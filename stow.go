@@ -1,6 +1,9 @@
 package stow
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 // Locations is a map of installed location providers,
 // supplying a function that creates a new instance of
@@ -61,6 +64,8 @@ type Item interface {
 	ID() string
 	// Name gets a human-readable name describing this Container.
 	Name() string
+	// URL gets the url for this item.
+	URL() *url.URL
 }
 
 // Config represents key/value configuraiton.

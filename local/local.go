@@ -3,6 +3,7 @@ package stow
 import (
 	"errors"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -133,6 +134,13 @@ func (i *item) ID() string {
 
 func (i *item) Name() string {
 	return i.name
+}
+
+func (i *item) URL() *url.URL {
+	return &url.URL{
+		Scheme: "file",
+		Host:   "etc",
+	}
 }
 
 // filesToContainers takes a list of files and turns it into a
