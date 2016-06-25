@@ -137,9 +137,12 @@ func (i *item) Name() string {
 }
 
 func (i *item) URL() *url.URL {
+	params := url.Values{}
+	params.Set("ns", "com.graymeta.stow.item")
 	return &url.URL{
-		Scheme: "file",
-		Host:   "etc",
+		Scheme:   "file",
+		Path:     filepath.Clean(i.path),
+		RawQuery: params.Encode(),
 	}
 }
 
