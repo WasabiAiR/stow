@@ -1,4 +1,4 @@
-package stow
+package local
 
 import (
 	"errors"

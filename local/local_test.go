@@ -1,4 +1,4 @@
-package stow_test
+package local_test
 
 import (
 	"io/ioutil"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
+	"github.com/graymeta/stow/local"
 )
 
 func setup() (string, func() error, error) {
@@ -58,7 +59,7 @@ func TestContainers(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New("local", cfg)
+	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -85,7 +86,7 @@ func TestContainersPrefix(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New("local", cfg)
+	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -113,7 +114,7 @@ func TestContainer(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New("local", cfg)
+	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -138,7 +139,7 @@ func TestItems(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New("local", cfg)
+	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -165,7 +166,7 @@ func TestItemByURL(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New("local", cfg)
+	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -182,6 +183,11 @@ func TestItemByURL(t *testing.T) {
 	is.Equal(len(items), 3)
 
 	item1 := items[0]
+
+	// make sure we know the kind by URL
+	kind, err := stow.KindByURL(item1.URL())
+	is.NoErr(err)
+	is.Equal(kind, local.Kind)
 
 	i, err := l.ItemByURL(item1.URL())
 	is.NoErr(err)
