@@ -6,18 +6,18 @@ import (
 	"sync"
 )
 
-var lock sync.RWMutex // protects locations and kindmatches
-
-// locations is a map of installed location providers,
-// supplying a function that creates a new instance of
-// that Location.
-var locations = map[string]func(Config) Location{}
-
-// kindmatches is a slice of functions that take turns
-// trying to match the kind of Location for a given
-// URL. Functions return an empty string if it does not
-// match.
-var kindmatches []func(*url.URL) string
+var (
+	lock sync.RWMutex // protects locations and kindmatches
+	// locations is a map of installed location providers,
+	// supplying a function that creates a new instance of
+	// that Location.
+	locations = map[string]func(Config) Location{}
+	// kindmatches is a slice of functions that take turns
+	// trying to match the kind of Location for a given
+	// URL. Functions return an empty string if it does not
+	// match.
+	kindmatches []func(*url.URL) string
+)
 
 // Location represents a storage location.
 type Location interface {
@@ -53,12 +53,11 @@ func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.U
 // New gets a new Location with the given kind and
 // configuration.
 func New(kind string, config Config) (Location, error) {
-	for k, fn := range locations {
-		if k == kind {
-			return fn(config), nil
-		}
+	fn, ok := locations[kind]
+	if !ok {
+		return nil, errUnknownKind(kind)
 	}
-	return nil, errUnknownKind(kind)
+	return fn(config), nil
 }
 
 // KindByURL gets the kind represented by the given URL.
