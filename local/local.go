@@ -2,6 +2,7 @@ package stow
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -18,6 +19,10 @@ const (
 
 // Kind is the kind of Location this package provides.
 const Kind = "local"
+
+const (
+	paramTypeValue = "item"
+)
 
 func init() {
 	// register local storage
@@ -58,6 +63,18 @@ func (l *location) Container(id string) (stow.Container, error) {
 		return nil, nil
 	}
 	return cs[0], nil
+}
+
+func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
+	// ensure correct type param
+	q := u.Query()
+	if q.Get(stow.ParamType) != paramTypeValue {
+		return nil, fmt.Errorf("stow: %s expected to be '%s'", stow.ParamType, paramTypeValue)
+	}
+	i := &item{}
+	i.path = u.Path
+	i.name = filepath.Base(i.path)
+	return i, nil
 }
 
 type containerList struct {
@@ -138,7 +155,7 @@ func (i *item) Name() string {
 
 func (i *item) URL() *url.URL {
 	params := url.Values{}
-	params.Set("ns", "com.graymeta.stow.item")
+	params.Set(stow.ParamType, paramTypeValue)
 	return &url.URL{
 		Scheme:   "file",
 		Path:     filepath.Clean(i.path),

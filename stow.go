@@ -5,6 +5,10 @@ import (
 	"net/url"
 )
 
+const (
+	ParamType = "com.graymeta.stow.type"
+)
+
 // Locations is a map of installed location providers,
 // supplying a function that creates a new instance of
 // that Location.
@@ -18,6 +22,9 @@ type Location interface {
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
+	// ItemByURL gets an Item at this location with the
+	// specified URL.
+	ItemByURL(*url.URL) (Item, error)
 }
 
 // New gets a new Location with the given kind and
@@ -60,9 +67,9 @@ type ItemList interface {
 // Item represents an item inside a Container.
 // Such as a file.
 type Item interface {
-	// ID gets a unique string describing this Container.
+	// ID gets a unique string describing this Item.
 	ID() string
-	// Name gets a human-readable name describing this Container.
+	// Name gets a human-readable name describing this Item.
 	Name() string
 	// URL gets the url for this item.
 	URL() *url.URL

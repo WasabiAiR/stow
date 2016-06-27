@@ -2,7 +2,6 @@ package stow_test
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -158,7 +157,7 @@ func TestItems(t *testing.T) {
 	is.Equal(items[0].Name(), "item1")
 }
 
-func TestKey(t *testing.T) {
+func TestItemByURL(t *testing.T) {
 	is := is.New(t)
 	testDir, teardown, err := setup()
 	is.NoErr(err)
@@ -183,7 +182,13 @@ func TestKey(t *testing.T) {
 	is.Equal(len(items), 3)
 
 	item1 := items[0]
-	log.Println(item1.URL().String())
+
+	i, err := l.ItemByURL(item1.URL())
+	is.NoErr(err)
+	is.OK(i)
+	is.Equal(i.ID(), item1.ID())
+	is.Equal(i.Name(), item1.Name())
+	is.Equal(i.URL().String(), item1.URL().String())
 
 }
 
