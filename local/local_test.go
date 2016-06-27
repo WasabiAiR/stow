@@ -198,6 +198,35 @@ func TestItemByURL(t *testing.T) {
 
 }
 
+func TestItemReader(t *testing.T) {
+	is := is.New(t)
+	testDir, teardown, err := setup()
+	is.NoErr(err)
+	defer teardown()
+
+	cfg := stow.ConfigMap{"path": testDir}
+	l, err := stow.New(local.Kind, cfg)
+	is.NoErr(err)
+	is.OK(l)
+	c, err := l.Containers("t")
+	is.NoErr(err)
+	is.OK(c)
+	three, err := l.Container(c.Items()[0].ID())
+
+	threeItemsPage, err := three.Items()
+	is.NoErr(err)
+	items := threeItemsPage.Items()
+	item1 := items[0]
+
+	rc, err := item1.Open()
+	defer rc.Close()
+	is.NoErr(err)
+	b, err := ioutil.ReadAll(rc)
+	is.NoErr(err)
+	is.Equal("3.1", string(b))
+
+}
+
 func isDir(is is.I, path string) {
 	info, err := os.Stat(path)
 	is.NoErr(err)

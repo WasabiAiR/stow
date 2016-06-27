@@ -2,6 +2,7 @@ package local
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -155,6 +156,11 @@ func (i *item) URL() *url.URL {
 		Scheme: "file",
 		Path:   filepath.Clean(i.path),
 	}
+}
+
+// Open opens the file for reading.
+func (i *item) Open() (io.ReadCloser, error) {
+	return os.Open(i.path)
 }
 
 // filesToContainers takes a list of files and turns it into a

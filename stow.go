@@ -1,6 +1,7 @@
 package stow
 
 import (
+	"io"
 	"net/url"
 	"sync"
 )
@@ -97,7 +98,12 @@ type Container interface {
 
 // ItemList represents a list of Item objects.
 type ItemList interface {
+	// Items gets the slice of Item that make up
+	// this ItemList.
 	Items() []Item
+
+	// More indicates whether there are more items
+	// after this ItemList.
 	More() bool
 }
 
@@ -110,6 +116,9 @@ type Item interface {
 	Name() string
 	// URL gets the url for this item.
 	URL() *url.URL
+	// Open opens the Item for reading.
+	// Calling code must close the io.ReadCloser.
+	Open() (io.ReadCloser, error)
 }
 
 // Config represents key/value configuraiton.
