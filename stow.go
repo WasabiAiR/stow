@@ -1,18 +1,22 @@
 package stow
 
 import (
-	"fmt"
 	"net/url"
+	"sync"
 )
 
-const (
-	ParamType = "com.graymeta.stow.type"
-)
+var lock sync.RWMutex // protects locations and kindmatches
 
-// Locations is a map of installed location providers,
+// locations is a map of installed location providers,
 // supplying a function that creates a new instance of
 // that Location.
-var Locations = map[string]func(Config) Location{}
+var locations = map[string]func(Config) Location{}
+
+// kindmatches is a slice of functions that take turns
+// trying to match the kind of Location for a given
+// URL. Functions return an empty string if it does not
+// match.
+var kindmatches []func(*url.URL) string
 
 // Location represents a storage location.
 type Location interface {
@@ -27,15 +31,48 @@ type Location interface {
 	ItemByURL(*url.URL) (Item, error)
 }
 
+// Register adds a Location implementation, with two helper functions.
+// makefn should make a Location with the given Config.
+// kindmatchfn should inspect a URL and return whether it represents a Location
+// of this kind or not. Code can call KindByURL to get a kind string
+// for any given URL and all registered implementations will be consulted.
+func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.URL) bool) {
+	lock.Lock()
+	defer lock.Unlock()
+	locations[kind] = makefn
+	kindmatches = append(kindmatches, func(u *url.URL) string {
+		if kindmatchfn(u) {
+			return kind // match
+		}
+		return "" // empty string means no match
+	})
+}
+
 // New gets a new Location with the given kind and
 // kind specific configuration.
 func New(kind string, config Config) (Location, error) {
-	for k, fn := range Locations {
+	for k, fn := range locations {
 		if k == kind {
 			return fn(config), nil
 		}
 	}
-	return nil, fmt.Errorf("stow: unknown kind %s", kind)
+	return nil, errUnknownKind(kind)
+}
+
+// KindByURL gets the kind represented by the given URL.
+// It consults all kindmatchfn functions passed into Register.
+// Error if no match is found.
+func KindByURL(u *url.URL) (string, error) {
+	lock.RLock()
+	defer lock.RUnlock()
+	for _, fn := range kindmatches {
+		kind := fn(u)
+		if kind == "" {
+			continue
+		}
+		return kind, nil
+	}
+	return "", errUnknownKind("")
 }
 
 // ContainerList represents a list of containers.
