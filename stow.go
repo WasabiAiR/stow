@@ -37,6 +37,7 @@ type Location interface {
 // kindmatchfn should inspect a URL and return whether it represents a Location
 // of this kind or not. Code can call KindByURL to get a kind string
 // for any given URL and all registered implementations will be consulted.
+// Register is usually called in an implementation package's init method.
 func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.URL) bool) {
 	lock.Lock()
 	defer lock.Unlock()
@@ -50,7 +51,7 @@ func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.U
 }
 
 // New gets a new Location with the given kind and
-// kind specific configuration.
+// configuration.
 func New(kind string, config Config) (Location, error) {
 	for k, fn := range locations {
 		if k == kind {
@@ -61,8 +62,8 @@ func New(kind string, config Config) (Location, error) {
 }
 
 // KindByURL gets the kind represented by the given URL.
-// It consults all kindmatchfn functions passed into Register.
-// Error if no match is found.
+// It consults all registered locations.
+// Error returned if no match is found.
 func KindByURL(u *url.URL) (string, error) {
 	lock.RLock()
 	defer lock.RUnlock()
@@ -101,7 +102,6 @@ type ItemList interface {
 	// Items gets the slice of Item that make up
 	// this ItemList.
 	Items() []Item
-
 	// More indicates whether there are more items
 	// after this ItemList.
 	More() bool
@@ -131,8 +131,6 @@ type Config interface {
 // ConfigMap is a map[string]string that implements
 // the Config method.
 type ConfigMap map[string]string
-
-var _ Config = (ConfigMap)(nil)
 
 // Config gets a string configuration value and a
 // bool indicating whether the value was present or not.
