@@ -33,6 +33,8 @@ type Location interface {
 	// NewContainer creates a container and returns it.
 	// On error it returns nil and error.
 	NewContainer(name string) (Container, error)
+	// DeleteContainer deletes container with given name.
+	DeleteContainer(name string) error
 }
 
 // Register adds a Location implementation, with two helper functions.

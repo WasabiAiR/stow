@@ -90,6 +90,15 @@ func (l *location) NewContainer(name string) (stow.Container, error) {
 	}, nil
 }
 
+func (l *location) DeleteContainer(name string) error {
+	path, ok := l.config.Config(ConfigKeyPath)
+	if !ok {
+		return errors.New("missing " + ConfigKeyPath + " configuration")
+	}
+	fullpath := filepath.Join(path, name)
+	return os.RemoveAll(fullpath)
+}
+
 type containerList struct {
 	items []stow.Container
 }

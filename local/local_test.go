@@ -104,6 +104,41 @@ func TestNewContainer(t *testing.T) {
 	is.Equal(items[0].Name(), "new_test_container")
 }
 
+func TestDeleteContainer(t *testing.T) {
+	is := is.New(t)
+	testDir, teardown, err := setup()
+	is.NoErr(err)
+	defer teardown()
+
+	cfg := stow.ConfigMap{"path": testDir}
+
+	l, err := stow.New(local.Kind, cfg)
+	is.NoErr(err)
+	is.OK(l)
+
+	c, err := l.NewContainer("delete_me_plox")
+	is.NoErr(err)
+	is.OK(c)
+
+	cc, err := l.Containers("del")
+	is.NoErr(err)
+	is.OK(cc)
+
+	items := cc.Items()
+	is.Equal(len(items), 1)
+	isDir(is, items[0].ID())
+	is.Equal(items[0].Name(), "delete_me_plox")
+
+	err = l.DeleteContainer("delete_me_plox")
+	is.NoErr(err)
+	check, err := l.Containers("del")
+	is.NoErr(err)
+	is.OK(check)
+
+	items = check.Items()
+	is.Equal(len(items), 0)
+}
+
 func TestContainersPrefix(t *testing.T) {
 	is := is.New(t)
 	testDir, teardown, err := setup()
