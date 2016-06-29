@@ -30,6 +30,9 @@ type Location interface {
 	// ItemByURL gets an Item at this location with the
 	// specified URL.
 	ItemByURL(*url.URL) (Item, error)
+	// NewContainer creates a container and returns it.
+	// On error it returns nil and error.
+	NewContainer(name string) (Container, error)
 }
 
 // Register adds a Location implementation, with two helper functions.
