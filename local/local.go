@@ -90,6 +90,30 @@ func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	return i, nil
 }
 
+func (l *location) NewContainer(name string) (stow.Container, error) {
+	path, ok := l.config.Config(ConfigKeyPath)
+	if !ok {
+		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
+	}
+	fullpath := filepath.Join(path, name)
+	if err := os.Mkdir(fullpath, 0777); err != nil {
+		return nil, errors.New("couldn't create a new container")
+	}
+	return &container{
+		name: name,
+		path: fullpath,
+	}, nil
+}
+
+func (l *location) DeleteContainer(name string) error {
+	path, ok := l.config.Config(ConfigKeyPath)
+	if !ok {
+		return errors.New("missing " + ConfigKeyPath + " configuration")
+	}
+	fullpath := filepath.Join(path, name)
+	return os.RemoveAll(fullpath)
+}
+
 type containerList struct {
 	items []stow.Container
 }
