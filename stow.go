@@ -21,6 +21,9 @@ var (
 
 // Location represents a storage location.
 type Location interface {
+	// CreateContainer creates a new Container with the
+	// specified name.
+	CreateContainer(name string) (Container, error)
 	// Containers gets the first page of containers
 	// with the specified prefix from this Location.
 	Containers(prefix string) (ContainerList, error)

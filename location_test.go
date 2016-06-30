@@ -24,6 +24,10 @@ type testLocation struct {
 	config stow.Config
 }
 
+func (l *testLocation) CreateContainer(name string) (stow.Container, error) {
+	return nil, nil
+}
+
 func (l *testLocation) Container(id string) (stow.Container, error) {
 	return nil, nil
 }

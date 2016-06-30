@@ -40,6 +40,21 @@ type location struct {
 	config stow.Config
 }
 
+func (l *location) CreateContainer(name string) (stow.Container, error) {
+	path, ok := l.config.Config(ConfigKeyPath)
+	if !ok {
+		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
+	}
+	fullpath := filepath.Join(path, name)
+	if err := os.Mkdir(fullpath, 0777); err != nil {
+		return nil, err
+	}
+	return &container{
+		name: name,
+		path: fullpath,
+	}, nil
+}
+
 func (l *location) Containers(prefix string) (stow.ContainerList, error) {
 	path, ok := l.config.Config(ConfigKeyPath)
 	if !ok {
