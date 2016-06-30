@@ -117,6 +117,19 @@ func (c *container) Name() string {
 	return c.name
 }
 
+func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
+	path := filepath.Join(c.path, name)
+	item := &item{
+		name: name,
+		path: path,
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	return item, f, nil
+}
+
 func (c *container) Items() (stow.ItemList, error) {
 	files, err := ioutil.ReadDir(c.path)
 	if err != nil {

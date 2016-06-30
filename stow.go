@@ -97,6 +97,11 @@ type Container interface {
 	// Items gets the first page of items for this
 	// Container.
 	Items() (ItemList, error)
+	// CreateItem creates a new Item with the
+	// specified name and returns it along with a io.WriteCloser
+	// which can be used to write contents to the Item.
+	// The io.WriteCloser must always be closed.
+	CreateItem(name string) (Item, io.WriteCloser, error)
 }
 
 // ItemList represents a list of Item objects.

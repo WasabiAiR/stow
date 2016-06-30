@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -155,6 +156,54 @@ func TestNewContainer(t *testing.T) {
 	is.Equal(len(items), 1)
 	isDir(is, items[0].ID())
 	is.Equal(items[0].Name(), "new_test_container")
+}
+
+func TestCreateItem(t *testing.T) {
+	is := is.New(t)
+	testDir, teardown, err := setup()
+	is.NoErr(err)
+	defer teardown()
+
+	cfg := stow.ConfigMap{"path": testDir}
+	l, err := stow.New(local.Kind, cfg)
+	is.NoErr(err)
+	is.OK(l)
+
+	c, err := l.Containers("t")
+	is.NoErr(err)
+	is.OK(c)
+	c1 := c.Items()[0]
+	items, err := c1.Items()
+	is.NoErr(err)
+	beforecount := len(items.Items())
+
+	newitem, w, err := c1.CreateItem("new_item")
+	is.NoErr(err)
+	defer w.Close()
+	_, err = io.WriteString(w, "new item contents")
+	is.NoErr(err)
+	is.OK(newitem)
+	is.Equal(newitem.Name(), "new_item")
+
+	// get the container again
+	c, err = l.Containers("t")
+	is.NoErr(err)
+	is.OK(c)
+	c1 = c.Items()[0]
+	items, err = c1.Items()
+	is.NoErr(err)
+	aftercount := len(items.Items())
+
+	is.Equal(aftercount, beforecount+1)
+
+	// get new item
+	item := items.Items()[len(items.Items())-1]
+	r, err := item.Open()
+	is.NoErr(err)
+	defer r.Close()
+	itemContents, err := ioutil.ReadAll(r)
+	is.NoErr(err)
+	is.Equal("new item contents", string(itemContents))
 }
 
 func TestItems(t *testing.T) {
