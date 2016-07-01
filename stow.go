@@ -132,6 +132,12 @@ type Item interface {
 	// Open opens the Item for reading.
 	// Calling code must close the io.ReadCloser.
 	Open() (io.ReadCloser, error)
+	// ETag represents a string describing the uniqueness
+	// of the Item. If the ETags of two items match, the
+	// items are considered identical.
+	ETag() (string, error)
+	// MD5 gets a hash of the contents of the file.
+	MD5() (string, error)
 }
 
 // Config represents key/value configuraiton.
