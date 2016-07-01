@@ -36,7 +36,7 @@ type Location interface {
 	// ContainerByURL gets a Container at this location
 	// with the specified URL. If the URL refers to an Item,
 	// it gets the Container of that Item.
-	ContainerByURL(*url.URL) (Container, error)
+	ContainerByURL(u *url.URL) (Container, error)
 }
 
 // Register adds a Location implementation, with two helper functions.
