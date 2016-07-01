@@ -1,12 +1,15 @@
 package local
 
 import (
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/graymeta/stow"
 )
@@ -181,8 +184,10 @@ func (i *itemlist) More() bool {
 }
 
 type item struct {
-	name string
-	path string
+	name    string
+	path    string
+	md5once sync.Once // protects md5
+	md5     string
 }
 
 func (i *item) ID() string {
@@ -198,6 +203,29 @@ func (i *item) URL() *url.URL {
 		Scheme: "file",
 		Path:   filepath.Clean(i.path),
 	}
+}
+
+func (i *item) ETag() (string, error) {
+	return i.MD5()
+}
+
+func (i *item) MD5() (string, error) {
+	var err error
+	i.md5once.Do(func() {
+		var f io.ReadCloser
+		f, err = i.Open()
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		h := md5.New()
+		_, err = io.Copy(h, f)
+		if err != nil {
+			return
+		}
+		i.md5 = fmt.Sprintf("%x", h.Sum(nil))
+	})
+	return i.md5, err
 }
 
 // Open opens the file for reading.

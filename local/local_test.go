@@ -202,12 +202,19 @@ func TestCreateItem(t *testing.T) {
 
 	// get new item
 	item := items.Items()[len(items.Items())-1]
+	md5, err := item.MD5()
+	is.NoErr(err)
+	is.Equal(md5, "1d4b28e33c8bfcfdb75e116ed2319632")
+	etag, err := item.ETag()
+	is.NoErr(err)
+	is.Equal(etag, md5)
 	r, err := item.Open()
 	is.NoErr(err)
 	defer r.Close()
 	itemContents, err := ioutil.ReadAll(r)
 	is.NoErr(err)
 	is.Equal("new item contents", string(itemContents))
+
 }
 
 func TestItems(t *testing.T) {
