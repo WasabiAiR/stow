@@ -33,6 +33,10 @@ type Location interface {
 	// ItemByURL gets an Item at this location with the
 	// specified URL.
 	ItemByURL(*url.URL) (Item, error)
+	// ContainerByURL gets a Container at this location
+	// with the specified URL. If the URL refers to an Item,
+	// it gets the Container of that Item.
+	ContainerByURL(*url.URL) (Container, error)
 }
 
 // Register adds a Location implementation, with two helper functions.
@@ -94,6 +98,8 @@ type Container interface {
 	ID() string
 	// Name gets a human-readable name describing this Container.
 	Name() string
+	// URL gets a URL describing this Container.
+	URL() *url.URL
 	// Items gets the first page of items for this
 	// Container.
 	Items() (ItemList, error)

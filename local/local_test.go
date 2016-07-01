@@ -130,6 +130,10 @@ func TestContainer(t *testing.T) {
 	cthree, err := l.Container(items[0].ID())
 	is.NoErr(err)
 	is.Equal(cthree.Name(), "three")
+
+	absTestDir, err := filepath.Abs(testDir)
+	is.NoErr(err)
+	is.Equal(cthree.URL().String(), "file://"+filepath.Join(absTestDir, cthree.Name()))
 }
 
 func TestNewContainer(t *testing.T) {
@@ -233,7 +237,7 @@ func TestItems(t *testing.T) {
 	is.Equal(items[0].Name(), "item1")
 }
 
-func TestItemByURL(t *testing.T) {
+func TestByURL(t *testing.T) {
 	is := is.New(t)
 	testDir, teardown, err := setup()
 	is.NoErr(err)
@@ -270,6 +274,13 @@ func TestItemByURL(t *testing.T) {
 	is.Equal(i.ID(), item1.ID())
 	is.Equal(i.Name(), item1.Name())
 	is.Equal(i.URL().String(), item1.URL().String())
+
+	container, err := l.ContainerByURL(item1.URL())
+	is.NoErr(err)
+	is.Equal(container.Name(), "three")
+	absTestDir, err := filepath.Abs(testDir)
+	is.NoErr(err)
+	is.Equal(container.ID(), filepath.Join(absTestDir, container.Name()))
 
 }
 

@@ -38,3 +38,7 @@ func (l *testLocation) Containers(prefix string) (stow.ContainerList, error) {
 func (l *testLocation) ItemByURL(u *url.URL) (stow.Item, error) {
 	return nil, nil
 }
+
+func (l *testLocation) ContainerByURL(u *url.URL) (stow.Container, error) {
+	return nil, nil
+}

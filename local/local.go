@@ -90,6 +90,13 @@ func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	return i, nil
 }
 
+func (l *location) ContainerByURL(u *url.URL) (stow.Container, error) {
+	c := &container{}
+	c.path = filepath.Dir(u.Path)
+	c.name = filepath.Base(c.path)
+	return c, nil
+}
+
 type containerList struct {
 	items []stow.Container
 }
@@ -115,6 +122,13 @@ func (c *container) ID() string {
 
 func (c *container) Name() string {
 	return c.name
+}
+
+func (c *container) URL() *url.URL {
+	return &url.URL{
+		Scheme: "file",
+		Path:   filepath.Clean(c.path),
+	}
 }
 
 func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
