@@ -9,8 +9,9 @@ import (
 
 // Test runs a generic suite of tests for Stow storage
 // implementations.
-// Passing the kind name is enough, because implementations
-// should have registered themselves via stow.Register.
+// Passing the kind name and a configuration is enough,
+// because implementations should have registered themselves
+// via stow.Register.
 func Test(t *testing.T, kind string, config stow.Config) {
 	is := is.New(t)
 
