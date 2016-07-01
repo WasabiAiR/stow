@@ -206,7 +206,11 @@ func (i *item) URL() *url.URL {
 }
 
 func (i *item) ETag() (string, error) {
-	return i.MD5()
+	info, err := os.Stat(i.path)
+	if err != nil {
+		return "", nil
+	}
+	return info.ModTime().String(), nil
 }
 
 func (i *item) MD5() (string, error) {

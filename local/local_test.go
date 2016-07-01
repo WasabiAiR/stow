@@ -207,7 +207,7 @@ func TestCreateItem(t *testing.T) {
 	is.Equal(md5, "1d4b28e33c8bfcfdb75e116ed2319632")
 	etag, err := item.ETag()
 	is.NoErr(err)
-	is.Equal(etag, md5)
+	is.OK(etag)
 	r, err := item.Open()
 	is.NoErr(err)
 	defer r.Close()
