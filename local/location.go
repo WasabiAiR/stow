@@ -29,9 +29,13 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	if err := os.Mkdir(fullpath, 0777); err != nil {
 		return nil, err
 	}
+	abspath, err := filepath.Abs(fullpath)
+	if err != nil {
+		return nil, err
+	}
 	return &container{
 		name: name,
-		path: fullpath,
+		path: abspath,
 	}, nil
 }
 

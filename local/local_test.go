@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/graymeta/stow/test"
-
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/local"
+	"github.com/graymeta/stow/test"
 )
 
 func setup() (string, func() error, error) {
@@ -51,7 +50,12 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 
-	return dir, done, nil
+	// make testpath absolute
+	absdir, err := filepath.Abs(dir)
+	if err != nil {
+		return dir, done, err
+	}
+	return absdir, done, nil
 }
 
 func TestStow(t *testing.T) {
