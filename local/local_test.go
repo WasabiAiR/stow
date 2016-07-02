@@ -280,8 +280,21 @@ func TestByURL(t *testing.T) {
 	items := threeItemsPage.Items()
 	is.Equal(len(items), 3)
 
-}
+	item1 := items[0]
 
+	// make sure we know the kind by URL
+	kind, err := stow.KindByURL(item1.URL())
+	is.NoErr(err)
+	is.Equal(kind, local.Kind)
+
+	i, err := l.ItemByURL(item1.URL())
+	is.NoErr(err)
+	is.OK(i)
+	is.Equal(i.ID(), item1.ID())
+	is.Equal(i.Name(), item1.Name())
+	is.Equal(i.URL().String(), item1.URL().String())
+
+}
 func TestItemReader(t *testing.T) {
 	is := is.New(t)
 	testDir, teardown, err := setup()
