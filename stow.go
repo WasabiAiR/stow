@@ -24,9 +24,13 @@ type Location interface {
 	// CreateContainer creates a new Container with the
 	// specified name.
 	CreateContainer(name string) (Container, error)
-	// Containers gets the first page of containers
+	// Containers gets a page of containers
 	// with the specified prefix from this Location.
-	Containers(prefix string) (ContainerList, error)
+	// The page starts at zero.
+	// The bool returned indicates whether there might be
+	// another page of results or not.
+	// If false, there definitely are no more containers.
+	Containers(prefix string, page int) ([]Container, bool, error)
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
@@ -94,24 +98,16 @@ type Container interface {
 	ID() string
 	// Name gets a human-readable name describing this Container.
 	Name() string
-	// Items gets the first page of items for this
-	// Container.
-	Items() (ItemList, error)
+	// Items gets a page of items for this
+	// Container. The page starts at zero.
+	// The returned bool indicates whether there might be another
+	// page of items or not. If false, there definitely are no more items.
+	Items(page int) ([]Item, bool, error)
 	// CreateItem creates a new Item with the
 	// specified name and returns it along with a io.WriteCloser
 	// which can be used to write contents to the Item.
 	// The io.WriteCloser must always be closed.
 	CreateItem(name string) (Item, io.WriteCloser, error)
-}
-
-// ItemList represents a list of Item objects.
-type ItemList interface {
-	// Items gets the slice of Item that make up
-	// this ItemList.
-	Items() []Item
-	// More indicates whether there are more items
-	// after this ItemList.
-	More() bool
 }
 
 // Item represents an item inside a Container.

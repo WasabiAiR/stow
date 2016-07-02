@@ -31,8 +31,8 @@ func (l *testLocation) CreateContainer(name string) (stow.Container, error) {
 func (l *testLocation) Container(id string) (stow.Container, error) {
 	return nil, nil
 }
-func (l *testLocation) Containers(prefix string) (stow.ContainerList, error) {
-	return nil, nil
+func (l *testLocation) Containers(prefix string, page int) ([]stow.Container, bool, error) {
+	return nil, false, nil
 }
 
 func (l *testLocation) ItemByURL(u *url.URL) (stow.Item, error) {

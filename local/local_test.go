@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/graymeta/stow/test"
-
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/local"
+	"github.com/graymeta/stow/test"
 )
 
 func setup() (string, func() error, error) {
@@ -51,7 +50,12 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 
-	return dir, done, nil
+	// make testpath absolute
+	absdir, err := filepath.Abs(dir)
+	if err != nil {
+		return dir, done, err
+	}
+	return absdir, done, nil
 }
 
 func TestStow(t *testing.T) {
@@ -77,12 +81,11 @@ func TestContainers(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("")
+	items, more, err := l.Containers("", 0)
 	is.NoErr(err)
-	is.OK(c)
-	is.False(c.More())
+	is.False(more)
+	is.OK(items)
 
-	items := c.Items()
 	is.Equal(len(items), 3)
 	isDir(is, items[0].ID())
 	is.Equal(items[0].Name(), "one")
@@ -104,18 +107,18 @@ func TestContainersPrefix(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
+	is.OK(containers)
+	is.False(more)
 
-	items := c.Items()
-	is.Equal(len(items), 2)
-	isDir(is, items[0].ID())
-	is.Equal(items[0].Name(), "three")
-	isDir(is, items[1].ID())
-	is.Equal(items[1].Name(), "two")
+	is.Equal(len(containers), 2)
+	isDir(is, containers[0].ID())
+	is.Equal(containers[0].Name(), "three")
+	isDir(is, containers[1].ID())
+	is.Equal(containers[1].Name(), "two")
 
-	cthree, err := l.Container(items[0].ID())
+	cthree, err := l.Container(containers[0].ID())
 	is.NoErr(err)
 	is.Equal(cthree.Name(), "three")
 }
@@ -132,15 +135,15 @@ func TestContainer(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
+	is.OK(containers)
+	is.False(more)
 
-	items := c.Items()
-	is.Equal(len(items), 2)
-	isDir(is, items[0].ID())
+	is.Equal(len(containers), 2)
+	isDir(is, containers[0].ID())
 
-	cthree, err := l.Container(items[0].ID())
+	cthree, err := l.Container(containers[0].ID())
 	is.NoErr(err)
 	is.Equal(cthree.Name(), "three")
 
@@ -164,14 +167,14 @@ func TestCreateContainer(t *testing.T) {
 	is.Equal(c.ID(), filepath.Join(testDir, "new_test_container"))
 	is.Equal(c.Name(), "new_test_container")
 
-	cc, err := l.Containers("new")
+	containers, more, err := l.Containers("new", 0)
 	is.NoErr(err)
-	is.OK(cc)
+	is.OK(containers)
+	is.False(more)
 
-	items := cc.Items()
-	is.Equal(len(items), 1)
-	isDir(is, items[0].ID())
-	is.Equal(items[0].Name(), "new_test_container")
+	is.Equal(len(containers), 1)
+	isDir(is, containers[0].ID())
+	is.Equal(containers[0].Name(), "new_test_container")
 }
 
 func TestCreateItem(t *testing.T) {
@@ -185,13 +188,14 @@ func TestCreateItem(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
-	c1 := c.Items()[0]
-	items, err := c1.Items()
+	is.OK(containers)
+	c1 := containers[0]
+	items, more, err := c1.Items(0)
 	is.NoErr(err)
-	beforecount := len(items.Items())
+	is.False(more)
+	beforecount := len(items)
 
 	newitem, w, err := c1.CreateItem("new_item")
 	is.NoErr(err)
@@ -202,18 +206,20 @@ func TestCreateItem(t *testing.T) {
 	is.Equal(newitem.Name(), "new_item")
 
 	// get the container again
-	c, err = l.Containers("t")
+	containers, more, err = l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
-	c1 = c.Items()[0]
-	items, err = c1.Items()
+	is.OK(containers)
+	is.False(more)
+	c1 = containers[0]
+	items, more, err = c1.Items(0)
 	is.NoErr(err)
-	aftercount := len(items.Items())
+	is.False(more)
+	aftercount := len(items)
 
 	is.Equal(aftercount, beforecount+1)
 
 	// get new item
-	item := items.Items()[len(items.Items())-1]
+	item := items[len(items)-1]
 	md5, err := item.MD5()
 	is.NoErr(err)
 	is.Equal(md5, "1d4b28e33c8bfcfdb75e116ed2319632")
@@ -241,18 +247,19 @@ func TestItems(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
-	three, err := l.Container(c.Items()[0].ID())
+	is.OK(containers)
+	is.False(more)
+	three, err := l.Container(containers[0].ID())
 	is.NoErr(err)
-	threeItemsPage, err := three.Items()
+	items, more, err := three.Items(0)
 	is.NoErr(err)
-	is.OK(threeItemsPage)
+	is.OK(items)
+	is.False(more)
 
-	items := threeItemsPage.Items()
 	is.Equal(len(items), 3)
-	is.Equal(items[0].ID(), filepath.Join(c.Items()[0].ID(), "item1"))
+	is.Equal(items[0].ID(), filepath.Join(containers[0].ID(), "item1"))
 	is.Equal(items[0].Name(), "item1")
 }
 
@@ -268,16 +275,17 @@ func TestByURL(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
-	three, err := l.Container(c.Items()[0].ID())
-	is.NoErr(err)
-	threeItemsPage, err := three.Items()
-	is.NoErr(err)
-	is.OK(threeItemsPage)
+	is.OK(containers)
+	is.False(more)
 
-	items := threeItemsPage.Items()
+	three, err := l.Container(containers[0].ID())
+	is.NoErr(err)
+	items, more, err := three.Items(0)
+	is.NoErr(err)
+	is.OK(items)
+	is.False(more)
 	is.Equal(len(items), 3)
 
 	item1 := items[0]
@@ -305,14 +313,15 @@ func TestItemReader(t *testing.T) {
 	l, err := stow.New(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
-	c, err := l.Containers("t")
+	containers, more, err := l.Containers("t", 0)
 	is.NoErr(err)
-	is.OK(c)
-	three, err := l.Container(c.Items()[0].ID())
+	is.OK(containers)
+	is.False(more)
+	three, err := l.Container(containers[0].ID())
 
-	threeItemsPage, err := three.Items()
+	items, more, err := three.Items(0)
 	is.NoErr(err)
-	items := threeItemsPage.Items()
+	is.False(more)
 	item1 := items[0]
 
 	rc, err := item1.Open()
