@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -53,11 +52,22 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[2].Name(), item3.Name())
 	is.Equal(readItemContents(is, item3), "item three")
 
-	// calculate MD5
-	md5, err := item1.MD5()
+	// check MD5s
+	is.Equal(len(md5(is, item1)), 32)
+	is.Equal(len(md5(is, item2)), 32)
+	is.Equal(len(md5(is, item3)), 32)
+
+	// check ETags
+	is.NotEqual(etag(is, item1), etag(is, item2))
+	is.NotEqual(etag(is, item2), etag(is, item3))
+	is.NotEqual(etag(is, item1), etag(is, item3))
+
+	// get items by URL
+	u1 := item1.URL()
+	item1b, err := location.ItemByURL(u1)
 	is.NoErr(err)
-	is.Equal(len(md5), 32)
-	fmt.Println(item1.ETag())
+	is.OK(item1b)
+	is.Equal(item1b.ID(), item1.ID())
 
 }
 
@@ -87,4 +97,16 @@ func readItemContents(is is.I, item stow.Item) string {
 	b, err := ioutil.ReadAll(r)
 	is.NoErr(err)
 	return string(b)
+}
+
+func md5(is is.I, item stow.Item) string {
+	md5, err := item.MD5()
+	is.NoErr(err)
+	return md5
+}
+
+func etag(is is.I, item stow.Item) string {
+	etag, err := item.ETag()
+	is.NoErr(err)
+	return etag
 }

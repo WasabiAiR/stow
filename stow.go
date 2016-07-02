@@ -36,7 +36,7 @@ type Location interface {
 	Container(id string) (Container, error)
 	// ItemByURL gets an Item at this location with the
 	// specified URL.
-	ItemByURL(*url.URL) (Item, error)
+	ItemByURL(url *url.URL) (Item, error)
 }
 
 // Register adds a Location implementation, with two helper functions.
