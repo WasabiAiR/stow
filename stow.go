@@ -30,13 +30,6 @@ type Location interface {
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
-	// ItemByURL gets an Item at this location with the
-	// specified URL.
-	ItemByURL(*url.URL) (Item, error)
-	// ContainerByURL gets a Container at this location
-	// with the specified URL. If the URL refers to an Item,
-	// it gets the Container of that Item.
-	ContainerByURL(u *url.URL) (Container, error)
 }
 
 // Register adds a Location implementation, with two helper functions.
@@ -98,8 +91,6 @@ type Container interface {
 	ID() string
 	// Name gets a human-readable name describing this Container.
 	Name() string
-	// URL gets a URL describing this Container.
-	URL() *url.URL
 	// Items gets the first page of items for this
 	// Container.
 	Items() (ItemList, error)
@@ -127,8 +118,6 @@ type Item interface {
 	ID() string
 	// Name gets a human-readable name describing this Item.
 	Name() string
-	// URL gets the url for this item.
-	URL() *url.URL
 	// Open opens the Item for reading.
 	// Calling code must close the io.ReadCloser.
 	Open() (io.ReadCloser, error)

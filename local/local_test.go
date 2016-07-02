@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/graymeta/stow/test"
+
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/local"
@@ -50,6 +52,17 @@ func setup() (string, func() error, error) {
 	}
 
 	return dir, done, nil
+}
+
+func TestStow(t *testing.T) {
+	is := is.New(t)
+
+	dir, err := ioutil.TempDir("testdata", "stow")
+	is.NoErr(err)
+	defer os.RemoveAll(dir)
+	cfg := stow.ConfigMap{"path": dir}
+
+	test.All(t, "local", cfg)
 }
 
 func TestContainers(t *testing.T) {
@@ -131,12 +144,9 @@ func TestContainer(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(cthree.Name(), "three")
 
-	absTestDir, err := filepath.Abs(testDir)
-	is.NoErr(err)
-	is.Equal(cthree.URL().String(), "file://"+filepath.Join(absTestDir, cthree.Name()))
 }
 
-func TestNewContainer(t *testing.T) {
+func TestCreateContainer(t *testing.T) {
 	is := is.New(t)
 	testDir, teardown, err := setup()
 	is.NoErr(err)
@@ -151,6 +161,8 @@ func TestNewContainer(t *testing.T) {
 	c, err := l.CreateContainer("new_test_container")
 	is.NoErr(err)
 	is.OK(c)
+	is.Equal(c.ID(), filepath.Join(testDir, "new_test_container"))
+	is.Equal(c.Name(), "new_test_container")
 
 	cc, err := l.Containers("new")
 	is.NoErr(err)
@@ -267,27 +279,6 @@ func TestByURL(t *testing.T) {
 
 	items := threeItemsPage.Items()
 	is.Equal(len(items), 3)
-
-	item1 := items[0]
-
-	// make sure we know the kind by URL
-	kind, err := stow.KindByURL(item1.URL())
-	is.NoErr(err)
-	is.Equal(kind, local.Kind)
-
-	i, err := l.ItemByURL(item1.URL())
-	is.NoErr(err)
-	is.OK(i)
-	is.Equal(i.ID(), item1.ID())
-	is.Equal(i.Name(), item1.Name())
-	is.Equal(i.URL().String(), item1.URL().String())
-
-	container, err := l.ContainerByURL(item1.URL())
-	is.NoErr(err)
-	is.Equal(container.Name(), "three")
-	absTestDir, err := filepath.Abs(testDir)
-	is.NoErr(err)
-	is.Equal(container.ID(), filepath.Join(absTestDir, container.Name()))
 
 }
 

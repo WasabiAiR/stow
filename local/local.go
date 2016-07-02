@@ -86,20 +86,6 @@ func (l *location) Container(id string) (stow.Container, error) {
 	return cs[0], nil
 }
 
-func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
-	i := &item{}
-	i.path = u.Path
-	i.name = filepath.Base(i.path)
-	return i, nil
-}
-
-func (l *location) ContainerByURL(u *url.URL) (stow.Container, error) {
-	c := &container{}
-	c.path = filepath.Dir(u.Path)
-	c.name = filepath.Base(c.path)
-	return c, nil
-}
-
 type containerList struct {
 	items []stow.Container
 }
