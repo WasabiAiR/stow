@@ -37,7 +37,7 @@ func (i *item) ETag() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	return info.ModTime().String(), nil
+	return fmt.Sprintf("%s:%v", i.path, info.ModTime().String()), nil
 }
 
 func (i *item) MD5() (string, error) {

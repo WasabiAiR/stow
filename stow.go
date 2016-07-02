@@ -83,15 +83,6 @@ func KindByURL(u *url.URL) (string, error) {
 	return "", errUnknownKind("")
 }
 
-// ContainerList represents a list of containers.
-type ContainerList interface {
-	// Items are the containers.
-	Items() []Container
-	// More indicates whether there are more containers
-	// not included in this ContainerList.
-	More() bool
-}
-
 // Container represents a container.
 type Container interface {
 	// ID gets a unique string describing this Container.
@@ -124,7 +115,11 @@ type Item interface {
 	Open() (io.ReadCloser, error)
 	// ETag represents a string describing the uniqueness
 	// of the Item. If the ETags of two items match, the
-	// items are considered identical.
+	// items are considered identical. If the strings differ,
+	// the items are different.
+	// Any other information that happens to show up inside
+	// the ETag must not be used as implementations are free
+	// to change these at any time.
 	ETag() (string, error)
 	// MD5 gets a hash of the contents of the file.
 	MD5() (string, error)

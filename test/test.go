@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -51,6 +52,12 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[2].ID(), item3.ID())
 	is.Equal(items[2].Name(), item3.Name())
 	is.Equal(readItemContents(is, item3), "item three")
+
+	// calculate MD5
+	md5, err := item1.MD5()
+	is.NoErr(err)
+	is.Equal(len(md5), 32)
+	fmt.Println(item1.ETag())
 
 }
 
