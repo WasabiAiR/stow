@@ -20,11 +20,9 @@ func TestWalker(t *testing.T) {
 	config := stow.ConfigMap{"path": testDir}
 	location, err := stow.New("local", config)
 	is.NoErr(err)
-
 	containers, _, err := location.Containers("three", 0)
 	is.NoErr(err)
 	is.Equal(len(containers), 1)
-
 	threeContainer := containers[0]
 
 	walker := NewWalker(threeContainer)
