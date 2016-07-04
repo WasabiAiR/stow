@@ -8,6 +8,8 @@ import (
 
 var (
 	lock sync.RWMutex // protects locations and kindmatches
+	// kinds holds a list of location kinds.
+	kinds []string
 	// locations is a map of installed location providers,
 	// supplying a function that creates a new instance of
 	// that Location.
@@ -49,6 +51,7 @@ func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.U
 	lock.Lock()
 	defer lock.Unlock()
 	locations[kind] = makefn
+	kinds = append(kinds, kind)
 	kindmatches = append(kindmatches, func(u *url.URL) string {
 		if kindmatchfn(u) {
 			return kind // match
@@ -65,6 +68,11 @@ func New(kind string, config Config) (Location, error) {
 		return nil, errUnknownKind(kind)
 	}
 	return fn(config), nil
+}
+
+// Kinds gets a list of installed location kinds.
+func Kinds() []string {
+	return kinds
 }
 
 // KindByURL gets the kind represented by the given URL.

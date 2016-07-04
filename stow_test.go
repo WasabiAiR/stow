@@ -18,3 +18,9 @@ func TestKindByURL(t *testing.T) {
 	is.Equal(kind, testKind)
 
 }
+
+func TestKinds(t *testing.T) {
+	is := is.New(t)
+	stow.Register("example", nil, nil)
+	is.Equal(stow.Kinds(), []string{"test", "example"})
+}
