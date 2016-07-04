@@ -109,17 +109,17 @@ type Item interface {
 	// Name gets a human-readable name describing this Item.
 	Name() string
 	// URL gets a URL for this item.
+	// For example:
+	// local: file:///path/to/something
+	// azure: azure://host:port/api/something
+	//    s3: s3://host:post/etc
 	URL() *url.URL
 	// Open opens the Item for reading.
 	// Calling code must close the io.ReadCloser.
 	Open() (io.ReadCloser, error)
-	// ETag represents a string describing the uniqueness
-	// of the Item. If the ETags of two items match, the
-	// items are considered identical. If the strings differ,
-	// the items are different.
-	// Any other information that happens to show up inside
-	// the ETag must not be used as implementations are free
-	// to change these at any time.
+	// ETag is a string that is different when the Item is
+	// different, and the same when the item is the same.
+	// Usually this is the last modified datetime.
 	ETag() (string, error)
 	// MD5 gets a hash of the contents of the file.
 	MD5() (string, error)

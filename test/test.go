@@ -58,9 +58,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(len(md5(is, item3)), 32)
 
 	// check ETags
-	is.NotEqual(etag(is, item1), etag(is, item2))
-	is.NotEqual(etag(is, item2), etag(is, item3))
-	is.NotEqual(etag(is, item1), etag(is, item3))
+	is.OK(etag(is, item1))
+	is.OK(etag(is, item2))
+	is.OK(etag(is, item3))
 
 	// get items by URL
 	u1 := item1.URL()
@@ -68,6 +68,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1b)
 	is.Equal(item1b.ID(), item1.ID())
+	is.Equal(etag(is, item1b), etag(is, item1))
 
 }
 
