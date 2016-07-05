@@ -7,10 +7,10 @@ import (
 )
 
 func init() {
-	makefn := func(config stow.Config) stow.Location {
+	makefn := func(config stow.Config) (stow.Location, error) {
 		return &testLocation{
 			config: config,
-		}
+		}, nil
 	}
 	kindfn := func(u *url.URL) bool {
 		return u.Scheme == testKind

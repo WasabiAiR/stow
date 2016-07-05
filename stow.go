@@ -9,11 +9,11 @@ import (
 var (
 	lock sync.RWMutex // protects locations and kindmatches
 	// kinds holds a list of location kinds.
-	kinds []string
+	kinds = []string{}
 	// locations is a map of installed location providers,
 	// supplying a function that creates a new instance of
 	// that Location.
-	locations = map[string]func(Config) Location{}
+	locations = map[string]func(Config) (Location, error){}
 	// kindmatches is a slice of functions that take turns
 	// trying to match the kind of Location for a given
 	// URL. Functions return an empty string if it does not
@@ -47,7 +47,7 @@ type Location interface {
 // of this kind or not. Code can call KindByURL to get a kind string
 // for any given URL and all registered implementations will be consulted.
 // Register is usually called in an implementation package's init method.
-func Register(kind string, makefn func(Config) Location, kindmatchfn func(*url.URL) bool) {
+func Register(kind string, makefn func(Config) (Location, error), kindmatchfn func(*url.URL) bool) {
 	lock.Lock()
 	defer lock.Unlock()
 	locations[kind] = makefn
@@ -67,7 +67,7 @@ func New(kind string, config Config) (Location, error) {
 	if !ok {
 		return nil, errUnknownKind(kind)
 	}
-	return fn(config), nil
+	return fn(config)
 }
 
 // Kinds gets a list of installed location kinds.
