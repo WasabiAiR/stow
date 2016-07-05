@@ -22,3 +22,9 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+test/fuzz/*
+stow-fuzz.zip
+
+local/testdata/*
+local/local-fuzz.zip
