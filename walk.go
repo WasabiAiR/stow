@@ -11,6 +11,8 @@ package stow
 type WalkFunc func(item Item, page int, err error) error
 
 // Walk walks all Items in the Container.
+// Returns the first error returned by the WalkFunc or
+// nil if no errors were returned.
 func Walk(container Container, fn WalkFunc) error {
 	var err error
 	var items []Item
