@@ -60,9 +60,9 @@ func Register(kind string, makefn func(Config) (Location, error), kindmatchfn fu
 	})
 }
 
-// New gets a new Location with the given kind and
+// Dial gets a new Location with the given kind and
 // configuration.
-func New(kind string, config Config) (Location, error) {
+func Dial(kind string, config Config) (Location, error) {
 	fn, ok := locations[kind]
 	if !ok {
 		return nil, errUnknownKind(kind)

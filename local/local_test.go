@@ -77,7 +77,7 @@ func TestContainers(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -103,7 +103,7 @@ func TestContainersPrefix(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -131,7 +131,7 @@ func TestContainer(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -157,7 +157,7 @@ func TestCreateContainer(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -184,7 +184,7 @@ func TestCreateItem(t *testing.T) {
 	defer teardown()
 
 	cfg := stow.ConfigMap{"path": testDir}
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -241,7 +241,7 @@ func TestItems(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -269,7 +269,7 @@ func TestByURL(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -308,7 +308,7 @@ func TestItemReader(t *testing.T) {
 	defer teardown()
 
 	cfg := stow.ConfigMap{"path": testDir}
-	l, err := stow.New(local.Kind, cfg)
+	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 	containers, more, err := l.Containers("t", 0)

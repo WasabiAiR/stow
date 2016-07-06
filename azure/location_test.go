@@ -12,7 +12,7 @@ import (
 func TestContainers(t *testing.T) {
 	is := is.New(t)
 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
-	location, err := stow.New("azure", cfg)
+	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
 	containers, _, err := location.Containers("c", 0)
@@ -23,7 +23,7 @@ func TestContainers(t *testing.T) {
 func TestContainer(t *testing.T) {
 	is := is.New(t)
 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
-	location, err := stow.New("azure", cfg)
+	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
 	container, err := location.Container("container1")
@@ -34,7 +34,7 @@ func TestContainer(t *testing.T) {
 func TestCreateContainer(t *testing.T) {
 	is := is.New(t)
 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
-	location, err := stow.New("azure", cfg)
+	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
 	newContainer, err := location.CreateContainer("testing")

@@ -19,7 +19,7 @@ import (
 func All(t *testing.T, kind string, config stow.Config) {
 	is := is.New(t)
 
-	location, err := stow.New(kind, config)
+	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
 	is.OK(location)
 

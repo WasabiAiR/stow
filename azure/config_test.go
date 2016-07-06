@@ -15,7 +15,7 @@ const (
 func TestConfig(t *testing.T) {
 	is := is.New(t)
 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
-	location, err := stow.New("azure", cfg)
+	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
 }
