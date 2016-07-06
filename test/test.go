@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -69,6 +70,29 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(item1b)
 	is.Equal(item1b.ID(), item1.ID())
 	is.Equal(etag(is, item1b), etag(is, item1))
+
+	// test walking
+	var walkedItems []stow.Item
+	err = stow.Walk(c1, func(item stow.Item, page int, err error) error {
+		if err != nil {
+			return err
+		}
+		walkedItems = append(walkedItems, item)
+		return nil
+	})
+	is.NoErr(err)
+	is.Equal(len(walkedItems), 3)
+
+	is.Equal(readItemContents(is, item1), "item one")
+	is.Equal(readItemContents(is, item2), "item two")
+	is.Equal(readItemContents(is, item3), "item three")
+
+	// test walking error
+	testErr := errors.New("test error")
+	err = stow.Walk(c1, func(item stow.Item, page int, err error) error {
+		return testErr
+	})
+	is.Equal(testErr, err)
 
 }
 
