@@ -64,6 +64,6 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 	return sis, false, nil
 }
 
-func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
+func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
 	panic("not implemented")
 }
