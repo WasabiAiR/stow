@@ -4,6 +4,7 @@ package stow
 
 // WalkFunc is the type of the function called for
 // each Item visited by Walk.
+// The item and page number is returned.
 // If there was a problem,
 // the incoming error will describe the problem and
 // the function can decide how to handle that error.
