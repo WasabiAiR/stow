@@ -2,8 +2,8 @@ package test
 
 import (
 	"errors"
-	"io"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/cheekybits/is"
@@ -106,12 +106,9 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 }
 
 func createItem(is is.I, container stow.Container, name, content string) stow.Item {
-	item, w, err := container.CreateItem(name)
+	item, err := container.Put(name, strings.NewReader(content), int64(len(content)))
 	is.NoErr(err)
-	defer w.Close()
 	is.OK(item)
-	_, err = io.WriteString(w, content)
-	is.NoErr(err)
 	return item
 }
 

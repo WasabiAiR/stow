@@ -102,11 +102,9 @@ type Container interface {
 	// The returned bool indicates whether there might be another
 	// page of items or not. If false, there definitely are no more items.
 	Items(page int) ([]Item, bool, error)
-	// CreateItem creates a new Item with the
-	// specified name and returns it along with a io.WriteCloser
-	// which can be used to write contents to the Item.
-	// The io.WriteCloser must always be closed.
-	CreateItem(name string) (Item, io.WriteCloser, error)
+	// Put creates a new Item with the specified name, and contents
+	// read from the reader.
+	Put(name string, r io.Reader, size int64) (Item, error)
 }
 
 // Item represents an item inside a Container.

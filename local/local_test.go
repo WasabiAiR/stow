@@ -1,10 +1,10 @@
 package local_test
 
 import (
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/cheekybits/is"
@@ -197,10 +197,8 @@ func TestCreateItem(t *testing.T) {
 	is.False(more)
 	beforecount := len(items)
 
-	newitem, w, err := c1.CreateItem("new_item")
-	is.NoErr(err)
-	defer w.Close()
-	_, err = io.WriteString(w, "new item contents")
+	content := "new item contents"
+	newitem, err := c1.Put("new_item", strings.NewReader(content), int64(len(content)))
 	is.NoErr(err)
 	is.OK(newitem)
 	is.Equal(newitem.Name(), "new_item")
