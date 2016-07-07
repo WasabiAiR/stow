@@ -39,7 +39,7 @@ func (i *item) URL() *url.URL {
 }
 
 func (i *item) Open() (io.ReadCloser, error) {
-	panic("not implemented")
+	return i.client.GetBlob(i.container.id, i.id)
 }
 
 func (i *item) ETag() (string, error) {
