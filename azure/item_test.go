@@ -29,4 +29,5 @@ func TestURL(t *testing.T) {
 
 	i, err := location.ItemByURL(url)
 	is.NoErr(err)
+	is.OK(i)
 }
