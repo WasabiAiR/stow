@@ -5,6 +5,7 @@ import (
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
+	"github.com/graymeta/stow/test"
 )
 
 const (
@@ -20,8 +21,8 @@ func TestConfig(t *testing.T) {
 	is.OK(location)
 }
 
-// func TestStow(t *testing.T) {
-// 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
+func TestStow(t *testing.T) {
+	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
 
-// 	test.All(t, "azure", cfg)
-// }
+	test.All(t, "azure", cfg)
+}

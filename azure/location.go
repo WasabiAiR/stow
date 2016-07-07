@@ -9,6 +9,8 @@ import (
 
 	"strings"
 
+	"time"
+
 	az "github.com/Azure/azure-sdk-for-go/storage"
 )
 
@@ -50,6 +52,8 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	time.Sleep(time.Second * 3)
 
 	container, err := l.Container(name)
 	if err != nil {
@@ -93,7 +97,7 @@ func (l *location) Containers(prefix string, page int) ([]stow.Container, bool, 
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
-	_, _, err := l.Containers(id, 0)
+	_, _, err := l.Containers(id[:3], 0)
 	if err != nil {
 		return nil, errors.New("No container with given name")
 	}

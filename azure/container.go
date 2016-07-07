@@ -47,17 +47,15 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 		}
 
 		next = listblobs.NextMarker
-		for _, x := range listblobs.Blobs {
-
-			ii := item{
-				id:         x.Name,
+		for _, blob := range listblobs.Blobs {
+			ii := &item{
+				id:         blob.Name,
 				container:  c,
 				client:     c.client,
-				blob:       &x,
-				properties: &x.Properties,
+				properties: blob.Properties,
 				page:       page,
 			}
-			sis = append(sis, &ii)
+			sis = append(sis, ii)
 		}
 	}
 

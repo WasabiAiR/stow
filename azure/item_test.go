@@ -31,3 +31,19 @@ func TestURL(t *testing.T) {
 	is.NoErr(err)
 	is.OK(i)
 }
+
+func TestMD5(t *testing.T) {
+	is := is.New(t)
+	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
+	location, err := stow.Dial("azure", cfg)
+	is.NoErr(err)
+	is.OK(location)
+	container, err := location.Container("container1")
+	is.NoErr(err)
+	is.OK(container)
+	items, _, err := container.Items(0)
+	is.NoErr(err)
+	is.OK(items)
+	fromAzure, err := items[0].MD5()
+	is.NoErr(err)
+}

@@ -37,7 +37,7 @@ func TestCreateContainer(t *testing.T) {
 	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
-	newContainer, err := location.CreateContainer("testing")
+	newContainer, err := location.CreateContainer("testing3")
 	if err != nil {
 		if strings.Contains(err.Error(), "ErrorCode=ContainerAlreadyExists") {
 			// ignore for testing purposes
@@ -46,4 +46,5 @@ func TestCreateContainer(t *testing.T) {
 	}
 	is.NoErr(err)
 	is.OK(newContainer)
+
 }

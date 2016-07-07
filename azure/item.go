@@ -5,6 +5,10 @@ import (
 	"net/url"
 	"sync"
 
+	"encoding/base64"
+
+	"encoding/hex"
+
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
 )
@@ -13,9 +17,9 @@ type item struct {
 	id         string
 	container  *container
 	client     *az.BlobStorageClient
-	blob       *az.Blob
-	properties *az.BlobProperties
+	properties az.BlobProperties
 	page       int
+	url        url.URL
 
 	rc       io.ReadCloser
 	readOnce sync.Once
@@ -32,7 +36,7 @@ func (i *item) Name() string {
 }
 
 func (i *item) URL() *url.URL {
-	u := i.client.GetBlobURL(i.container.id, i.blob.Name)
+	u := i.client.GetBlobURL(i.container.id, i.id)
 	url, _ := url.Parse(u)
 	url.Scheme = "azure"
 	return url
@@ -47,5 +51,10 @@ func (i *item) ETag() (string, error) {
 }
 
 func (i *item) MD5() (string, error) {
-	return i.properties.ContentMD5, nil
+	decoded, err := base64.StdEncoding.DecodeString(i.properties.ContentMD5)
+	if err != nil {
+		return "", err
+	}
+	str := hex.EncodeToString(decoded)
+	return str, nil
 }

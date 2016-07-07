@@ -24,8 +24,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(location)
 
 	// create two containers
-	c1 := createContainer(is, location, "c1")
-	c2 := createContainer(is, location, "c2")
+	c1 := createContainer(is, location, "testcontainer1")
+	c2 := createContainer(is, location, "testcontainer2")
 	is.NotEqual(c1.ID(), c2.ID())
 
 	// add three items to c1
