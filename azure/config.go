@@ -27,9 +27,15 @@ func init() {
 		if !ok {
 			return nil, errors.New("missing auth key")
 		}
-		return &location{
+		l := &location{
 			config: config,
-		}, nil
+		}
+		// test the connection
+		_, _, err := l.Containers("", 0)
+		if err != nil {
+			return nil, err
+		}
+		return l, nil
 	}
 	kindfn := func(u *url.URL) bool {
 		return u.Scheme == "azure"
