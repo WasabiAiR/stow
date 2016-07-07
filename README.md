@@ -1,6 +1,42 @@
 # stow
 Storage abstraction
 
+## How it works
+
+Stow provides implementations for storage services, blob stores, cloud storage etc.
+
+## Concepts
+
+The concepts of Stow are modelled around the most popular object storage services, and are made up of three main objects:
+
+* Location - a place where many `Container` objects are stored
+* Container - a named group of `Item` objects
+* Item - an individual file
+
+```
+location1 (e.g. Azure)
+├── container1
+├───── item1.1
+├───── item1.2
+├───── item1.3
+├── container2
+├───── item2.1
+├───── item2.2
+location2 (e.g. local storage)
+├── container1
+├───── item1.1
+├───── item1.2
+├───── item1.3
+├── container2
+├───── item2.1
+├───── item2.2
+```
+
+* A Location contains many containers
+* A container contains many items
+* Containers do not contain other containers
+* Items must belong to a container
+
 ## Guides
 
 ### Getting an `Item` by URL
