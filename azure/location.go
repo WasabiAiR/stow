@@ -7,6 +7,8 @@ import (
 
 	"errors"
 
+	"strings"
+
 	az "github.com/Azure/azure-sdk-for-go/storage"
 )
 
@@ -104,5 +106,38 @@ func (l *location) Container(id string) (stow.Container, error) {
 }
 
 func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
-	panic("not implemented")
+	if url.Scheme != "azure" {
+		return nil, errors.New("not valid azure URL")
+	}
+	location := strings.Split(url.Host, ".")[0]
+	a, ok := l.config.Config(ConfigAccount)
+	if !ok {
+		// shouldn't really happen
+		panic("wrong configuration")
+	}
+	if a != location {
+		return nil, errors.New("wrong azure URL")
+	}
+	path := strings.TrimLeft(url.Path, "/")
+	params := strings.Split(path, "/")
+	if len(params) != 2 {
+		return nil, errors.New("wrong path")
+	}
+
+	c, err := l.Container(params[0])
+	if err != nil {
+		return nil, err
+	}
+	items, _, err := c.Items(0)
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range items {
+		if x.ID() == params[1] {
+			return x, nil
+		}
+	}
+
+	// not found
+	return nil, errors.New("couldn't find the item")
 }
