@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/graymeta/stow"
 )
 
 type item struct {
@@ -20,16 +21,21 @@ type item struct {
 	readOnce sync.Once
 }
 
+var _ stow.Item = (*item)(nil)
+
 func (i *item) ID() string {
-	panic("not implemented")
+	return i.id
 }
 
 func (i *item) Name() string {
-	panic("not implemented")
+	return i.id
 }
 
 func (i *item) URL() *url.URL {
-	panic("not implemented")
+	u := i.client.GetBlobURL(i.container.id, i.blob.Name)
+	url, _ := url.Parse(u)
+	url.Scheme = "azure"
+	return url
 }
 
 func (i *item) Open() (io.ReadCloser, error) {
@@ -37,9 +43,9 @@ func (i *item) Open() (io.ReadCloser, error) {
 }
 
 func (i *item) ETag() (string, error) {
-	panic("not implemented")
+	return i.properties.Etag, nil
 }
 
 func (i *item) MD5() (string, error) {
-	panic("not implemented")
+	return i.properties.ContentMD5, nil
 }

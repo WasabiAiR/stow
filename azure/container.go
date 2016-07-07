@@ -65,5 +65,19 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 }
 
 func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
-	panic("not implemented")
+	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
+	if err != nil {
+		return nil, err
+	}
+	items, _, err := c.Items(0)
+	for _, x := range items {
+		if x.ID() == name {
+			return x, nil
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	// never called
+	return &item{}, nil
 }
