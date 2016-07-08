@@ -33,7 +33,7 @@ func new(cfg stow.Config) (*az.BlobStorageClient, error) {
 	}
 	basicClient, err := az.NewBasicClient(acc, key)
 	if err != nil {
-		return nil, errors.New("Wrong credentials for Azure.")
+		return nil, errors.New("bad credentials")
 	}
 	client := basicClient.GetBlobService()
 	return &client, err
@@ -99,14 +99,14 @@ func (l *location) Containers(prefix string, page int) ([]stow.Container, bool, 
 func (l *location) Container(id string) (stow.Container, error) {
 	_, _, err := l.Containers(id[:3], 0)
 	if err != nil {
-		return nil, errors.New("No container with given name")
+		return nil, stow.ErrNotFound
 	}
 	for _, i := range l.containers {
 		if i.ID() == id {
 			return i, nil
 		}
 	}
-	return nil, errors.New("No container with given name")
+	return nil, stow.ErrNotFound
 }
 
 func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
@@ -143,5 +143,5 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	}
 
 	// not found
-	return nil, errors.New("couldn't find the item")
+	return nil, stow.ErrNotFound
 }
