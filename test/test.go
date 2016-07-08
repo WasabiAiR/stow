@@ -63,6 +63,28 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(etag(is, item2))
 	is.OK(etag(is, item3))
 
+	// get container by ID
+	c1copy, err := location.Container(c1.ID())
+	is.NoErr(err)
+	is.OK(c1copy)
+	is.Equal(c1copy.ID(), c1.ID())
+
+	// get container that doesn't exist
+	noContainer, err := location.Container(c1.ID() + "nope")
+	is.Equal(stow.ErrNotFound, err)
+	is.Nil(noContainer)
+
+	// get item by ID
+	item1copy, err := c1copy.Item(item1.ID())
+	is.NoErr(err)
+	is.OK(item1copy)
+	is.Equal(item1copy.ID(), item1.ID())
+
+	// get an item by ID that doesn't exist
+	noItem, err := c1copy.Item(item1.ID() + "nope")
+	is.Equal(stow.ErrNotFound, err)
+	is.Nil(noItem)
+
 	// get items by URL
 	u1 := item1.URL()
 	item1b, err := location.ItemByURL(u1)
