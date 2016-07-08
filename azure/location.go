@@ -1,17 +1,13 @@
 package azure
 
 import (
-	"net/url"
-
-	"github.com/graymeta/stow"
-
 	"errors"
-
+	"net/url"
 	"strings"
-
 	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/graymeta/stow"
 )
 
 type location struct {
