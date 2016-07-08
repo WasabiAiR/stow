@@ -27,6 +27,12 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+var (
+	// CursorStart is a string representing a cursor pointing
+	// to the first page of items or containers.
+	CursorStart = ""
+)
+
 // Location represents a storage location.
 type Location interface {
 	// CreateContainer creates a new Container with the
@@ -36,7 +42,8 @@ type Location interface {
 	// with the specified prefix from this Location.
 	// The specified cursor is a pointer to the start of
 	// the containers to get. It it obtained from a previous
-	// call to this method.
+	// call to this method, or should be CursorStart for the
+	// first page.
 	// If the returned cursor is empty, there
 	// are no more results.
 	Containers(prefix string, cursor string) ([]Container, string, error)
@@ -60,7 +67,8 @@ type Container interface {
 	// Container.
 	// The specified cursor is a pointer to the start of
 	// the items to get. It it obtained from a previous
-	// call to this method.
+	// call to this method, or should be CursorStart for the
+	// first page.
 	// If the returned cursor is empty, there
 	// are no more results.
 	Items(cursor string) ([]Item, string, error)

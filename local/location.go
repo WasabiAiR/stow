@@ -39,17 +39,17 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	}, nil
 }
 
-func (l *location) Containers(prefix string, page int) ([]stow.Container, bool, error) {
+func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
 	path, ok := l.config.Config(ConfigKeyPath)
 	if !ok {
-		return nil, false, errors.New("missing " + ConfigKeyPath + " configuration")
+		return nil, "", errors.New("missing " + ConfigKeyPath + " configuration")
 	}
 	files, err := filepath.Glob(filepath.Join(path, prefix+"*"))
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
 	cs, err := filesToContainers(path, files...)
-	return cs, false, err
+	return cs, "", err
 }
 
 func (l *location) Container(id string) (stow.Container, error) {

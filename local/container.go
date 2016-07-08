@@ -65,10 +65,10 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	return item, nil
 }
 
-func (c *container) Items(page int) ([]stow.Item, bool, error) {
+func (c *container) Items(cursor string) ([]stow.Item, string, error) {
 	files, err := ioutil.ReadDir(c.path)
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
 	var items []stow.Item
 	for _, f := range files {
@@ -77,14 +77,14 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 		}
 		path, err := filepath.Abs(filepath.Join(c.path, f.Name()))
 		if err != nil {
-			return nil, false, err
+			return nil, "", err
 		}
 		items = append(items, &item{
 			name: f.Name(),
 			path: path,
 		})
 	}
-	return items, false, nil
+	return items, "", nil
 }
 
 func (c *container) Item(id string) (stow.Item, error) {

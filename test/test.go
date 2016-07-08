@@ -35,9 +35,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(item1, item2, item3)
 
 	// make sure we get these three items from the container
-	items, more, err := c1.Items(0)
+	items, cursor, err := c1.Items(stow.CursorStart)
 	is.NoErr(err)
-	is.False(more)
+	is.Equal(cursor, "")
 	is.Equal(len(items), 3)
 
 	// make sure the items are identical
@@ -101,7 +101,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking
 	var walkedItems []stow.Item
-	err = stow.Walk(c1, func(item stow.Item, page int, err error) error {
+	err = stow.Walk(c1, func(item stow.Item, err error) error {
 		if err != nil {
 			return err
 		}
@@ -117,7 +117,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking error
 	testErr := errors.New("test error")
-	err = stow.Walk(c1, func(item stow.Item, page int, err error) error {
+	err = stow.Walk(c1, func(item stow.Item, err error) error {
 		return testErr
 	})
 	is.Equal(testErr, err)

@@ -17,7 +17,7 @@ func Walk(container Container, fn WalkFunc) error {
 	var (
 		err    error
 		items  []Item
-		cursor string
+		cursor = "start"
 	)
 	for len(cursor) > 0 {
 		items, cursor, err = container.Items(cursor)
