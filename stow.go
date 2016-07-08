@@ -1,6 +1,7 @@
 package stow
 
 import (
+	"errors"
 	"io"
 	"net/url"
 	"sync"
@@ -19,6 +20,11 @@ var (
 	// URL. Functions return an empty string if it does not
 	// match.
 	kindmatches []func(*url.URL) string
+)
+
+var (
+	// ErrNotFound is returned when something could not be found.
+	ErrNotFound = errors.New("not found")
 )
 
 // Location represents a storage location.
