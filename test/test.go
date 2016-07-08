@@ -41,14 +41,20 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(len(items), 3)
 
 	// make sure the items are identical
+	is.OK(item1.ID())
+	is.OK(item1.Name())
 	is.Equal(items[0].ID(), item1.ID())
 	is.Equal(items[0].Name(), item1.Name())
 	is.Equal(readItemContents(is, item1), "item one")
 
+	is.OK(item2.ID())
+	is.OK(item2.Name())
 	is.Equal(items[1].ID(), item2.ID())
 	is.Equal(items[1].Name(), item2.Name())
 	is.Equal(readItemContents(is, item2), "item two")
 
+	is.OK(item3.ID())
+	is.OK(item3.Name())
 	is.Equal(items[2].ID(), item3.ID())
 	is.Equal(items[2].Name(), item3.Name())
 	is.Equal(readItemContents(is, item3), "item three")

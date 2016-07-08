@@ -59,10 +59,13 @@ func (l *location) Container(id string) (stow.Container, error) {
 	}
 	containers, err := filesToContainers(path, id)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, stow.ErrNotFound
+		}
 		return nil, err
 	}
 	if len(containers) == 0 {
-		return nil, nil // TODO: should this be stow.ErrNotFound?
+		return nil, stow.ErrNotFound
 	}
 	return containers[0], nil
 }

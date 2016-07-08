@@ -86,3 +86,19 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 	}
 	return items, false, nil
 }
+
+func (c *container) Item(id string) (stow.Item, error) {
+	path := id
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, stow.ErrNotFound
+	}
+	if info.IsDir() {
+		return nil, errors.New("unexpected directory")
+	}
+	item := &item{
+		name: filepath.Base(path),
+		path: path,
+	}
+	return item, nil
+}
