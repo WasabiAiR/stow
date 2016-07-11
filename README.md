@@ -58,3 +58,11 @@ You can then get the `Item` for the specified URL from the location:
 ```
 item, err := location.ItemByURL(url)
 ```
+
+### Cursors
+
+Cursors are strings that provide a pointer to items in sets allowing for paging over the entire set.
+
+Call such methods first passing in `stow.CursorStart` as the cursor, which indicates the first item/page. The method will, as one of its return arguments, provide a new cursor which you can pass into subsequent calls to the same method.
+
+When the returned cursor is an empty string `""`, you have reached the end of the set.
