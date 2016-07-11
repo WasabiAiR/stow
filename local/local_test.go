@@ -10,7 +10,6 @@ import (
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/local"
-	"github.com/graymeta/stow/test"
 )
 
 func setup() (string, func() error, error) {
@@ -56,17 +55,6 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 	return absdir, done, nil
-}
-
-func TestStow(t *testing.T) {
-	is := is.New(t)
-
-	dir, err := ioutil.TempDir("testdata", "stow")
-	is.NoErr(err)
-	defer os.RemoveAll(dir)
-	cfg := stow.ConfigMap{"path": dir}
-
-	test.All(t, "local", cfg)
 }
 
 func TestContainers(t *testing.T) {
