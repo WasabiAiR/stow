@@ -35,6 +35,7 @@ var (
 
 // Location represents a storage location.
 type Location interface {
+	io.Closer
 	// CreateContainer creates a new Container with the
 	// specified name.
 	CreateContainer(name string) (Container, error)
@@ -63,15 +64,15 @@ type Container interface {
 	Name() string
 	// Item gets an item by its ID.
 	Item(id string) (Item, error)
-	// Items gets a page of items for this
-	// Container.
+	// Items gets a page of items with the specified
+	// prefix for this Container.
 	// The specified cursor is a pointer to the start of
 	// the items to get. It it obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
 	// If the returned cursor is empty, there
 	// are no more results.
-	Items(cursor string) ([]Item, string, error)
+	Items(prefix, cursor string) ([]Item, string, error)
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
 	Put(name string, r io.Reader, size int64) (Item, error)

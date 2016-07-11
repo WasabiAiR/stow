@@ -18,39 +18,17 @@ type location struct {
 
 var _ stow.Location = (*location)(nil)
 
-func new(cfg stow.Config) (*az.BlobStorageClient, error) {
-	acc, ok := cfg.Config(ConfigAccount)
-	if !ok {
-		return nil, errors.New("missing account id")
-	}
-	key, ok := cfg.Config(ConfigKey)
-	if !ok {
-		return nil, errors.New("missing auth key")
-	}
-	basicClient, err := az.NewBasicClient(acc, key)
-	if err != nil {
-		return nil, errors.New("bad credentials")
-	}
-	client := basicClient.GetBlobService()
-	return &client, err
+func (l *location) Close() error {
+	return nil // nothing to close
 }
 
 func (l *location) CreateContainer(name string) (stow.Container, error) {
-	if l.client == nil {
-		client, err := new(l.config)
-		if err != nil {
-			return nil, err
-		}
-		l.client = client
-	}
-
 	err := l.client.CreateContainer(name, az.ContainerAccessTypeBlob)
 	if err != nil {
 		return nil, err
 	}
-
+	// TODO: remove this
 	time.Sleep(time.Second * 3)
-
 	container, err := l.Container(name)
 	if err != nil {
 		return nil, errors.New("Couldn't get newly created container")
@@ -58,42 +36,59 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	return container, nil
 }
 
-func (l *location) Containers(prefix string, page int) ([]stow.Container, bool, error) {
-	// TODO implement paging
-	if l.client == nil {
-		client, err := new(l.config)
-		if err != nil {
-			return nil, false, err
-		}
-		l.client = client
-	}
-	var containers []stow.Container
-	cts, err := l.client.ListContainers(az.ListContainersParameters{
+func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
+	response, err := l.client.ListContainers(az.ListContainersParameters{
 		Prefix: prefix,
 	})
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
-
-	if len(cts.Containers) == 0 {
-		return nil, false, errors.New("No containers with given prefix")
-	}
-
-	for _, c := range cts.Containers {
-		var sc stow.Container
-		sc = &container{
-			id:         c.Name,
-			properties: c.Properties,
+	containers := make([]stow.Container, len(response.Containers))
+	for i, azureContainer := range response.Containers {
+		containers[i] = &container{
+			id:         azureContainer.Name,
+			properties: azureContainer.Properties,
 			client:     l.client,
 		}
-		containers = append(containers, sc)
 	}
-	l.containers = containers
-	return containers, false, nil
+	return containers, response.NextMarker, nil
 }
 
+// func (l *location) Containers(prefix string, cursor string) ([]stow.Container, bool, error) {
+// 	if l.client == nil {
+// 		client, err := new(l.config)
+// 		if err != nil {
+// 			return nil, false, err
+// 		}
+// 		l.client = client
+// 	}
+// 	var containers []stow.Container
+// 	cts, err := l.client.ListContainers(az.ListContainersParameters{
+// 		Prefix: prefix,
+// 	})
+// 	if err != nil {
+// 		return nil, false, err
+// 	}
+
+// 	if len(cts.Containers) == 0 {
+// 		return nil, false, errors.New("No containers with given prefix")
+// 	}
+
+// 	for _, c := range cts.Containers {
+// 		var sc stow.Container
+// 		sc = &container{
+// 			id:         c.Name,
+// 			properties: c.Properties,
+// 			client:     l.client,
+// 		}
+// 		containers = append(containers, sc)
+// 	}
+// 	l.containers = containers
+// 	return containers, false, nil
+// }
+
 func (l *location) Container(id string) (stow.Container, error) {
-	_, _, err := l.Containers(id[:3], 0)
+	_, _, err := l.Containers(id[:3], stow.CursorStart)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
@@ -113,7 +108,7 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	a, ok := l.config.Config(ConfigAccount)
 	if !ok {
 		// shouldn't really happen
-		panic("wrong configuration")
+		return nil, errors.New("missing " + ConfigAccount + " config")
 	}
 	if a != location {
 		return nil, errors.New("wrong azure URL")
@@ -128,16 +123,5 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	items, _, err := c.Items(0)
-	if err != nil {
-		return nil, err
-	}
-	for _, x := range items {
-		if x.ID() == params[1] {
-			return x, nil
-		}
-	}
-
-	// not found
-	return nil, stow.ErrNotFound
+	return c.Item(params[1])
 }

@@ -13,6 +13,10 @@ type location struct {
 	config stow.Config
 }
 
+func (l *location) Close() error {
+	return nil // nothing to close
+}
+
 func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	i := &item{}
 	i.path = u.Path
