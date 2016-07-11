@@ -51,7 +51,7 @@ type Location interface {
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
-	// RemoveContainer remotes the container with the specified ID.
+	// RemoveContainer removes the container with the specified ID.
 	RemoveContainer(id string) error
 	// ItemByURL gets an Item at this location with the
 	// specified URL.
