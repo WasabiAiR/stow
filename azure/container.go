@@ -69,7 +69,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		container: c,
 		client:    c.client,
 		properties: az.BlobProperties{ // TODO: confirm sensible properties
-			LastModified:  time.Now().String(),
+			LastModified:  time.Now().String(), // TODO(piotrrojek): check time format
 			Etag:          "",
 			ContentLength: size,
 		},
