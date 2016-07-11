@@ -1,13 +1,10 @@
 package azure
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"net/url"
-	"sync"
-
-	"encoding/base64"
-
-	"encoding/hex"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
@@ -18,11 +15,7 @@ type item struct {
 	container  *container
 	client     *az.BlobStorageClient
 	properties az.BlobProperties
-	page       int
 	url        url.URL
-
-	rc       io.ReadCloser
-	readOnce sync.Once
 }
 
 var _ stow.Item = (*item)(nil)

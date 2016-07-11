@@ -24,6 +24,10 @@ type testLocation struct {
 	config stow.Config
 }
 
+func (l *testLocation) Close() error {
+	return nil
+}
+
 func (l *testLocation) CreateContainer(name string) (stow.Container, error) {
 	return nil, nil
 }
@@ -31,8 +35,8 @@ func (l *testLocation) CreateContainer(name string) (stow.Container, error) {
 func (l *testLocation) Container(id string) (stow.Container, error) {
 	return nil, nil
 }
-func (l *testLocation) Containers(prefix string, page int) ([]stow.Container, bool, error) {
-	return nil, false, nil
+func (l *testLocation) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+	return nil, "", nil
 }
 
 func (l *testLocation) ItemByURL(u *url.URL) (stow.Item, error) {

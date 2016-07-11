@@ -1,9 +1,8 @@
 package azure
 
 import (
-	"testing"
-
 	"strings"
+	"testing"
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
@@ -15,7 +14,7 @@ func TestContainers(t *testing.T) {
 	location, err := stow.Dial("azure", cfg)
 	is.NoErr(err)
 	is.OK(location)
-	containers, _, err := location.Containers("c", 0)
+	containers, _, err := location.Containers("c", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
 }
@@ -46,5 +45,4 @@ func TestCreateContainer(t *testing.T) {
 	}
 	is.NoErr(err)
 	is.OK(newContainer)
-
 }

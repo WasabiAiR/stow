@@ -16,7 +16,7 @@ func TestItems(t *testing.T) {
 	container, err := location.Container("container1")
 	is.NoErr(err)
 	is.OK(container)
-	items, _, err := container.Items(0)
+	items, _, err := container.Items("", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(items)
 	// in that container should be more than 100 items

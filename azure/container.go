@@ -2,10 +2,10 @@ package azure
 
 import (
 	"io"
-
-	"github.com/graymeta/stow"
+	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/graymeta/stow"
 )
 
 type container struct {
@@ -24,42 +24,40 @@ func (c *container) Name() string {
 	return c.id
 }
 
-func (c *container) Items(page int) ([]stow.Item, bool, error) {
-	// TODO implement paging
-	var (
-		previousPage = 0
-		pageCount    = 1
-		next         = ""
-		sis          []stow.Item
-	)
+func (c *container) Item(id string) (stow.Item, error) {
+	blobProperties, err := c.client.GetBlobProperties(c.id, id)
+	if err != nil {
+		// TODO(piotrrojek): check for azure not found error and return stow.ErrNotFound
+		return nil, err
+	}
+	item := &item{
+		id:         id,
+		container:  c,
+		client:     c.client,
+		properties: *blobProperties,
+	}
+	return item, nil
+}
 
-	for pp := 0; next != "" || pp == 0; pp++ {
-		listblobs, err := c.client.ListBlobs(c.id, az.ListBlobsParameters{
-			Marker:     next,
-			MaxResults: 100,
-		})
-		if err != nil {
-			return nil, false, err
-		}
-
-		if pp != previousPage {
-			pageCount++
-		}
-
-		next = listblobs.NextMarker
-		for _, blob := range listblobs.Blobs {
-			ii := &item{
-				id:         blob.Name,
-				container:  c,
-				client:     c.client,
-				properties: blob.Properties,
-				page:       page,
-			}
-			sis = append(sis, ii)
+func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
+	listblobs, err := c.client.ListBlobs(c.id, az.ListBlobsParameters{
+		Marker:     cursor,
+		Prefix:     prefix,
+		MaxResults: 10,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	items := make([]stow.Item, len(listblobs.Blobs))
+	for i, blob := range listblobs.Blobs {
+		items[i] = &item{
+			id:         blob.Name,
+			container:  c,
+			client:     c.client,
+			properties: blob.Properties,
 		}
 	}
-
-	return sis, false, nil
+	return items, listblobs.NextMarker, nil
 }
 
 func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
@@ -67,15 +65,15 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	if err != nil {
 		return nil, err
 	}
-	items, _, err := c.Items(0)
-	for _, x := range items {
-		if x.ID() == name {
-			return x, nil
-		}
+	item := &item{
+		id:        name,
+		container: c,
+		client:    c.client,
+		properties: az.BlobProperties{ // TODO: confirm sensible properties
+			LastModified:  time.Now().String(), // TODO(piotrrojek): check time format
+			Etag:          "",
+			ContentLength: size,
+		},
 	}
-	if err != nil {
-		return nil, err
-	}
-	// never called
-	return &item{}, nil
+	return item, nil
 }

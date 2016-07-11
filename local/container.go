@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/graymeta/stow"
 )
@@ -65,10 +66,10 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	return item, nil
 }
 
-func (c *container) Items(page int) ([]stow.Item, bool, error) {
+func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	files, err := ioutil.ReadDir(c.path)
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
 	var items []stow.Item
 	for _, f := range files {
@@ -77,12 +78,31 @@ func (c *container) Items(page int) ([]stow.Item, bool, error) {
 		}
 		path, err := filepath.Abs(filepath.Join(c.path, f.Name()))
 		if err != nil {
-			return nil, false, err
+			return nil, "", err
+		}
+		if !strings.HasPrefix(f.Name(), prefix) {
+			continue
 		}
 		items = append(items, &item{
 			name: f.Name(),
 			path: path,
 		})
 	}
-	return items, false, nil
+	return items, "", nil
+}
+
+func (c *container) Item(id string) (stow.Item, error) {
+	path := id
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, stow.ErrNotFound
+	}
+	if info.IsDir() {
+		return nil, errors.New("unexpected directory")
+	}
+	item := &item{
+		name: filepath.Base(path),
+		path: path,
+	}
+	return item, nil
 }

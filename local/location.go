@@ -13,6 +13,10 @@ type location struct {
 	config stow.Config
 }
 
+func (l *location) Close() error {
+	return nil // nothing to close
+}
+
 func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	i := &item{}
 	i.path = u.Path
@@ -39,17 +43,17 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	}, nil
 }
 
-func (l *location) Containers(prefix string, page int) ([]stow.Container, bool, error) {
+func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
 	path, ok := l.config.Config(ConfigKeyPath)
 	if !ok {
-		return nil, false, errors.New("missing " + ConfigKeyPath + " configuration")
+		return nil, "", errors.New("missing " + ConfigKeyPath + " configuration")
 	}
 	files, err := filepath.Glob(filepath.Join(path, prefix+"*"))
 	if err != nil {
-		return nil, false, err
+		return nil, "", err
 	}
 	cs, err := filesToContainers(path, files...)
-	return cs, false, err
+	return cs, "", err
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
@@ -59,10 +63,13 @@ func (l *location) Container(id string) (stow.Container, error) {
 	}
 	containers, err := filesToContainers(path, id)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, stow.ErrNotFound
+		}
 		return nil, err
 	}
 	if len(containers) == 0 {
-		return nil, nil // TODO: should this be stow.ErrNotFound?
+		return nil, stow.ErrNotFound
 	}
 	return containers[0], nil
 }

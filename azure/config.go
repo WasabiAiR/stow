@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/url"
 
+	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
 )
 
@@ -30,8 +31,13 @@ func init() {
 		l := &location{
 			config: config,
 		}
+		var err error
+		l.client, err = newBlobStorageClient(l.config)
+		if err != nil {
+			return nil, err
+		}
 		// test the connection
-		_, _, err := l.Containers("", 0)
+		_, _, err = l.Containers("", stow.CursorStart)
 		if err != nil {
 			return nil, err
 		}
@@ -41,4 +47,21 @@ func init() {
 		return u.Scheme == "azure"
 	}
 	stow.Register(Kind, makefn, kindfn)
+}
+
+func newBlobStorageClient(cfg stow.Config) (*az.BlobStorageClient, error) {
+	acc, ok := cfg.Config(ConfigAccount)
+	if !ok {
+		return nil, errors.New("missing account id")
+	}
+	key, ok := cfg.Config(ConfigKey)
+	if !ok {
+		return nil, errors.New("missing auth key")
+	}
+	basicClient, err := az.NewBasicClient(acc, key)
+	if err != nil {
+		return nil, errors.New("bad credentials")
+	}
+	client := basicClient.GetBlobService()
+	return &client, err
 }

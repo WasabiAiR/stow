@@ -81,9 +81,9 @@ func TestContainers(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	items, more, err := l.Containers("", 0)
+	items, cursor, err := l.Containers("", stow.CursorStart)
 	is.NoErr(err)
-	is.False(more)
+	is.Equal(cursor, "")
 	is.OK(items)
 
 	is.Equal(len(items), 3)
@@ -107,10 +107,10 @@ func TestContainersPrefix(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 2)
 	isDir(is, containers[0].ID())
@@ -135,10 +135,10 @@ func TestContainer(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 2)
 	isDir(is, containers[0].ID())
@@ -167,10 +167,10 @@ func TestCreateContainer(t *testing.T) {
 	is.Equal(c.ID(), filepath.Join(testDir, "new_test_container"))
 	is.Equal(c.Name(), "new_test_container")
 
-	containers, more, err := l.Containers("new", 0)
+	containers, cursor, err := l.Containers("new", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 1)
 	isDir(is, containers[0].ID())
@@ -188,13 +188,13 @@ func TestCreateItem(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
 	c1 := containers[0]
-	items, more, err := c1.Items(0)
+	items, cursor, err := c1.Items("", stow.CursorStart)
 	is.NoErr(err)
-	is.False(more)
+	is.Equal(cursor, "")
 	beforecount := len(items)
 
 	content := "new item contents"
@@ -204,14 +204,14 @@ func TestCreateItem(t *testing.T) {
 	is.Equal(newitem.Name(), "new_item")
 
 	// get the container again
-	containers, more, err = l.Containers("t", 0)
+	containers, cursor, err = l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 	c1 = containers[0]
-	items, more, err = c1.Items(0)
+	items, cursor, err = c1.Items("", stow.CursorStart)
 	is.NoErr(err)
-	is.False(more)
+	is.Equal(cursor, "")
 	aftercount := len(items)
 
 	is.Equal(aftercount, beforecount+1)
@@ -245,16 +245,16 @@ func TestItems(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 	three, err := l.Container(containers[0].ID())
 	is.NoErr(err)
-	items, more, err := three.Items(0)
+	items, cursor, err := three.Items("", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(items)
-	is.False(more)
+	is.Equal(cursor, "")
 
 	is.Equal(len(items), 3)
 	is.Equal(items[0].ID(), filepath.Join(containers[0].ID(), "item1"))
@@ -273,17 +273,17 @@ func TestByURL(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 
 	three, err := l.Container(containers[0].ID())
 	is.NoErr(err)
-	items, more, err := three.Items(0)
+	items, cursor, err := three.Items("", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(items)
-	is.False(more)
+	is.Equal(cursor, "")
 	is.Equal(len(items), 3)
 
 	item1 := items[0]
@@ -311,15 +311,15 @@ func TestItemReader(t *testing.T) {
 	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
-	containers, more, err := l.Containers("t", 0)
+	containers, cursor, err := l.Containers("t", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
-	is.False(more)
+	is.Equal(cursor, "")
 	three, err := l.Container(containers[0].ID())
 
-	items, more, err := three.Items(0)
+	items, cursor, err := three.Items("", stow.CursorStart)
 	is.NoErr(err)
-	is.False(more)
+	is.Equal(cursor, "")
 	item1 := items[0]
 
 	rc, err := item1.Open()
