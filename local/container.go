@@ -46,7 +46,7 @@ func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
 }
 
 func (c *container) RemoveItem(id string) error {
-	return os.Remove(c.path)
+	return os.Remove(id)
 }
 
 func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
