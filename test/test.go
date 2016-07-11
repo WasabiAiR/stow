@@ -40,9 +40,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// add three items to c1
-	item1 := createItem(is, c1, "a_first_item", "item one")
-	item2 := createItem(is, c1, "a_second_item", "item two")
-	item3 := createItem(is, c1, "the_third_item", "item three")
+	item1 := putItem(is, c1, "a_first_item", "item one")
+	item2 := putItem(is, c1, "a_second_item", "item two")
+	item3 := putItem(is, c1, "the_third_item", "item three")
 	is.OK(item1, item2, item3)
 
 	defer func() {
@@ -50,7 +50,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 		is.NoErr(err)
 		err = c1.RemoveItem(item2.ID())
 		is.NoErr(err)
-		err = c1.RemoveItem(item2.ID())
+		err = c1.RemoveItem(item3.ID())
 		is.NoErr(err)
 	}()
 
@@ -170,7 +170,7 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 	return container
 }
 
-func createItem(is is.I, container stow.Container, name, content string) stow.Item {
+func putItem(is is.I, container stow.Container, name, content string) stow.Item {
 	item, err := container.Put(name, strings.NewReader(content), int64(len(content)))
 	is.NoErr(err)
 	is.OK(item)
