@@ -51,6 +51,8 @@ type Location interface {
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
+	// RemoveContainer removes the container with the specified ID.
+	RemoveContainer(id string) error
 	// ItemByURL gets an Item at this location with the
 	// specified URL.
 	ItemByURL(url *url.URL) (Item, error)
@@ -73,6 +75,8 @@ type Container interface {
 	// If the returned cursor is empty, there
 	// are no more results.
 	Items(prefix, cursor string) ([]Item, string, error)
+	// RemoveItem removes the Item with the specified ID.
+	RemoveItem(id string) error
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
 	Put(name string, r io.Reader, size int64) (Item, error)

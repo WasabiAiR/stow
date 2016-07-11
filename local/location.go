@@ -24,6 +24,10 @@ func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	return i, nil
 }
 
+func (l *location) RemoveContainer(id string) error {
+	return os.RemoveAll(id)
+}
+
 func (l *location) CreateContainer(name string) (stow.Container, error) {
 	path, ok := l.config.Config(ConfigKeyPath)
 	if !ok {
