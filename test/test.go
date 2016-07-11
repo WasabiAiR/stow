@@ -22,6 +22,10 @@ func All(t *testing.T, kind string, config stow.Config) {
 	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
 	is.OK(location)
+	defer func() {
+		err := location.Close()
+		is.NoErr(err)
+	}()
 
 	// create two containers
 	c1 := createContainer(is, location, "testcontainer1")
@@ -29,15 +33,19 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NotEqual(c1.ID(), c2.ID())
 
 	// add three items to c1
-	item1 := createItem(is, c1, "item1", "item one")
-	item2 := createItem(is, c1, "item2", "item two")
-	item3 := createItem(is, c1, "item3", "item three")
+	item1 := createItem(is, c1, "a_first_item", "item one")
+	item2 := createItem(is, c1, "a_second_item", "item two")
+	item3 := createItem(is, c1, "the_third_item", "item three")
 	is.OK(item1, item2, item3)
 
-	// make sure we get these three items from the container
-	items, cursor, err := c1.Items("", stow.CursorStart)
+	// get the items with a prefix (should only get 2)
+	items, _, err := c1.Items("a_", stow.CursorStart)
 	is.NoErr(err)
-	is.Equal(cursor, "")
+	is.Equal(len(items), 2)
+
+	// make sure we get these three items from the container
+	items, _, err = c1.Items("", stow.CursorStart)
+	is.NoErr(err)
 	is.Equal(len(items), 3)
 
 	// make sure the items are identical
@@ -110,10 +118,23 @@ func All(t *testing.T, kind string, config stow.Config) {
 	})
 	is.NoErr(err)
 	is.Equal(len(walkedItems), 3)
+	is.Equal(readItemContents(is, walkedItems[0]), "item one")
+	is.Equal(readItemContents(is, walkedItems[1]), "item two")
+	is.Equal(readItemContents(is, walkedItems[2]), "item three")
 
-	is.Equal(readItemContents(is, item1), "item one")
-	is.Equal(readItemContents(is, item2), "item two")
-	is.Equal(readItemContents(is, item3), "item three")
+	// test walking with a prefix
+	walkedItems = make([]stow.Item, 0)
+	err = stow.Walk(c1, "a_", func(item stow.Item, err error) error {
+		if err != nil {
+			return err
+		}
+		walkedItems = append(walkedItems, item)
+		return nil
+	})
+	is.NoErr(err)
+	is.Equal(len(walkedItems), 2)
+	is.Equal(readItemContents(is, walkedItems[0]), "item one")
+	is.Equal(readItemContents(is, walkedItems[1]), "item two")
 
 	// test walking error
 	testErr := errors.New("test error")
