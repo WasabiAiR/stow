@@ -144,6 +144,8 @@ func Dial(kind string, config Config) (Location, error) {
 
 // Kinds gets a list of installed location kinds.
 func Kinds() []string {
+	lock.RLock()
+	defer lock.RUnlock()
 	return kinds
 }
 
