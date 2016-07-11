@@ -27,6 +27,7 @@ func (c *container) Name() string {
 func (c *container) Item(id string) (stow.Item, error) {
 	blobProperties, err := c.client.GetBlobProperties(c.id, id)
 	if err != nil {
+		// TODO(piotrrojek): check for azure not found error and return stow.ErrNotFound
 		return nil, err
 	}
 	item := &item{
