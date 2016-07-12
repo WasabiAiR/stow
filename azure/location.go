@@ -23,6 +23,9 @@ func (l *location) Close() error {
 func (l *location) CreateContainer(name string) (stow.Container, error) {
 	err := l.client.CreateContainer(name, az.ContainerAccessTypeBlob)
 	if err != nil {
+		if strings.Contains(err.Error(), "ErrorCode=ContainerAlreadyExists") {
+			return l.Container(name)
+		}
 		return nil, err
 	}
 	container := &container{
@@ -37,7 +40,9 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 
 func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
 	response, err := l.client.ListContainers(az.ListContainersParameters{
-		Prefix: prefix,
+		MaxResults: 100,
+		Prefix:     prefix,
+		Marker:     cursor,
 	})
 	if err != nil {
 		return nil, "", err
