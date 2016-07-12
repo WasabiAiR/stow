@@ -4,9 +4,13 @@ import (
 	"io"
 	"time"
 
+	"strings"
+
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
 )
+
+var AzureTimeLayout = "Mon, 2 Jan 2006 15:04:05 MST"
 
 type container struct {
 	id         string
@@ -27,7 +31,9 @@ func (c *container) Name() string {
 func (c *container) Item(id string) (stow.Item, error) {
 	blobProperties, err := c.client.GetBlobProperties(c.id, id)
 	if err != nil {
-		// TODO(piotrrojek): check for azure not found error and return stow.ErrNotFound
+		if strings.Contains("BlobNotFound", err.Error()) {
+			return nil, stow.ErrNotFound
+		}
 		return nil, err
 	}
 	item := &item{
@@ -69,8 +75,8 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		id:        name,
 		container: c,
 		client:    c.client,
-		properties: az.BlobProperties{ // TODO: confirm sensible properties
-			LastModified:  time.Now().String(), // TODO(piotrrojek): check time format
+		properties: az.BlobProperties{
+			LastModified:  time.Now().Format(AzureTimeLayout),
 			Etag:          "",
 			ContentLength: size,
 		},
