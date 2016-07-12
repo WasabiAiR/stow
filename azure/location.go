@@ -27,9 +27,8 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	}
 	container := &container{
 		id: name,
-		properties: az.ContainerProperties{ // TODO(piotrrojek): sensible container values
-			LastModified: time.Now().String(), // TODO(piotrrojek): check time format
-			Etag:         "",
+		properties: az.ContainerProperties{
+			LastModified: time.Now().Format(AzureTimeLayout),
 		},
 		client: l.client,
 	}
