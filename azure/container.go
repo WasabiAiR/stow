@@ -31,7 +31,7 @@ func (c *container) Name() string {
 func (c *container) Item(id string) (stow.Item, error) {
 	blobProperties, err := c.client.GetBlobProperties(c.id, id)
 	if err != nil {
-		if strings.Contains("BlobNotFound", err.Error()) {
+		if strings.Contains(err.Error(), "404") {
 			return nil, stow.ErrNotFound
 		}
 		return nil, err
@@ -46,11 +46,14 @@ func (c *container) Item(id string) (stow.Item, error) {
 }
 
 func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
-	listblobs, err := c.client.ListBlobs(c.id, az.ListBlobsParameters{
-		Marker:     cursor,
+	params := az.ListBlobsParameters{
 		Prefix:     prefix,
 		MaxResults: 10,
-	})
+	}
+	if cursor != "" {
+		params.Marker = cursor
+	}
+	listblobs, err := c.client.ListBlobs(c.id, params)
 	if err != nil {
 		return nil, "", err
 	}

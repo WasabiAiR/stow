@@ -11,9 +11,8 @@ import (
 )
 
 type location struct {
-	config     stow.Config
-	client     *az.BlobStorageClient
-	containers []stow.Container
+	config stow.Config
+	client *az.BlobStorageClient
 }
 
 func (l *location) Close() error {
@@ -35,15 +34,19 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 		},
 		client: l.client,
 	}
+	time.Sleep(time.Second * 3)
 	return container, nil
 }
 
 func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
-	response, err := l.client.ListContainers(az.ListContainersParameters{
+	params := az.ListContainersParameters{
 		MaxResults: 100,
 		Prefix:     prefix,
-		Marker:     cursor,
-	})
+	}
+	if cursor != stow.CursorStart {
+		params.Marker = cursor
+	}
+	response, err := l.client.ListContainers(params)
 	if err != nil {
 		return nil, "", err
 	}
@@ -59,11 +62,11 @@ func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, 
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
-	_, _, err := l.Containers(id[:3], stow.CursorStart)
+	containers, _, err := l.Containers(id[:3], stow.CursorStart)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
-	for _, i := range l.containers {
+	for _, i := range containers {
 		if i.ID() == id {
 			return i, nil
 		}
