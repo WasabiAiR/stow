@@ -77,3 +77,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	}
 	return item, nil
 }
+
+func (c *container) RemoveItem(id string) error {
+	return c.client.DeleteBlob(c.id, id, nil)
+}
