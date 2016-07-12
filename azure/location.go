@@ -91,3 +91,7 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	}
 	return c.Item(params[1])
 }
+
+func (l *location) RemoveContainer(id string) error {
+	return l.client.DeleteContainer(id)
+}
