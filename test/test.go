@@ -3,12 +3,26 @@ package test
 import (
 	"errors"
 	"io/ioutil"
+	"math/rand"
 	"strings"
 	"testing"
+
+	"time"
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 )
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+
+func randName(length int) string {
+	rand.Seed(int64(time.Now().Nanosecond()))
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
 
 // All runs a generic suite of tests for Stow storage
 // implementations.
@@ -28,8 +42,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// create two containers
-	c1 := createContainer(is, location, "testcontainer1")
-	c2 := createContainer(is, location, "testcontainer2")
+	c1 := createContainer(is, location, "stowtest"+randName(10))
+	c2 := createContainer(is, location, "stowtest"+randName(10))
 	is.NotEqual(c1.ID(), c2.ID())
 
 	defer func() {
@@ -84,14 +98,14 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, item3), "item three")
 
 	// check MD5s
-	is.Equal(len(md5(is, item1)), 32)
-	is.Equal(len(md5(is, item2)), 32)
-	is.Equal(len(md5(is, item3)), 32)
+	is.Equal(len(md5(is, items[0])), 32)
+	is.Equal(len(md5(is, items[1])), 32)
+	is.Equal(len(md5(is, items[2])), 32)
 
 	// check ETags
-	is.OK(etag(is, item1))
-	is.OK(etag(is, item2))
-	is.OK(etag(is, item3))
+	is.OK(etag(is, items[0]))
+	is.OK(etag(is, items[1]))
+	is.OK(etag(is, items[2]))
 
 	// get container by ID
 	c1copy, err := location.Container(c1.ID())
@@ -121,7 +135,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1b)
 	is.Equal(item1b.ID(), item1.ID())
-	is.Equal(etag(is, item1b), etag(is, item1))
+	is.Equal(etag(is, item1b), etag(is, item1copy))
 
 	// test walking
 	var walkedItems []stow.Item

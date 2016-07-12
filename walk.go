@@ -17,9 +17,9 @@ func Walk(container Container, prefix string, fn WalkFunc) error {
 	var (
 		err    error
 		items  []Item
-		cursor = "start"
+		cursor = CursorStart
 	)
-	for len(cursor) > 0 {
+	for {
 		items, cursor, err = container.Items(prefix, cursor)
 		if err != nil {
 			err = fn(nil, err)
@@ -32,6 +32,9 @@ func Walk(container Container, prefix string, fn WalkFunc) error {
 			if err != nil {
 				return err
 			}
+		}
+		if len(cursor) == 0 {
+			break
 		}
 	}
 	return nil
