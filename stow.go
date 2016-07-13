@@ -33,6 +33,12 @@ var (
 	CursorStart = ""
 )
 
+// IsCursorEnd checks whether the cursor indicates there are no
+// more items or not.
+func IsCursorEnd(cursor string) bool {
+	return cursor == ""
+}
+
 // Location represents a storage location.
 type Location interface {
 	io.Closer

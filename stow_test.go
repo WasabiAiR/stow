@@ -24,3 +24,11 @@ func TestKinds(t *testing.T) {
 	stow.Register("example", nil, nil)
 	is.Equal(stow.Kinds(), []string{"test", "example"})
 }
+
+func TestIsCursorEnd(t *testing.T) {
+
+	is := is.New(t)
+	is.True(stow.IsCursorEnd(""))
+	is.False(stow.IsCursorEnd("anything"))
+
+}
