@@ -61,13 +61,17 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	if err != nil {
 		return nil, "", err
 	}
+	cs, err := l.filesToContainers(path, files...)
+	if err != nil {
+		return nil, "", err
+	}
 	if cursor != stow.CursorStart {
 		// seek to the cursor
 		ok := false
-		for i, file := range files {
-			if file == cursor {
+		for i, c := range cs {
+			if c.ID() == cursor {
 				ok = true
-				files = files[i:]
+				cs = cs[i:]
 				break
 			}
 		}
@@ -75,13 +79,13 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 			return nil, "", stow.ErrBadCursor
 		}
 	}
-	if len(files) > l.pagesize {
-		cursor = files[l.pagesize]
-		files = files[:l.pagesize] // limit files to pagesize
-	} else if len(files) <= l.pagesize {
+	if len(cs) > l.pagesize {
+		cursor = cs[l.pagesize].ID()
+		cs = cs[:l.pagesize] // limit cs to pagesize
+	} else if len(cs) <= l.pagesize {
 		cursor = ""
 	}
-	cs, err := l.filesToContainers(path, files...)
+
 	return cs, cursor, err
 }
 
