@@ -15,8 +15,11 @@ import (
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func randName(length int) string {
+func init() {
 	rand.Seed(int64(time.Now().Nanosecond()))
+}
+
+func randName(length int) string {
 	b := make([]rune, length)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
