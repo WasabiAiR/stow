@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	lock sync.RWMutex // protects locations and kindmatches
+	lock sync.RWMutex // protects locations, kinds and kindmatches
 	// kinds holds a list of location kinds.
 	kinds = []string{}
 	// locations is a map of installed location providers,
@@ -51,8 +51,8 @@ type Location interface {
 	// the containers to get. It it obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
-	// If the returned cursor is empty, there
-	// are no more results.
+	// The returned cursor can be checked with IsCursorEnd to
+	// decide if there are any more items or not.
 	Containers(prefix string, cursor string) ([]Container, string, error)
 	// Container gets the Container with the specified
 	// identifier.
@@ -78,8 +78,8 @@ type Container interface {
 	// the items to get. It it obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
-	// If the returned cursor is empty, there
-	// are no more results.
+	// The returned cursor can be checked with IsCursorEnd to
+	// decide if there are any more items or not.
 	Items(prefix, cursor string) ([]Item, string, error)
 	// RemoveItem removes the Item with the specified ID.
 	RemoveItem(id string) error
