@@ -25,6 +25,9 @@ var (
 var (
 	// ErrNotFound is returned when something could not be found.
 	ErrNotFound = errors.New("not found")
+	// ErrBadCursor is returned by paging methods when the specified
+	// cursor is invalid.
+	ErrBadCursor = errors.New("bad cursor")
 )
 
 var (

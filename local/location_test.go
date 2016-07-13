@@ -160,23 +160,21 @@ func TestByURL(t *testing.T) {
 }
 
 func TestContainersPaging(t *testing.T) {
-
 	is := is.New(t)
 	testDir, teardown, err := setup()
 	is.NoErr(err)
 	defer teardown()
-
 	cfg := stow.ConfigMap{"path": testDir}
-
 	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
-	for i := 0; i < 35; i++ {
+	for i := 0; i < 25; i++ {
 		_, err := l.CreateContainer(fmt.Sprintf("container-%02d", i))
 		is.NoErr(err)
 	}
 
+	// get the first page
 	containers, cursor, err := l.Containers("container-", stow.CursorStart)
 	is.NoErr(err)
 	is.OK(containers)
@@ -192,19 +190,15 @@ func TestContainersPaging(t *testing.T) {
 	is.OK(cursor)
 	is.Equal(filepath.Base(cursor), "container-20")
 
-	// get next page
-	containers, cursor, err = l.Containers("container-", cursor)
-	is.NoErr(err)
-	is.OK(containers)
-	is.Equal(len(containers), 10)
-	is.OK(cursor)
-	is.Equal(filepath.Base(cursor), "container-30")
-
 	// get last page
 	containers, cursor, err = l.Containers("container-", cursor)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(len(containers), 5)
-	is.Equal(cursor, "")
+	is.True(stow.IsCursorEnd(cursor))
+
+	// bad cursor
+	containers, cursor, err = l.Containers("container-", "made-up-cursor")
+	is.Equal(err, stow.ErrBadCursor)
 
 }

@@ -15,6 +15,10 @@ import (
 type container struct {
 	name string
 	path string
+
+	// pagesize is the number of items to return
+	// per page (for Containers and Items).
+	pagesize int
 }
 
 func (c *container) ID() string {
@@ -75,6 +79,26 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+	if cursor != stow.CursorStart {
+		// seek to the cursor
+		ok := false
+		for i, file := range files {
+			if file.Name() == cursor {
+				files = files[i:]
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return nil, "", stow.ErrBadCursor
+		}
+	}
+	if len(files) > c.pagesize {
+		cursor = files[c.pagesize].Name()
+		files = files[:c.pagesize]
+	} else if len(files) <= c.pagesize {
+		cursor = "" // end
+	}
 	var items []stow.Item
 	for _, f := range files {
 		if f.IsDir() {
@@ -87,12 +111,13 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 		if !strings.HasPrefix(f.Name(), prefix) {
 			continue
 		}
-		items = append(items, &item{
+		item := &item{
 			name: f.Name(),
 			path: path,
-		})
+		}
+		items = append(items, item)
 	}
-	return items, "", nil
+	return items, cursor, nil
 }
 
 func (c *container) Item(id string) (stow.Item, error) {

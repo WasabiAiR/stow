@@ -46,8 +46,9 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 		return nil, err
 	}
 	return &container{
-		name: name,
-		path: abspath,
+		pagesize: l.pagesize,
+		name:     name,
+		path:     abspath,
 	}, nil
 }
 
@@ -62,11 +63,16 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	}
 	if cursor != stow.CursorStart {
 		// seek to the cursor
+		ok := false
 		for i, file := range files {
 			if file == cursor {
+				ok = true
 				files = files[i:]
 				break
 			}
+		}
+		if !ok {
+			return nil, "", stow.ErrBadCursor
 		}
 	}
 	if len(files) > l.pagesize {
@@ -75,7 +81,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	} else if len(files) <= l.pagesize {
 		cursor = ""
 	}
-	cs, err := filesToContainers(path, files...)
+	cs, err := l.filesToContainers(path, files...)
 	return cs, cursor, err
 }
 
@@ -84,7 +90,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 	if !ok {
 		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
 	}
-	containers, err := filesToContainers(path, id)
+	containers, err := l.filesToContainers(path, id)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, stow.ErrNotFound
@@ -95,4 +101,37 @@ func (l *location) Container(id string) (stow.Container, error) {
 		return nil, stow.ErrNotFound
 	}
 	return containers[0], nil
+}
+
+// filesToContainers takes a list of files and turns it into a
+// stow.ContainerList.
+func (l *location) filesToContainers(root string, files ...string) ([]stow.Container, error) {
+	cs := make([]stow.Container, 0, len(files))
+	for _, f := range files {
+		info, err := os.Stat(f)
+		if err != nil {
+			return nil, err
+		}
+		if !info.IsDir() {
+			continue
+		}
+		absroot, err := filepath.Abs(root)
+		if err != nil {
+			return nil, err
+		}
+		path, err := filepath.Abs(f)
+		if err != nil {
+			return nil, err
+		}
+		name, err := filepath.Rel(absroot, path)
+		if err != nil {
+			return nil, err
+		}
+		cs = append(cs, &container{
+			pagesize: l.pagesize,
+			name:     name,
+			path:     path,
+		})
+	}
+	return cs, nil
 }
