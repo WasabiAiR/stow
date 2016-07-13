@@ -40,7 +40,7 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 
 func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
 	params := az.ListContainersParameters{
-		MaxResults: 100,
+		MaxResults: 10,
 		Prefix:     prefix,
 	}
 	if cursor != stow.CursorStart {
