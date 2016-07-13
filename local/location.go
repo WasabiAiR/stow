@@ -10,7 +10,11 @@ import (
 )
 
 type location struct {
+	// config is the configuration for this location.
 	config stow.Config
+	// pagesize is the number of items to return
+	// per page (for Containers and Items).
+	pagesize int
 }
 
 func (l *location) Close() error {
@@ -56,8 +60,23 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	if err != nil {
 		return nil, "", err
 	}
+	if cursor != stow.CursorStart {
+		// seek to the cursor
+		for i, file := range files {
+			if file == cursor {
+				files = files[i:]
+				break
+			}
+		}
+	}
+	if len(files) > l.pagesize {
+		cursor = files[l.pagesize]
+		files = files[:l.pagesize] // limit files to pagesize
+	} else if len(files) <= l.pagesize {
+		cursor = ""
+	}
 	cs, err := filesToContainers(path, files...)
-	return cs, "", err
+	return cs, cursor, err
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
