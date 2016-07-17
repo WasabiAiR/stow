@@ -1,0 +1,156 @@
+package s3
+
+import (
+	"net/url"
+	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/graymeta/stow"
+)
+
+// A location contains a client + the configurations used to create the client.
+type location struct {
+	config stow.Config
+	client *s3.S3
+}
+
+// CreateContainer creates a new container, in this case an S3 bucket.
+// The bare minimum needed is a container name, but there are many other
+// options that can be provided.
+func (l *location) CreateContainer(containerName string) (stow.Container, error) {
+	createBucketParams := &s3.CreateBucketInput{
+		Bucket: aws.String(containerName), // required
+	}
+
+	_, err := l.client.CreateBucket(createBucketParams)
+	if err != nil {
+		return nil, err
+	}
+
+	region, _ := l.config.Config("region")
+
+	newContainer := &container{
+		name:   containerName,
+		client: l.client,
+		region: region,
+	}
+
+	return newContainer, nil
+}
+
+// Containers returns a slice of the Container interface, a cursor, and an error.
+// This doesn't seem to exist yet in the APIi without doing a ton of manual work.
+// Will be discussed.
+func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+	var params *s3.ListBucketsInput
+
+	var containers []stow.Container
+
+	// Response returns exported Owner(*s3.Owner) and Bucket(*s3.[]Bucket)
+	response, err := l.client.ListBuckets(params)
+	if err != nil {
+		return nil, "", err
+	}
+
+	region, _ := l.config.Config("region")
+
+	// Iterate through the slice of pointers to buckets
+	for _, bucket := range response.Buckets {
+		newContainer := &container{
+			name:   *(bucket.Name),
+			client: l.client,
+			region: region,
+		}
+
+		containers = append(containers, newContainer)
+	}
+
+	return containers, "", nil
+}
+
+// Close simply satisfies the Location interface. There's nothing that
+// needs to be done in order to satisfy the interface.
+func (l *location) Close() error {
+	return nil // nothing to close
+}
+
+// Container retrieves a stow. Container based on its name which must be
+// exact.
+func (l *location) Container(id string) (stow.Container, error) {
+	params := &s3.GetBucketLocationInput{
+		Bucket: aws.String(id), // Required
+	}
+
+	_, err := l.client.GetBucketLocation(params)
+	if err != nil {
+		return nil, stow.ErrNotFound
+	}
+
+	region, _ := l.config.Config("region")
+
+	c := &container{
+		name:   id,
+		client: l.client,
+		region: region,
+	}
+
+	return c, nil
+}
+
+// RemoveContainer removes a container simply by name.
+func (l *location) RemoveContainer(id string) error {
+	params := &s3.DeleteBucketInput{
+		Bucket: aws.String(id),
+	}
+
+	_, err := l.client.DeleteBucket(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ItemByURL retrieves a stow.Item by parsing the URL, in this
+// case an item is an object.
+func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
+	genericURL := []string{"https://s3-", ".amazonaws.com/"}
+
+	// Remove genericURL[0] from URL:
+	// url = <genericURL[0]><region><genericURL[1]><bucket name><object path>
+	firstCut := strings.Replace(url.Path, genericURL[0], "", 1)
+
+	// find first dot so that we could extract region.
+	dotIndex := strings.Index(firstCut, ".")
+
+	// region of the s3 bucket.
+	region := firstCut[0:dotIndex]
+
+	// Remove <region><genericURL[1]> from
+	// <region><genericURL[1]><bucket name><object path>
+	secondCut := strings.Replace(firstCut, region+genericURL[1], "", 1)
+
+	// Get the index of the first slash to get the end of the bucket name.
+	firstSlash := strings.Index(secondCut, "/")
+
+	// Grab bucket name
+	bucketName := secondCut[:firstSlash]
+
+	// Everything afterwards pertains to object.
+	objectPath := secondCut[firstSlash+1:]
+
+	// Get the container by bucket name.
+	cont, err := l.Container(bucketName)
+	if err != nil {
+		return nil, stow.ErrNotFound
+	}
+
+	// Get the item by object name.
+	it, err := cont.Item(objectPath)
+	if err != nil {
+		return nil, stow.ErrNotFound
+	}
+
+	return it, err
+}
