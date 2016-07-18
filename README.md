@@ -5,6 +5,13 @@ Storage abstraction
 
 Stow provides implementations for storage services, blob stores, cloud storage etc.
 
+## Implementations
+
+* Local
+* Amazon S3
+* Microsoft Azure Blob Storage
+* Openstack Swift (with auth v2)
+
 ## Concepts
 
 The concepts of Stow are modelled around the most popular object storage services, and are made up of three main objects:
