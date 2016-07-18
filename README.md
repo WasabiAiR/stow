@@ -1,5 +1,5 @@
 # stow
-Storage abstraction
+Blob storage abstraction.
 
 ## How it works
 
