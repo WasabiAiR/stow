@@ -30,7 +30,7 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	container := &container{
 		id: name,
 		properties: az.ContainerProperties{
-			LastModified: time.Now().Format(AzureTimeLayout),
+			LastModified: time.Now().Format(timeFormat),
 		},
 		client: l.client,
 	}

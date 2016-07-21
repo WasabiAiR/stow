@@ -10,7 +10,8 @@ import (
 	"github.com/graymeta/stow"
 )
 
-var AzureTimeLayout = "Mon, 2 Jan 2006 15:04:05 MST"
+// timeFormat is the time format for azure.
+var timeFormat = "Mon, 2 Jan 2006 15:04:05 MST"
 
 type container struct {
 	id         string
@@ -79,7 +80,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		container: c,
 		client:    c.client,
 		properties: az.BlobProperties{
-			LastModified:  time.Now().Format(AzureTimeLayout),
+			LastModified:  time.Now().Format(timeFormat),
 			Etag:          "",
 			ContentLength: size,
 		},
