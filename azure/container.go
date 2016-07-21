@@ -71,6 +71,7 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 }
 
 func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+	name = strings.Replace(name, " ", "+", -1)
 	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
 	if err != nil {
 		return nil, err
