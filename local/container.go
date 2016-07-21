@@ -3,7 +3,6 @@ package local
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -59,6 +58,10 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		name: name,
 		path: path,
 	}
+	err := os.MkdirAll(filepath.Dir(path), 0777)
+	if err != nil {
+		return nil, err
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return nil, err
@@ -75,7 +78,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 }
 
 func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
-	files, err := ioutil.ReadDir(c.path)
+	files, err := flatdirs(c.path)
 	if err != nil {
 		return nil, "", err
 	}
@@ -134,4 +137,40 @@ func (c *container) Item(id string) (stow.Item, error) {
 		path: path,
 	}
 	return item, nil
+}
+
+// flatdirs walks the entire tree returning a list of
+// os.FileInfo for all items encountered.
+func flatdirs(path string) ([]os.FileInfo, error) {
+	var list []os.FileInfo
+	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		flatname, err := filepath.Rel(path, p)
+		if err != nil {
+			return err
+		}
+		list = append(list, fileinfo{
+			FileInfo: info,
+			name:     flatname,
+		})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+type fileinfo struct {
+	os.FileInfo
+	name string
+}
+
+func (f fileinfo) Name() string {
+	return f.name
 }
