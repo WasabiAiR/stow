@@ -57,9 +57,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// add three items to c1
-	item1 := putItem(is, c1, "a_first_item", "item one")
-	item2 := putItem(is, c1, "a_second_item", "item two")
-	item3 := putItem(is, c1, "the_third_item", "item three")
+	item1 := putItem(is, c1, "a_first/the item", "item one")
+	item2 := putItem(is, c1, "a_second/the item", "item two")
+	item3 := putItem(is, c1, "the_third/the item", "item three")
 	is.OK(item1, item2, item3)
 
 	defer func() {
