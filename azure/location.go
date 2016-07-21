@@ -88,7 +88,7 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 		return nil, errors.New("wrong azure URL")
 	}
 	path := strings.TrimLeft(url.Path, "/")
-	params := strings.Split(path, "/")
+	params := strings.SplitN(path, "/", 2)
 	if len(params) != 2 {
 		return nil, errors.New("wrong path")
 	}
