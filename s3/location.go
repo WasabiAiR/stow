@@ -28,12 +28,9 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 		return nil, err
 	}
 
-	region, _ := l.config.Config("region")
-
 	newContainer := &container{
 		name:   containerName,
 		client: l.client,
-		region: region,
 	}
 
 	return newContainer, nil
@@ -53,14 +50,11 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 		return nil, "", err
 	}
 
-	region, _ := l.config.Config("region")
-
 	// Iterate through the slice of pointers to buckets
 	for _, bucket := range response.Buckets {
 		newContainer := &container{
 			name:   *(bucket.Name),
 			client: l.client,
-			region: region,
 		}
 
 		containers = append(containers, newContainer)
@@ -75,7 +69,7 @@ func (l *location) Close() error {
 	return nil // nothing to close
 }
 
-// Container retrieves a stow. Container based on its name which must be
+// Container retrieves a stow.Container based on its name which must be
 // exact.
 func (l *location) Container(id string) (stow.Container, error) {
 	params := &s3.GetBucketLocationInput{
@@ -87,12 +81,9 @@ func (l *location) Container(id string) (stow.Container, error) {
 		return nil, stow.ErrNotFound
 	}
 
-	region, _ := l.config.Config("region")
-
 	c := &container{
 		name:   id,
 		client: l.client,
-		region: region,
 	}
 
 	return c, nil
