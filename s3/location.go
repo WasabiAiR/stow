@@ -71,12 +71,18 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 		clientRegion, _ := l.config.Config("region")
 		containerRegion := bucketLocResponse.LocationConstraint
 
+		// If containerRegion (* string) is nil, the region is US Standard, which is "us-east-1"
+		// by default.
+		if containerRegion == nil {
+			usStandardRegion := "us-east-1"
+			containerRegion = &usStandardRegion
+		}
+
 		// Add buckets with 'US Standard' region. The containerRegion, a pointer, will return nil.
 		// Also add buckets that have the same region as the client, otherwise continue on.
-		if containerRegion != nil {
-			if *containerRegion != clientRegion {
-				continue
-			}
+
+		if *containerRegion != clientRegion {
+			continue
 		}
 
 		newContainer := &container{
