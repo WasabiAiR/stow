@@ -12,7 +12,10 @@ import (
 
 // Amazon S3 bucket contains a creationdate and a name.
 type container struct {
-	name   string
+	// Name is needed to retrieve items.
+	name string
+
+	// Client is responsible for performing the requests.
 	client *s3.S3
 }
 

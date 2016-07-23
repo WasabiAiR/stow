@@ -37,8 +37,13 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 }
 
 // Containers returns a slice of the Container interface, a cursor, and an error.
-// This doesn't seem to exist yet in the APIi without doing a ton of manual work.
-// Will be discussed.
+// This doesn't seem to exist yet in the API without doing a ton of manual work.
+// Get the list of buckets, query every single one to retrieve region info, and finally
+// return the list of containers that have a matching region against the client. It's not
+// possible to manipulate a container within a region that doesn't match the clients'.
+// This is because AWS user credentials can be tied to regions. One solution would be
+// to start a new client for every single container where the region matches, this would
+// also check the credentials on every new instance... Tabled for later.
 func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
 	var params *s3.ListBucketsInput
 
@@ -52,12 +57,26 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 
 	// Iterate through the slice of pointers to buckets
 	for _, bucket := range response.Buckets {
-		newContainer := &container{
-			name:   *(bucket.Name),
-			client: l.client,
+		// Retrieve region information.
+		bliParams := &s3.GetBucketLocationInput{
+			Bucket: aws.String(*bucket.Name),
 		}
 
-		containers = append(containers, newContainer)
+		bliResponse, err := l.client.GetBucketLocation(bliParams)
+		if err != nil {
+			return nil, "", err
+		}
+
+		clientRegion, _ := l.config.Config("region")
+
+		if bliResponse.String() == clientRegion {
+			newContainer := &container{
+				name:   *(bucket.Name),
+				client: l.client,
+			}
+
+			containers = append(containers, newContainer)
+		}
 	}
 
 	return containers, "", nil
