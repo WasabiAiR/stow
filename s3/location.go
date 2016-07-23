@@ -115,39 +115,26 @@ func (l *location) RemoveContainer(id string) error {
 // ItemByURL retrieves a stow.Item by parsing the URL, in this
 // case an item is an object.
 func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
-	genericURL := []string{"https://s3-", ".amazonaws.com/"}
+	genericString := "https://s3.amazonaws.com/"
 
-	// Remove genericURL[0] from URL:
-	// url = <genericURL[0]><region><genericURL[1]><bucket name><object path>
-	firstCut := strings.Replace(url.Path, genericURL[0], "", 1)
+	// Cut generic string.
+	firstCut := strings.Replace(url.Path, genericString, "", 1)
 
-	// find first dot so that we could extract region.
-	dotIndex := strings.Index(firstCut, ".")
+	// firstCut is in the format <container name>/<item path>. Grab container name.
+	firstSlash := strings.Index(firstCut, "/")
+	containerName := firstCut[0:firstSlash]
 
-	// region of the s3 bucket.
-	region := firstCut[0:dotIndex]
+	// item path is everything after the first slash.
+	itemPath := firstCut[firstSlash+1:]
 
-	// Remove <region><genericURL[1]> from
-	// <region><genericURL[1]><bucket name><object path>
-	secondCut := strings.Replace(firstCut, region+genericURL[1], "", 1)
-
-	// Get the index of the first slash to get the end of the bucket name.
-	firstSlash := strings.Index(secondCut, "/")
-
-	// Grab bucket name
-	bucketName := secondCut[:firstSlash]
-
-	// Everything afterwards pertains to object.
-	objectPath := secondCut[firstSlash+1:]
-
-	// Get the container by bucket name.
-	cont, err := l.Container(bucketName)
+	// Get the container by name.
+	cont, err := l.Container(containerName)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
 
-	// Get the item by object name.
-	it, err := cont.Item(objectPath)
+	// Get the item by its path.
+	it, err := cont.Item(itemPath)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
