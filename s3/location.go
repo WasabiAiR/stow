@@ -50,33 +50,41 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	var containers []stow.Container
 
 	// Response returns exported Owner(*s3.Owner) and Bucket(*s3.[]Bucket)
-	response, err := l.client.ListBuckets(params)
+	bucketList, err := l.client.ListBuckets(params)
 	if err != nil {
 		return nil, "", err
 	}
 
 	// Iterate through the slice of pointers to buckets
-	for _, bucket := range response.Buckets {
+	for _, bucket := range bucketList.Buckets {
 		// Retrieve region information.
-		bliParams := &s3.GetBucketLocationInput{
+		bucketLocParams := &s3.GetBucketLocationInput{
 			Bucket: aws.String(*bucket.Name),
 		}
 
-		bliResponse, err := l.client.GetBucketLocation(bliParams)
+		// Buckets with region 'US Standard' return nothing.
+		bucketLocResponse, err := l.client.GetBucketLocation(bucketLocParams)
 		if err != nil {
 			return nil, "", err
 		}
 
 		clientRegion, _ := l.config.Config("region")
+		containerRegion := bucketLocResponse.LocationConstraint
 
-		if bliResponse.String() == clientRegion {
-			newContainer := &container{
-				name:   *(bucket.Name),
-				client: l.client,
+		// Add buckets with 'US Standard' region. The containerRegion, a pointer, will return nil.
+		// Also add buckets that have the same region as the client, otherwise continue on.
+		if containerRegion != nil {
+			if *containerRegion != clientRegion {
+				continue
 			}
-
-			containers = append(containers, newContainer)
 		}
+
+		newContainer := &container{
+			name:   *(bucket.Name),
+			client: l.client,
+		}
+
+		containers = append(containers, newContainer)
 	}
 
 	return containers, "", nil
