@@ -14,7 +14,6 @@ import (
 type container struct {
 	name   string
 	client *s3.S3
-	region string
 }
 
 // ID returns a string value which represents the name of the container.
@@ -141,10 +140,4 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	}
 
 	return newItem, nil
-}
-
-// Region returns a string representing the region/availability zone
-// of the container.
-func (c *container) Region() string {
-	return c.region
 }

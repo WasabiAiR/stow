@@ -15,10 +15,15 @@ import (
 // file name/id, size, owner, last modified date, and storage class.
 // see Object type at http://docs.aws.amazon.com/sdk-for-go/api/service/s3/
 // for more info.
+// All fields are unexported because methods exist to facilitate retrieval.
 type item struct {
+	// Container information is required by a few methods.
 	container *container
-	client    *s3.S3
 
+	// A client is needed to make requests.
+	client *s3.S3
+
+	// Properties represent the characteristics of the file. Name, Etag, etc.
 	properties *s3.Object
 }
 
@@ -44,7 +49,7 @@ func (i *item) URL() *url.URL {
 	}
 }
 
-// Open retrieves specic information about an item baseed on the container name
+// Open retrieves specic information about an item based on the container name
 // and path of the file within the container. This response includes the body of
 // resource which is returned along with an error.
 func (i *item) Open() (io.ReadCloser, error) {
