@@ -40,12 +40,12 @@ func (i *item) Name() string {
 // URL returns a formatted string which follows the predefined format
 // that every S3 asset is given.
 func (i *item) URL() *url.URL {
-	//genericURL := []string{"https://s3-", i.container.Region(), ".amazonaws.com/", i.container.Name(), "/", i.Name()}
-	genericURL := []string{"https://s3.amazonaws.com", i.container.Name(), i.Name()}
+	genericURL := []string{"https://s3-", i.container.Region(), ".amazonaws.com/",
+		i.container.Name(), "/", i.Name()}
 
 	return &url.URL{
 		Scheme: "s3",
-		Path:   strings.Join(genericURL, "/"),
+		Path:   strings.Join(genericURL, ""),
 	}
 }
 
