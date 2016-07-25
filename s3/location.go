@@ -28,9 +28,12 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 		return nil, err
 	}
 
+	region, _ := l.config.Config("region")
+
 	newContainer := &container{
 		name:   containerName,
 		client: l.client,
+		region: region,
 	}
 
 	return newContainer, nil
@@ -88,6 +91,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 		newContainer := &container{
 			name:   *(bucket.Name),
 			client: l.client,
+			region: clientRegion,
 		}
 
 		containers = append(containers, newContainer)
@@ -114,9 +118,12 @@ func (l *location) Container(id string) (stow.Container, error) {
 		return nil, stow.ErrNotFound
 	}
 
+	region, _ := l.config.Config("region")
+
 	c := &container{
 		name:   id,
 		client: l.client,
+		region: region,
 	}
 
 	return c, nil
@@ -139,26 +146,39 @@ func (l *location) RemoveContainer(id string) error {
 // ItemByURL retrieves a stow.Item by parsing the URL, in this
 // case an item is an object.
 func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
-	genericString := "https://s3.amazonaws.com/"
+	genericURL := []string{"https://s3-", ".amazonaws.com/"}
 
-	// Cut generic string.
-	firstCut := strings.Replace(url.Path, genericString, "", 1)
+	// Remove genericURL[0] from URL:
+	// url = <genericURL[0]><region><genericURL[1]><bucket name><object path>
+	firstCut := strings.Replace(url.Path, genericURL[0], "", 1)
 
-	// firstCut is in the format <container name>/<item path>. Grab container name.
-	firstSlash := strings.Index(firstCut, "/")
-	containerName := firstCut[0:firstSlash]
+	// find first dot so that we could extract region.
+	dotIndex := strings.Index(firstCut, ".")
 
-	// item path is everything after the first slash.
-	itemPath := firstCut[firstSlash+1:]
+	// region of the s3 bucket.
+	region := firstCut[0:dotIndex]
 
-	// Get the container by name.
-	cont, err := l.Container(containerName)
+	// Remove <region><genericURL[1]> from
+	// <region><genericURL[1]><bucket name><object path>
+	secondCut := strings.Replace(firstCut, region+genericURL[1], "", 1)
+
+	// Get the index of the first slash to get the end of the bucket name.
+	firstSlash := strings.Index(secondCut, "/")
+
+	// Grab bucket name
+	bucketName := secondCut[:firstSlash]
+
+	// Everything afterwards pertains to object.
+	objectPath := secondCut[firstSlash+1:]
+
+	// Get the container by bucket name.
+	cont, err := l.Container(bucketName)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
 
-	// Get the item by its path.
-	it, err := cont.Item(itemPath)
+	// Get the item by object name.
+	it, err := cont.Item(objectPath)
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
