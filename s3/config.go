@@ -44,7 +44,7 @@ func init() {
 
 		_, ok = config.Config(ConfigRegion)
 		if !ok {
-			return nil, errors.New("missin Region")
+			return nil, errors.New("missing Region")
 		}
 
 		// Create a new client (s3 session)
