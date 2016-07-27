@@ -30,19 +30,21 @@ const (
 )
 
 func init() {
-	nameErrorPairs := make(map[string]string)
-	nameErrorPairs[ConfigAccessKeyID] = "missing aws access key id"
-	nameErrorPairs[ConfigSecretKey] = "missing aws access key id"
-	nameErrorPairs[ConfigRegion] = "missing region"
 
 	makefn := func(config stow.Config) (stow.Location, error) {
+		_, ok := config.Config(ConfigAccessKeyID)
+		if !ok {
+			return nil, errors.New("missing Access Key ID")
+		}
 
-		// Ensure required keys are not empty.
-		for configName, errorMsg := range nameErrorPairs {
-			_, ok := config.Config(configName)
-			if !ok {
-				return nil, errors.New(errorMsg)
-			}
+		_, ok = config.Config(ConfigSecretKey)
+		if !ok {
+			return nil, errors.New("missing Secret Key")
+		}
+
+		_, ok = config.Config(ConfigRegion)
+		if !ok {
+			return nil, errors.New("missin Region")
 		}
 
 		// Create a new client (s3 session)

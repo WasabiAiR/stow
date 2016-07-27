@@ -29,12 +29,12 @@ type item struct {
 
 // ID returns a string value that represents the name of a file.
 func (i *item) ID() string {
-	return *(i.properties.Key)
+	return *i.properties.Key
 }
 
 // Name returns a string value that represents the name of the file.
 func (i *item) Name() string {
-	return *(i.properties.Key)
+	return *i.properties.Key
 }
 
 // URL returns a formatted string which follows the predefined format
