@@ -87,11 +87,13 @@ func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, er
 		}
 	}
 
-	// If there is a marker that denotes the next Item to be read in the
-	// next page, return it.
+	// Create a marker and determine if the list of items to retrieve is complete.
+	// If not, provide the file name of the last item as the next marker. S3 lists
+	// its items (S3 Objects) in alphabetical order, so it will receive the item name
+	// and correctly return the next list of items in subsequent requests.
 	marker := ""
-	if response.NextMarker != nil {
-		marker = *response.NextMarker
+	if *response.IsTruncated {
+		marker = containerItems[len(containerItems)-1].Name()
 	}
 
 	return containerItems, marker, nil
