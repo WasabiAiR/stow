@@ -24,7 +24,6 @@ func (l *location) Close() error {
 func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
 	i := &item{}
 	i.path = u.Path
-	i.name = filepath.Base(i.path)
 	return i, nil
 }
 

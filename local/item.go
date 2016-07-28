@@ -11,10 +11,12 @@ import (
 )
 
 type item struct {
-	name    string
-	path    string
-	md5once sync.Once // protects md5
-	md5     string
+	path     string
+	infoOnce sync.Once // protects info
+	info     os.FileInfo
+	infoErr  error
+	md5once  sync.Once // protects md5
+	md5      string
 }
 
 func (i *item) ID() string {
@@ -22,7 +24,15 @@ func (i *item) ID() string {
 }
 
 func (i *item) Name() string {
-	return i.name
+	return filepath.Base(i.path)
+}
+
+func (i *item) Size() (int64, error) {
+	info, err := i.getInfo()
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
 }
 
 func (i *item) URL() *url.URL {
@@ -32,8 +42,15 @@ func (i *item) URL() *url.URL {
 	}
 }
 
+func (i *item) getInfo() (os.FileInfo, error) {
+	i.infoOnce.Do(func() {
+		i.info, i.infoErr = os.Stat(i.path)
+	})
+	return i.info, i.infoErr
+}
+
 func (i *item) ETag() (string, error) {
-	info, err := os.Stat(i.path)
+	info, err := i.getInfo()
 	if err != nil {
 		return "", nil
 	}

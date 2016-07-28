@@ -104,6 +104,8 @@ type Item interface {
 	// azure: azure://host:port/api/something
 	//    s3: s3://host:post/etc
 	URL() *url.URL
+	// Size gets the size of the Item's contents in bytes.
+	Size() (int64, error)
 	// Open opens the Item for reading.
 	// Calling code must close the io.ReadCloser.
 	Open() (io.ReadCloser, error)

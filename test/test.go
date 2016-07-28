@@ -86,18 +86,21 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(item1.Name())
 	is.Equal(items[0].ID(), item1.ID())
 	is.Equal(items[0].Name(), item1.Name())
+	is.Equal(size(is, items[0]), 8)
 	is.Equal(readItemContents(is, item1), "item one")
 
 	is.OK(item2.ID())
 	is.OK(item2.Name())
 	is.Equal(items[1].ID(), item2.ID())
 	is.Equal(items[1].Name(), item2.Name())
+	is.Equal(size(is, items[1]), 8)
 	is.Equal(readItemContents(is, item2), "item two")
 
 	is.OK(item3.ID())
 	is.OK(item3.Name())
 	is.Equal(items[2].ID(), item3.ID())
 	is.Equal(items[2].Name(), item3.Name())
+	is.Equal(size(is, items[2]), 10)
 	is.Equal(readItemContents(is, item3), "item three")
 
 	// check MD5s
@@ -126,6 +129,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1copy)
 	is.Equal(item1copy.ID(), item1.ID())
+	is.Equal(item1copy.Name(), item1.Name())
+	is.Equal(size(is, item1copy), size(is, item1))
+	is.Equal(readItemContents(is, item1copy), "item one")
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -213,4 +219,10 @@ func etag(is is.I, item stow.Item) string {
 	etag, err := item.ETag()
 	is.NoErr(err)
 	return etag
+}
+
+func size(is is.I, item stow.Item) int64 {
+	size, err := item.Size()
+	is.NoErr(err)
+	return size
 }
