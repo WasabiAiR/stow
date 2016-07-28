@@ -136,12 +136,21 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		return nil, err
 	}
 
+	// Some fields are empty because this information isn't included in the response.
+	// May have to involve sending a request if we want more specific information.
+	// Keeping it simple for now.
+	// s3.Object info: https://github.com/aws/aws-sdk-go/blob/master/service/s3/api.go#L7092-L7107
+	// Response: https://github.com/aws/aws-sdk-go/blob/master/service/s3/api.go#L8193-L8227
 	newItem := &item{
 		container: c,
 		client:    c.client,
 		properties: &s3.Object{
 			ETag: response.ETag,
 			Key:  &name,
+			Size: &size,
+			//LastModified *time.Time
+			//Owner        *s3.Owner
+			//StorageClass *string
 		},
 	}
 

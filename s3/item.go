@@ -37,6 +37,11 @@ func (i *item) Name() string {
 	return *i.properties.Key
 }
 
+// Size returns the size of an item in bytes.
+func (i *item) Size() (int64, error) {
+	return *i.properties.Size, nil
+}
+
 // URL returns a formatted string which follows the predefined format
 // that every S3 asset is given.
 func (i *item) URL() *url.URL {
