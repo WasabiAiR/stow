@@ -64,6 +64,7 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 			container: c,
 			client:    c.client,
 			hash:      obj.Hash,
+			size:      obj.Bytes,
 		}
 	}
 
@@ -86,6 +87,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		id:        name,
 		container: c,
 		client:    c.client,
+		size:      size,
 	}
 	return item, nil
 }

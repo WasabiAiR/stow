@@ -129,6 +129,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1copy)
 	is.Equal(item1copy.ID(), item1.ID())
+	is.Equal(item1copy.Name(), item1.Name())
+	is.Equal(size(is, item1copy), size(is, item1))
+	is.Equal(readItemContents(is, item1copy), "item one")
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")

@@ -11,7 +11,6 @@ import (
 )
 
 type item struct {
-	name     string
 	path     string
 	infoOnce sync.Once // protects info
 	info     os.FileInfo
@@ -25,7 +24,7 @@ func (i *item) ID() string {
 }
 
 func (i *item) Name() string {
-	return i.name
+	return filepath.Base(i.path)
 }
 
 func (i *item) Size() (int64, error) {

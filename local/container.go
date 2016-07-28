@@ -38,7 +38,6 @@ func (c *container) URL() *url.URL {
 func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
 	path := filepath.Join(c.path, name)
 	item := &item{
-		name: name,
 		path: path,
 	}
 	f, err := os.Create(path)
@@ -55,7 +54,6 @@ func (c *container) RemoveItem(id string) error {
 func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
 	path := filepath.Join(c.path, name)
 	item := &item{
-		name: name,
 		path: path,
 	}
 	err := os.MkdirAll(filepath.Dir(path), 0777)
@@ -115,7 +113,6 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 			continue
 		}
 		item := &item{
-			name: f.Name(),
 			path: path,
 		}
 		items = append(items, item)
@@ -133,7 +130,6 @@ func (c *container) Item(id string) (stow.Item, error) {
 		return nil, errors.New("unexpected directory")
 	}
 	item := &item{
-		name: filepath.Base(path),
 		path: path,
 	}
 	return item, nil

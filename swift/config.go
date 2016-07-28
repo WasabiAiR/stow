@@ -8,6 +8,7 @@ import (
 	"github.com/ncw/swift"
 )
 
+// Config key constants.
 const (
 	ConfigUsername      = "username"
 	ConfigKey           = "key"
