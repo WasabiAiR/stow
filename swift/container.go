@@ -25,19 +25,18 @@ func (c *container) Name() string {
 
 func (c *container) Item(id string) (stow.Item, error) {
 	info, _, err := c.client.Object(c.id, id)
-
 	if err != nil {
 		if strings.Contains(err.Error(), "Object Not Found") {
 			return nil, stow.ErrNotFound
 		}
 		return nil, err
 	}
-
 	item := &item{
 		id:        id,
 		container: c,
 		client:    c.client,
 		hash:      info.Hash,
+		size:      info.Bytes,
 	}
 	return item, nil
 }

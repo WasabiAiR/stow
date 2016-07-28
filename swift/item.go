@@ -15,6 +15,7 @@ type item struct {
 	client    *swift.Connection
 	//properties az.BlobProperties
 	hash string
+	size int64
 	url  url.URL
 }
 
@@ -40,6 +41,10 @@ func (i *item) URL() *url.URL {
 	url.Path = fmt.Sprintf("%s/%s/%s", url.Path, i.container.id, i.id)
 
 	return url
+}
+
+func (i *item) Size() (int64, error) {
+	return i.size, nil
 }
 
 func (i *item) Open() (io.ReadCloser, error) {

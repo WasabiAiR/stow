@@ -35,6 +35,10 @@ func (i *item) URL() *url.URL {
 	return url
 }
 
+func (i *item) Size() (int64, error) {
+	return i.properties.ContentLength, nil
+}
+
 func (i *item) Open() (io.ReadCloser, error) {
 	return i.client.GetBlob(i.container.id, i.id)
 }
