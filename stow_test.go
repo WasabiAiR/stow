@@ -12,11 +12,9 @@ func TestKindByURL(t *testing.T) {
 	is := is.New(t)
 	u, err := url.Parse("test://container/item")
 	is.NoErr(err)
-
 	kind, err := stow.KindByURL(u)
 	is.NoErr(err)
 	is.Equal(kind, testKind)
-
 }
 
 func TestKinds(t *testing.T) {
@@ -26,9 +24,7 @@ func TestKinds(t *testing.T) {
 }
 
 func TestIsCursorEnd(t *testing.T) {
-
 	is := is.New(t)
 	is.True(stow.IsCursorEnd(""))
 	is.False(stow.IsCursorEnd("anything"))
-
 }

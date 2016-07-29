@@ -1,12 +1,12 @@
 package stow
 
-// tests for this are in test/test.go
+// DEV NOTE: tests for this are in test/test.go
 
-// WalkFunc is the type of the function called for
-// each Item visited by Walk.
-// If there was a problem,
-// the incoming error will describe the problem and
-// the function can decide how to handle that error.
+// WalkFunc is a function called for each Item visited
+// by Walk.
+// If there was a problem, the incoming error will describe
+// the problem and the function can decide how to handle
+// that error.
 // If an error is returned, processing stops.
 type WalkFunc func(item Item, err error) error
 
@@ -33,7 +33,7 @@ func Walk(container Container, prefix string, fn WalkFunc) error {
 				return err
 			}
 		}
-		if len(cursor) == 0 {
+		if IsCursorEnd(cursor) {
 			break
 		}
 	}
