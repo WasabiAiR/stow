@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -69,6 +70,27 @@ func (i *item) Open() (io.ReadCloser, error) {
 	}
 
 	return response.Body, nil
+}
+
+// LastMod returns the last modified date of the item. The response of an item that is PUT
+// does not contain this field. Solution? Detect when the LastModified field (a *time.Time)
+// is nil, then do a manual request for it via the Item() method of the container which
+// does return the specified field. This more detailed information is kept so that we
+// won't have to do it again.
+func (i *item) LastMod() (time.Time, error) {
+	if i.properties.LastModified == nil {
+		it, err := i.container.getItem(i.ID())
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		// Went through the work of sending a request to get this information.
+		// Let's keep it since the response contains more specific information
+		// about itself.
+		i.properties = it.properties
+	}
+
+	return *i.properties.LastModified, nil
 }
 
 // ETag returns the ETag value from the properies field of an item.
