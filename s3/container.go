@@ -141,6 +141,13 @@ func (c *container) Region() string {
 	return c.region
 }
 
+// A request to retrieve a single item includes information that is more specific than
+// a PUT. Instead of doing a request within the PUT, make this method available so that the
+// request can be made by the field retrieval methods when necessary. This is the case for
+// fields that are left out, such as the object's last modified date. This also needs to be
+// done only once since the requested information is retained.
+// May be simpler to just stick it in PUT and and do a request every time, please vouch
+// for this if so.
 func (c *container) getItem(id string) (*item, error) {
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(c.Name()),
