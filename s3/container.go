@@ -33,30 +33,7 @@ func (c *container) Name() string {
 // Item returns a stow.Item instance of a container based on the
 // name of the container and the key representing
 func (c *container) Item(id string) (stow.Item, error) {
-	params := &s3.GetObjectInput{
-		Bucket: aws.String(c.Name()),
-		Key:    aws.String(id),
-	}
-
-	response, err := c.client.GetObject(params)
-	if err != nil {
-		return nil, stow.ErrNotFound
-	}
-
-	i := &item{
-		container: c,
-		client:    c.client,
-		properties: &s3.Object{
-			ETag:         response.ETag,
-			Key:          &id,
-			LastModified: response.LastModified,
-			Owner:        nil, // Weird that it's not returned in the response.
-			Size:         response.ContentLength,
-			StorageClass: response.StorageClass,
-		},
-	}
-
-	return i, nil
+	return c.getItem(id)
 }
 
 // Items sends a request to retrieve a list of items that are prepended with
@@ -128,6 +105,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		Key:           aws.String(name),   // Required
 		ContentLength: aws.Int64(size),
 		Body:          bytes.NewReader(content),
+		// Metadata map[string]*string,
 	}
 
 	// Only Etag returned.
@@ -161,4 +139,31 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 // of the container.
 func (c *container) Region() string {
 	return c.region
+}
+
+func (c *container) getItem(id string) (*item, error) {
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(c.Name()),
+		Key:    aws.String(id),
+	}
+
+	response, err := c.client.GetObject(params)
+	if err != nil {
+		return nil, stow.ErrNotFound
+	}
+
+	i := &item{
+		container: c,
+		client:    c.client,
+		properties: &s3.Object{
+			ETag:         response.ETag,
+			Key:          &id,
+			LastModified: response.LastModified,
+			Owner:        nil, // Weird that it's not returned in the response.
+			Size:         response.ContentLength,
+			StorageClass: response.StorageClass,
+		},
+	}
+
+	return i, nil
 }
