@@ -2,6 +2,7 @@ package test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"strings"
@@ -88,7 +89,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[0].Name(), item1.Name())
 	is.Equal(size(is, items[0]), 8)
 	is.Equal(readItemContents(is, item1), "item one")
-	is.Equal(lastMod(is, items[0]), lastMod(is, item1))
+	is.NoErr(acceptableTime(is, items[0], item1))
 
 	is.OK(item2.ID())
 	is.OK(item2.Name())
@@ -96,7 +97,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[1].Name(), item2.Name())
 	is.Equal(size(is, items[1]), 8)
 	is.Equal(readItemContents(is, item2), "item two")
-	is.Equal(lastMod(is, items[1]), lastMod(is, item2))
+	is.NoErr(acceptableTime(is, items[1], item2))
 
 	is.OK(item3.ID())
 	is.OK(item3.Name())
@@ -104,7 +105,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[2].Name(), item3.Name())
 	is.Equal(size(is, items[2]), 10)
 	is.Equal(readItemContents(is, item3), "item three")
-	is.Equal(lastMod(is, items[2]), lastMod(is, item3))
+	is.NoErr(acceptableTime(is, items[2], item3))
 
 	// check MD5s
 	/*	is.Equal(len(md5(is, items[0])), 32)
@@ -229,6 +230,24 @@ func size(is is.I, item stow.Item) int64 {
 	size, err := item.Size()
 	is.NoErr(err)
 	return size
+}
+
+func acceptableTime(is is.I, item1, item2 stow.Item) error {
+	item1LastMod, err := item1.LastMod()
+	is.NoErr(err)
+
+	item2LastMod, err := item2.LastMod()
+	is.NoErr(err)
+
+	timeDiff := item2LastMod.Sub(item1LastMod)
+
+	threshold := time.Duration(2 * time.Second)
+
+	if timeDiff.Seconds() > threshold.Seconds() {
+		return fmt.Errorf("last modified time exceeds threshold (%v)", threshold.Seconds())
+	}
+
+	return nil
 }
 
 func lastMod(is is.I, item stow.Item) time.Time {
