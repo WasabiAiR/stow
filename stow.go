@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"sync"
+	"time"
 )
 
 var (
@@ -115,6 +116,8 @@ type Item interface {
 	ETag() (string, error)
 	// MD5 gets a hash of the contents of the file.
 	MD5() (string, error)
+	// LastMode returns the last modified date of the file.
+	LastMod() (time.Time, error)
 }
 
 // Config represents key/value configuraiton.

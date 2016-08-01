@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"net/url"
+	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
@@ -54,4 +55,8 @@ func (i *item) MD5() (string, error) {
 	}
 	str := hex.EncodeToString(decoded)
 	return str, nil
+}
+
+func (i *item) LastMod() (time.Time, error) {
+	return time.Parse(timeFormat, i.properties.LastModified)
 }

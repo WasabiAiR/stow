@@ -33,30 +33,7 @@ func (c *container) Name() string {
 // Item returns a stow.Item instance of a container based on the
 // name of the container and the key representing
 func (c *container) Item(id string) (stow.Item, error) {
-	params := &s3.GetObjectInput{
-		Bucket: aws.String(c.Name()),
-		Key:    aws.String(id),
-	}
-
-	response, err := c.client.GetObject(params)
-	if err != nil {
-		return nil, stow.ErrNotFound
-	}
-
-	i := &item{
-		container: c,
-		client:    c.client,
-		properties: &s3.Object{
-			ETag:         response.ETag,
-			Key:          &id,
-			LastModified: response.LastModified,
-			Owner:        nil, // Weird that it's not returned in the response.
-			Size:         response.ContentLength,
-			StorageClass: response.StorageClass,
-		},
-	}
-
-	return i, nil
+	return c.getItem(id)
 }
 
 // Items sends a request to retrieve a list of items that are prepended with
@@ -128,6 +105,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		Key:           aws.String(name),   // Required
 		ContentLength: aws.Int64(size),
 		Body:          bytes.NewReader(content),
+		// Metadata map[string]*string,
 	}
 
 	// Only Etag returned.
@@ -161,4 +139,38 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 // of the container.
 func (c *container) Region() string {
 	return c.region
+}
+
+// A request to retrieve a single item includes information that is more specific than
+// a PUT. Instead of doing a request within the PUT, make this method available so that the
+// request can be made by the field retrieval methods when necessary. This is the case for
+// fields that are left out, such as the object's last modified date. This also needs to be
+// done only once since the requested information is retained.
+// May be simpler to just stick it in PUT and and do a request every time, please vouch
+// for this if so.
+func (c *container) getItem(id string) (*item, error) {
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(c.Name()),
+		Key:    aws.String(id),
+	}
+
+	response, err := c.client.GetObject(params)
+	if err != nil {
+		return nil, stow.ErrNotFound
+	}
+
+	i := &item{
+		container: c,
+		client:    c.client,
+		properties: &s3.Object{
+			ETag:         response.ETag,
+			Key:          &id,
+			LastModified: response.LastModified,
+			Owner:        nil, // Weird that it's not returned in the response.
+			Size:         response.ContentLength,
+			StorageClass: response.StorageClass,
+		},
+	}
+
+	return i, nil
 }

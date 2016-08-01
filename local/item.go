@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type item struct {
@@ -79,4 +80,13 @@ func (i *item) MD5() (string, error) {
 // Open opens the file for reading.
 func (i *item) Open() (io.ReadCloser, error) {
 	return os.Open(i.path)
+}
+
+func (i *item) LastMod() (time.Time, error) {
+	info, err := i.getInfo()
+	if err != nil {
+		return time.Time{}, nil
+	}
+
+	return info.ModTime(), nil
 }
