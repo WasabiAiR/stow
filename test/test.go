@@ -241,7 +241,7 @@ func acceptableTime(is is.I, item1, item2 stow.Item) error {
 
 	timeDiff := item2LastMod.Sub(item1LastMod)
 
-	threshold := time.Duration(2 * time.Second)
+	threshold := time.Duration(1 * time.Second)
 
 	if timeDiff.Seconds() > threshold.Seconds() {
 		return fmt.Errorf("last modified time exceeds threshold (%v)", threshold.Seconds())
