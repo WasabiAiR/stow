@@ -83,8 +83,8 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 
 		// Add buckets with 'US Standard' region. The containerRegion, a pointer, will return nil.
 		// Also add buckets that have the same region as the client, otherwise continue on.
-
-		if *containerRegion != clientRegion {
+		// The second condition ensures that the bucket contains the given prefix.
+		if *containerRegion != clientRegion || !strings.HasPrefix(*bucket.Name, prefix) {
 			continue
 		}
 
