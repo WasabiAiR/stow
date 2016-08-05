@@ -108,9 +108,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(acceptableTime(is, items[2], item3))
 
 	// check MD5s
-	/*	is.Equal(len(md5(is, items[0])), 32)
-		is.Equal(len(md5(is, items[1])), 32)
-		is.Equal(len(md5(is, items[2])), 32)*/
+	is.Equal(len(md5(is, items[0])), 32)
+	is.Equal(len(md5(is, items[1])), 32)
+	is.Equal(len(md5(is, items[2])), 32)
 
 	// check ETags
 	is.OK(etag(is, items[0]))
