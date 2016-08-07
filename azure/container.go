@@ -45,7 +45,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 	}
 
 	// Etags returned from this method include quotes. Strip them.
-	etag := strings.Trim(item.properties.Etag, "\"")
+	etag := cleanEtag(item.properties.Etag)
 
 	// Assign the corrected string value to the field.
 	item.properties.Etag = etag
@@ -67,6 +67,9 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	}
 	items := make([]stow.Item, len(listblobs.Blobs))
 	for i, blob := range listblobs.Blobs {
+		// Clean Etag just in case.
+		blob.Properties.Etag = cleanEtag(blob.Properties.Etag)
+
 		items[i] = &item{
 			id:         blob.Name,
 			container:  c,
@@ -98,4 +101,11 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 
 func (c *container) RemoveItem(id string) error {
 	return c.client.DeleteBlob(c.id, id, nil)
+}
+
+func cleanEtag(etag string) string {
+	etag = strings.Trim(etag, `"`)
+	etag = strings.Replace(etag, `W/`, "", 1)
+
+	return etag
 }
