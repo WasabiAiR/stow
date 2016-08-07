@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"strings"
 	"testing"
@@ -241,9 +242,13 @@ func acceptableTime(is is.I, item1, item2 stow.Item) error {
 
 	timeDiff := item2LastMod.Sub(item1LastMod)
 
-	threshold := time.Duration(1 * time.Second)
+	threshold := time.Duration(3 * time.Second)
 
 	if timeDiff.Seconds() > threshold.Seconds() {
+		log.Printf("LastModified time for item1: %s", item1LastMod.String())
+		log.Printf("LastModified time for item2: %s", item2LastMod.String())
+		log.Printf("Difference: %s", timeDiff.String())
+
 		return fmt.Errorf("last modified time exceeds threshold (%v)", threshold.Seconds())
 	}
 
