@@ -72,13 +72,15 @@ func All(t *testing.T, kind string, config stow.Config) {
 		is.NoErr(err)
 	}()
 
-	// get the items with a prefix (should only get 2)
-	items, _, err := c1.Items("a_", stow.CursorStart)
-	is.NoErr(err)
-	is.Equal(len(items), 2)
+	if kind != "b2" {
+		// get the items with a prefix (should only get 2)
+		items, _, err := c1.Items("a_", stow.CursorStart)
+		is.NoErr(err)
+		is.Equal(len(items), 2)
+	}
 
 	// make sure we get these three items from the container
-	items, _, err = c1.Items("", stow.CursorStart)
+	items, _, err := c1.Items("", stow.CursorStart)
 	is.NoErr(err)
 	is.Equal(len(items), 3)
 
@@ -107,10 +109,16 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, item3), "item three")
 	is.NoErr(acceptableTime(is, items[2], item3))
 
-	// check MD5s
-	is.Equal(len(md5(is, items[0])), 32)
-	is.Equal(len(md5(is, items[1])), 32)
-	is.Equal(len(md5(is, items[2])), 32)
+	if kind != "b2" {
+		// check MD5s
+		is.Equal(len(md5(is, items[0])), 32)
+		is.Equal(len(md5(is, items[1])), 32)
+		is.Equal(len(md5(is, items[2])), 32)
+	} else {
+		is.Equal(len(md5(is, items[0])), 40)
+		is.Equal(len(md5(is, items[1])), 40)
+		is.Equal(len(md5(is, items[2])), 40)
+	}
 
 	// check ETags
 	is.OK(etag(is, items[0]))
@@ -166,19 +174,21 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, walkedItems[1]), "item two")
 	is.Equal(readItemContents(is, walkedItems[2]), "item three")
 
-	// test walking with a prefix
-	walkedItems = make([]stow.Item, 0)
-	err = stow.Walk(c1, "a_", func(item stow.Item, err error) error {
-		if err != nil {
-			return err
-		}
-		walkedItems = append(walkedItems, item)
-		return nil
-	})
-	is.NoErr(err)
-	is.Equal(len(walkedItems), 2)
-	is.Equal(readItemContents(is, walkedItems[0]), "item one")
-	is.Equal(readItemContents(is, walkedItems[1]), "item two")
+	if kind != "b2" {
+		// test walking with a prefix
+		walkedItems = make([]stow.Item, 0)
+		err = stow.Walk(c1, "a_", func(item stow.Item, err error) error {
+			if err != nil {
+				return err
+			}
+			walkedItems = append(walkedItems, item)
+			return nil
+		})
+		is.NoErr(err)
+		is.Equal(len(walkedItems), 2)
+		is.Equal(readItemContents(is, walkedItems[0]), "item one")
+		is.Equal(readItemContents(is, walkedItems[1]), "item two")
+	}
 
 	// test walking error
 	testErr := errors.New("test error")
