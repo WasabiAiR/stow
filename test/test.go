@@ -63,6 +63,11 @@ func All(t *testing.T, kind string, config stow.Config) {
 	item3 := putItem(is, c1, "the_third/the item", "item three")
 	is.OK(item1, item2, item3)
 
+	// check etags retrieved from the Put method.
+	is.OK(etag(is, item1))
+	is.OK(etag(is, item2))
+	is.OK(etag(is, item3))
+
 	defer func() {
 		err := c1.RemoveItem(item1.ID())
 		is.NoErr(err)
@@ -110,11 +115,16 @@ func All(t *testing.T, kind string, config stow.Config) {
 	// check MD5s
 	if kind != "s3" {
 		is.Equal(len(md5(is, items[0])), 32)
+		is.NoErr()
+
 		is.Equal(len(md5(is, items[1])), 32)
+		is.NoErr()
+
 		is.Equal(len(md5(is, items[2])), 32)
+		is.NoErr()
 	}
 
-	// check ETags
+	// check ETags from items retrieved by the Items() method
 	is.OK(etag(is, items[0]))
 	is.OK(etag(is, items[1]))
 	is.OK(etag(is, items[2]))
@@ -138,6 +148,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(item1copy.Name(), item1.Name())
 	is.Equal(size(is, item1copy), size(is, item1))
 	is.Equal(readItemContents(is, item1copy), "item one")
+	is.OK(etag(is, item1copy))
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -225,6 +236,12 @@ func md5(is is.I, item stow.Item) string {
 func etag(is is.I, item stow.Item) string {
 	etag, err := item.ETag()
 	is.NoErr(err)
+
+	if strings.HasPrefix(etag, `W/`) {
+		is.Failf(`Item(%s) Etag value (%s) contains weak string prefix W/`, item.Name(), etag)
+	} else if strings.HasPrefix(etag, `"`) || strings.HasSuffix(etag, `"`) {
+		is.Failf("Item(%s) Etag value (%s) contains quotation mark in prefix or suffix", item.Name(), etag)
+	}
 	return etag
 }
 
