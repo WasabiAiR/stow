@@ -246,7 +246,7 @@ func acceptableTime(is is.I, item1, item2 stow.Item) error {
 
 	threshold := time.Duration(3 * time.Second)
 
-	if timeDiff.Seconds() > threshold.Seconds() {
+	if timeDiff > threshold {
 		log.Printf("LastModified time for item1: %s", item1LastMod.String())
 		log.Printf("LastModified time for item2: %s", item2LastMod.String())
 		log.Printf("Difference: %s", timeDiff.String())
