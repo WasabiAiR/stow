@@ -60,8 +60,7 @@ func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, er
 	for i, object := range response.Contents {
 
 		// Copy etag value and remove the strings.
-		etag := *object.ETag
-		etag = strings.Trim(etag, "\"")
+		etag := cleanEtag(*object.ETag)
 
 		// Assign the value to the object field representing the item.
 		object.ETag = &etag
@@ -123,6 +122,8 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		return nil, err
 	}
 
+	etag := cleanEtag(*response.ETag)
+
 	// Some fields are empty because this information isn't included in the response.
 	// May have to involve sending a request if we want more specific information.
 	// Keeping it simple for now.
@@ -132,7 +133,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		container: c,
 		client:    c.client,
 		properties: &s3.Object{
-			ETag: response.ETag,
+			ETag: &etag,
 			Key:  &name,
 			Size: &size,
 			//LastModified *time.Time
@@ -169,7 +170,7 @@ func (c *container) getItem(id string) (*item, error) {
 	}
 
 	// etag string value contains quotations. Remove them.
-	etag := strings.Trim(*response.ETag, "\"")
+	etag := cleanEtag(*response.ETag)
 
 	i := &item{
 		container: c,
@@ -185,4 +186,12 @@ func (c *container) getItem(id string) (*item, error) {
 	}
 
 	return i, nil
+}
+
+// Remove quotation marks from beginning and end. Also removes leading `W/` from prefix for weak Etags.
+func cleanEtag(etag string) string {
+	etag = strings.Trim(etag, `"`)
+	etag = strings.Replace(etag, `W/`, "", 1)
+
+	return etag
 }
