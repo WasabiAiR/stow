@@ -43,6 +43,13 @@ func (c *container) Item(id string) (stow.Item, error) {
 		client:     c.client,
 		properties: *blobProperties,
 	}
+
+	// Etags returned from this method include quotes. Strip them.
+	etag := item.properties.Etag
+
+	// Removes first and last quotations.
+	item.properties.Etag = etag[1 : len(etag)-1]
+
 	return item, nil
 }
 
