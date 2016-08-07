@@ -63,11 +63,6 @@ func All(t *testing.T, kind string, config stow.Config) {
 	item3 := putItem(is, c1, "the_third/the item", "item three")
 	is.OK(item1, item2, item3)
 
-	// check etags retrieved from the Put method.
-	is.OK(etag(is, item1))
-	is.OK(etag(is, item2))
-	is.OK(etag(is, item3))
-
 	defer func() {
 		err := c1.RemoveItem(item1.ID())
 		is.NoErr(err)
@@ -260,7 +255,7 @@ func acceptableTime(t *testing.T, is is.I, item1, item2 stow.Item) error {
 
 	timeDiff := item2LastMod.Sub(item1LastMod)
 
-	threshold := time.Duration(3 * time.Second)
+	threshold := time.Duration(8 * time.Second)
 
 	if timeDiff > threshold {
 		t.Logf("LastModified time for item1: %s", item1LastMod.String())
