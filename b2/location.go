@@ -38,10 +38,12 @@ func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, 
 		return nil, "", err
 	}
 
-	containers := make([]stow.Container, len(response))
-	for i, cont := range response {
-		containers[i] = &container{
-			bucket: cont,
+	containers := make([]stow.Container, 0, len(response))
+	for _, cont := range response {
+		if prefix == "" || (prefix != "" && strings.HasPrefix(cont.Name, prefix)) {
+			containers = append(containers, &container{
+				bucket: cont,
+			})
 		}
 	}
 
