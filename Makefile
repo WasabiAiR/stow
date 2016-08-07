@@ -18,6 +18,7 @@ deps:
 	go get github.com/aws/aws-sdk-go
 	go get github.com/ncw/swift
 	go get github.com/cheekybits/is
+	go get gopkg.in/kothar/go-backblaze.v0
 
 test: clean deps vet
 	go test -v ./... | tee tests.out
