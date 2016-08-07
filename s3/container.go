@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -57,6 +58,14 @@ func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, er
 	containerItems := make([]stow.Item, len(response.Contents))
 
 	for i, object := range response.Contents {
+
+		// Copy etag value and remove the strings.
+		etag := *object.ETag
+		etag = strings.Trim(etag, "\"")
+
+		// Assign the value to the object field representing the item.
+		object.ETag = &etag
+
 		containerItems[i] = &item{
 			container:  c,
 			client:     c.client,
@@ -159,11 +168,14 @@ func (c *container) getItem(id string) (*item, error) {
 		return nil, stow.ErrNotFound
 	}
 
+	// etag string value contains quotations. Remove them.
+	etag := strings.Trim(*response.ETag, "\"")
+
 	i := &item{
 		container: c,
 		client:    c.client,
 		properties: &s3.Object{
-			ETag:         response.ETag,
+			ETag:         &etag,
 			Key:          &id,
 			LastModified: response.LastModified,
 			Owner:        nil, // Weird that it's not returned in the response.
