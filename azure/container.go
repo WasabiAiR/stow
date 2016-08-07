@@ -45,10 +45,10 @@ func (c *container) Item(id string) (stow.Item, error) {
 	}
 
 	// Etags returned from this method include quotes. Strip them.
-	etag := item.properties.Etag
+	etag := strings.Trim(item.properties.Etag, "\"")
 
-	// Removes first and last quotations.
-	item.properties.Etag = etag[1 : len(etag)-1]
+	// Assign the corrected string value to the field.
+	item.properties.Etag = etag
 
 	return item, nil
 }
