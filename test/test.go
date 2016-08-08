@@ -110,13 +110,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 	// check MD5s
 	if kind != "s3" {
 		is.Equal(len(md5(is, items[0])), 32)
-		is.NoErr()
-
 		is.Equal(len(md5(is, items[1])), 32)
-		is.NoErr()
-
 		is.Equal(len(md5(is, items[2])), 32)
-		is.NoErr()
 	}
 
 	// check ETags from items retrieved by the Items() method
