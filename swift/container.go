@@ -45,7 +45,6 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	items := make([]stow.Item, len(objects))
 
 	for i, obj := range objects {
-		obj.Hash = cleanEtag(obj.Hash)
 
 		items[i] = &item{
 			id:           obj.Name,
@@ -95,22 +94,13 @@ func (c *container) getItem(id string) (*item, error) {
 		return nil, err
 	}
 
-	etag := cleanEtag(info.Hash)
-
 	item := &item{
 		id:           id,
 		container:    c,
 		client:       c.client,
-		hash:         etag,
+		hash:         info.Hash,
 		size:         info.Bytes,
 		lastModified: info.LastModified,
 	}
 	return item, nil
-}
-
-func cleanEtag(etag string) string {
-	etag = strings.Trim(etag, `"`)
-	etag = strings.Replace(etag, `W/`, "", 1)
-
-	return etag
 }
