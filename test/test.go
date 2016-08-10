@@ -89,7 +89,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[0].Name(), item1.Name())
 	is.Equal(size(is, items[0]), 8)
 	is.Equal(readItemContents(is, item1), "item one")
-	is.NoErr(acceptableTime(is, items[0], item1))
+	is.NoErr(acceptableTime(t, is, items[0], item1))
 
 	is.OK(item2.ID())
 	is.OK(item2.Name())
@@ -97,7 +97,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[1].Name(), item2.Name())
 	is.Equal(size(is, items[1]), 8)
 	is.Equal(readItemContents(is, item2), "item two")
-	is.NoErr(acceptableTime(is, items[1], item2))
+	is.NoErr(acceptableTime(t, is, items[1], item2))
 
 	is.OK(item3.ID())
 	is.OK(item3.Name())
@@ -105,17 +105,19 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(items[2].Name(), item3.Name())
 	is.Equal(size(is, items[2]), 10)
 	is.Equal(readItemContents(is, item3), "item three")
-	is.NoErr(acceptableTime(is, items[2], item3))
+	is.NoErr(acceptableTime(t, is, items[2], item3))
 
 	// check MD5s
-	is.Equal(len(md5(is, items[0])), 32)
-	is.Equal(len(md5(is, items[1])), 32)
-	is.Equal(len(md5(is, items[2])), 32)
+	if kind != "s3" {
+		is.Equal(len(md5(is, items[0])), 32)
+		is.Equal(len(md5(is, items[1])), 32)
+		is.Equal(len(md5(is, items[2])), 32)
+	}
 
-	// check ETags
-	is.OK(etag(is, items[0]))
-	is.OK(etag(is, items[1]))
-	is.OK(etag(is, items[2]))
+	// check ETags from items retrieved by the Items() method
+	is.OK(etag(t, is, items[0]))
+	is.OK(etag(t, is, items[1]))
+	is.OK(etag(t, is, items[2]))
 
 	// get container by ID
 	c1copy, err := location.Container(c1.ID())
@@ -136,6 +138,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(item1copy.Name(), item1.Name())
 	is.Equal(size(is, item1copy), size(is, item1))
 	is.Equal(readItemContents(is, item1copy), "item one")
+	is.OK(etag(t, is, item1copy))
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -149,7 +152,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1b)
 	is.Equal(item1b.ID(), item1.ID())
-	is.Equal(etag(is, item1b), etag(is, item1copy))
+	is.Equal(etag(t, is, item1b), etag(t, is, item1copy))
 
 	// test walking
 	var walkedItems []stow.Item
@@ -220,9 +223,17 @@ func md5(is is.I, item stow.Item) string {
 	return md5
 }
 
-func etag(is is.I, item stow.Item) string {
+func etag(t *testing.T, is is.I, item stow.Item) string {
 	etag, err := item.ETag()
 	is.NoErr(err)
+
+	t.Logf("ETag value: %s", etag)
+
+	if strings.HasPrefix(etag, `W/`) {
+		is.Failf(`Item(%s) Etag value (%s) contains weak string prefix W/`, item.Name(), etag)
+	} else if strings.HasPrefix(etag, `"`) || strings.HasSuffix(etag, `"`) {
+		is.Failf("Item(%s) Etag value (%s) contains quotation mark in prefix or suffix", item.Name(), etag)
+	}
 	return etag
 }
 
@@ -232,7 +243,7 @@ func size(is is.I, item stow.Item) int64 {
 	return size
 }
 
-func acceptableTime(is is.I, item1, item2 stow.Item) error {
+func acceptableTime(t *testing.T, is is.I, item1, item2 stow.Item) error {
 	item1LastMod, err := item1.LastMod()
 	is.NoErr(err)
 
@@ -241,9 +252,13 @@ func acceptableTime(is is.I, item1, item2 stow.Item) error {
 
 	timeDiff := item2LastMod.Sub(item1LastMod)
 
-	threshold := time.Duration(1 * time.Second)
+	threshold := time.Duration(8 * time.Second)
 
-	if timeDiff.Seconds() > threshold.Seconds() {
+	if timeDiff > threshold {
+		t.Logf("LastModified time for item1: %s", item1LastMod.String())
+		t.Logf("LastModified time for item2: %s", item2LastMod.String())
+		t.Logf("Difference: %s", timeDiff.String())
+
 		return fmt.Errorf("last modified time exceeds threshold (%v)", threshold.Seconds())
 	}
 
