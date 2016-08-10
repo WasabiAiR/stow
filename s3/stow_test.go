@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/graymeta/stow"
@@ -15,4 +16,33 @@ func TestStow(t *testing.T) {
 	}
 
 	test.All(t, "s3", config)
+}
+
+func TestEtagCleanup(t *testing.T) {
+	etagValue := "9c51403a2255f766891a1382288dece4"
+
+	t.Log("Testing Etag Cleanup...")
+
+	permutations := []string{
+		`"%s"`,       // Enclosing quotations
+		`W/\"%s\"`,   // Weak tag identifier with escapted quotes
+		`W/"%s"`,     // Weak tag identifier with quotes
+		`"\"%s"\"`,   // Double quotes, inner escaped
+		`""%s""`,     // Double quotes,
+		`"W/"%s""`,   // Double quotes with weak identifier
+		`"W/\"%s\""`, // Double quotes with weak identifier, inner escaped
+	}
+
+	for index, p := range permutations {
+		testStr := fmt.Sprintf(p, etagValue)
+
+		t.Logf(`Etag: %s`, testStr)
+
+		cleanTestStr := cleanEtag(testStr)
+
+		if etagValue != cleanTestStr {
+			t.Errorf(`Failure at permutation #%d (%s), result: %s`,
+				index, permutations[index], cleanTestStr)
+		}
+	}
 }
