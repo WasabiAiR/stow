@@ -28,22 +28,17 @@ func (c *container) Item(id string) (stow.Item, error) {
 }
 
 func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
-
 	numitems := 10
-
 	params := &swift.ObjectsOpts{
 		Limit:  numitems,
 		Marker: cursor,
 		Prefix: prefix,
 	}
-
 	objects, err := c.client.Objects(c.id, params)
 	if err != nil {
 		return nil, "", err
 	}
-
 	items := make([]stow.Item, len(objects))
-
 	for i, obj := range objects {
 
 		items[i] = &item{
@@ -55,13 +50,10 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 			lastModified: obj.LastModified,
 		}
 	}
-
 	marker := ""
-
 	if len(objects) == numitems {
 		marker = objects[len(objects)-1].Name
 	}
-
 	return items, marker, nil
 }
 
@@ -70,14 +62,12 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	if err != nil {
 		return nil, err
 	}
-
 	item := &item{
 		id:        name,
 		container: c,
 		client:    c.client,
 		size:      size,
 	}
-
 	return item, nil
 }
 
@@ -93,7 +83,6 @@ func (c *container) getItem(id string) (*item, error) {
 		}
 		return nil, err
 	}
-
 	item := &item{
 		id:           id,
 		container:    c,

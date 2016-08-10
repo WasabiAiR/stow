@@ -15,6 +15,5 @@ func TestStow(t *testing.T) {
 		"tenant_auth_url": "https://lax-01.identity.sohonet.com/v2.0/",
 		//"tenant_id":       "b04239c7467548678b4822e9dad96030",
 	}
-
 	test.All(t, "swift", cfg)
 }

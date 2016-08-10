@@ -32,16 +32,13 @@ func (i *item) Name() string {
 }
 
 func (i *item) URL() *url.URL {
-
 	// StorageUrl looks like this:
 	// https://lax-proxy-03.storagesvc.sohonet.com/v1/AUTH_b04239c7467548678b4822e9dad96030
 	// We want something like this:
 	// swift://lax-proxy-03.storagesvc.sohonet.com/v1/AUTH_b04239c7467548678b4822e9dad96030/<container_name>/<path_to_object>
-
 	url, _ := url.Parse(i.client.StorageUrl)
 	url.Scheme = Kind
 	url.Path = path.Join(url.Path, i.container.id, i.id)
-
 	return url
 }
 
@@ -72,7 +69,6 @@ func (i *item) LastMod() (time.Time, error) {
 		if err != nil {
 			return time.Time{}, err
 		}
-
 		// Save the missing information so that a request won't need to be
 		// sent again.
 		i.lastModified = itemInfo.lastModified
