@@ -106,11 +106,6 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, item3), "item three")
 	is.NoErr(acceptableTime(t, is, items[2], item3))
 
-	// check ETags
-	is.OK(etag(is, items[0]))
-	is.OK(etag(is, items[1]))
-	is.OK(etag(is, items[2]))
-
 	// check ETags from items retrieved by the Items() method
 	is.OK(etag(t, is, items[0]))
 	is.OK(etag(t, is, items[1]))
@@ -214,17 +209,8 @@ func readItemContents(is is.I, item stow.Item) string {
 	return string(b)
 }
 
-<<<<<<< HEAD
-func etag(is is.I, item stow.Item) string {
-=======
-func md5(is is.I, item stow.Item) string {
-	md5, err := item.MD5()
-	is.NoErr(err)
-	return md5
-}
-
 func etag(t *testing.T, is is.I, item stow.Item) string {
->>>>>>> master
+
 	etag, err := item.ETag()
 	is.NoErr(err)
 
