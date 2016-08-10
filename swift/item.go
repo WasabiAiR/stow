@@ -1,9 +1,9 @@
 package swift
 
 import (
-	"fmt"
 	"io"
 	"net/url"
+	"path"
 	"time"
 
 	"github.com/graymeta/stow"
@@ -40,7 +40,7 @@ func (i *item) URL() *url.URL {
 
 	url, _ := url.Parse(i.client.StorageUrl)
 	url.Scheme = Kind
-	url.Path = fmt.Sprintf("%s/%s/%s", url.Path, i.container.id, i.id)
+	url.Path = path.Join(url.Path, i.container.id, i.id)
 
 	return url
 }
