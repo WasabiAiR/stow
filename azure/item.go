@@ -1,8 +1,6 @@
 package azure
 
 import (
-	"encoding/base64"
-	"encoding/hex"
 	"io"
 	"net/url"
 	"time"
@@ -46,15 +44,6 @@ func (i *item) Open() (io.ReadCloser, error) {
 
 func (i *item) ETag() (string, error) {
 	return i.properties.Etag, nil
-}
-
-func (i *item) MD5() (string, error) {
-	decoded, err := base64.StdEncoding.DecodeString(i.properties.ContentMD5)
-	if err != nil {
-		return "", err
-	}
-	str := hex.EncodeToString(decoded)
-	return str, nil
 }
 
 func (i *item) LastMod() (time.Time, error) {
