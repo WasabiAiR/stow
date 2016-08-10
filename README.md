@@ -46,23 +46,52 @@ location2 (e.g. local storage)
 
 ## Guides
 
+### Walking all items
+
+```go
+kind := "s3"
+config := stow.ConfigMap{
+	"account-name": "stow"
+	"api-key":      "abc123",
+}
+location, err := stow.Dial(kind, config)
+if err != nil {
+	return err
+}
+defer location.Close()
+containers, _, err := location.Containers("", stow.CursorStart)
+if err != nil {
+	return err
+}
+err = stow.Walk(containers[0], "", func(item stow.Item, err error) error {
+	if err != nil {
+		return err
+	}
+	log.Println(item.Name())
+	return nil
+})
+if err != nil {
+	return err
+}
+```
+
 ### Getting an `Item` by URL
 
 If you have a stow URL, you can use it to lookup the kind of location:
 
-```
+```go
 kind, err := stow.KindByURL(url)
 ```
 
 `kind` will be a string describing the kind of storage. You can then pass `kind` along with a `Config` to `stow.New` to create a new `Location` where the item for the URL is:
 
-```
-location, err := stow.New(kind, config)
+```go
+location, err := stow.Dial(kind, config)
 ```
 
 You can then get the `Item` for the specified URL from the location:
 
-```
+```go
 item, err := location.ItemByURL(url)
 ```
 
