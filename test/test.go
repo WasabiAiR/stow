@@ -115,9 +115,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}
 
 	// check ETags from items retrieved by the Items() method
-	is.OK(etag(is, items[0]))
-	is.OK(etag(is, items[1]))
-	is.OK(etag(is, items[2]))
+	is.OK(etag(t, is, items[0]))
+	is.OK(etag(t, is, items[1]))
+	is.OK(etag(t, is, items[2]))
 
 	// get container by ID
 	c1copy, err := location.Container(c1.ID())
@@ -138,7 +138,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(item1copy.Name(), item1.Name())
 	is.Equal(size(is, item1copy), size(is, item1))
 	is.Equal(readItemContents(is, item1copy), "item one")
-	is.OK(etag(is, item1copy))
+	is.OK(etag(t, is, item1copy))
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -152,7 +152,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NoErr(err)
 	is.OK(item1b)
 	is.Equal(item1b.ID(), item1.ID())
-	is.Equal(etag(is, item1b), etag(is, item1copy))
+	is.Equal(etag(t, is, item1b), etag(t, is, item1copy))
 
 	// test walking
 	var walkedItems []stow.Item
@@ -223,9 +223,11 @@ func md5(is is.I, item stow.Item) string {
 	return md5
 }
 
-func etag(is is.I, item stow.Item) string {
+func etag(t *testing.T, is is.I, item stow.Item) string {
 	etag, err := item.ETag()
 	is.NoErr(err)
+
+	t.Logf("ETag value: %s", etag)
 
 	if strings.HasPrefix(etag, `W/`) {
 		is.Failf(`Item(%s) Etag value (%s) contains weak string prefix W/`, item.Name(), etag)
