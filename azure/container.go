@@ -2,9 +2,8 @@ package azure
 
 import (
 	"io"
-	"time"
-
 	"strings"
+	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
-
 	"time"
 
 	"github.com/cheekybits/is"
