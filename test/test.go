@@ -92,13 +92,6 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, item3), "item three")
 	is.NoErr(acceptableTime(t, is, items[2], item3))
 
-	// check MD5s
-	if kind != "s3" {
-		is.Equal(len(md5(is, items[0])), 32)
-		is.Equal(len(md5(is, items[1])), 32)
-		is.Equal(len(md5(is, items[2])), 32)
-	}
-
 	// check ETags from items retrieved by the Items() method
 	is.OK(etag(t, is, items[0]))
 	is.OK(etag(t, is, items[1]))
@@ -202,13 +195,8 @@ func readItemContents(is is.I, item stow.Item) string {
 	return string(b)
 }
 
-func md5(is is.I, item stow.Item) string {
-	md5, err := item.MD5()
-	is.NoErr(err)
-	return md5
-}
-
 func etag(t *testing.T, is is.I, item stow.Item) string {
+
 	etag, err := item.ETag()
 	is.NoErr(err)
 

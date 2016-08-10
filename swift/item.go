@@ -58,10 +58,6 @@ func (i *item) ETag() (string, error) {
 	return i.hash, nil
 }
 
-func (i *item) MD5() (string, error) {
-	return i.hash, nil
-}
-
 func (i *item) LastMod() (time.Time, error) {
 	// If an object is PUT, certain information is missing. Detect
 	// if the lastModified field is missing, send a request to retrieve
