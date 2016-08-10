@@ -45,6 +45,7 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	items := make([]stow.Item, len(objects))
 
 	for i, obj := range objects {
+
 		items[i] = &item{
 			id:           obj.Name,
 			container:    c,
@@ -92,6 +93,7 @@ func (c *container) getItem(id string) (*item, error) {
 		}
 		return nil, err
 	}
+
 	item := &item{
 		id:           id,
 		container:    c,
