@@ -97,10 +97,3 @@ func (i *item) LastMod() (time.Time, error) {
 func (i *item) ETag() (string, error) {
 	return *(i.properties.ETag), nil
 }
-
-// MD5 doesn't seem to be implemented in S3. There is no metadata field, and the
-// Etag field is not always guaranteed to be an MD5 hash. This seems to be true
-// for files uploaded in multiple parts.
-func (i *item) MD5() (string, error) {
-	return "", nil
-}

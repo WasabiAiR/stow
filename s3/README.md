@@ -16,8 +16,6 @@ Concerns:
 
 - More testing needs to be done for nested files and files with spaces.
 
-- AWS doesn't always use MD5 hashes for the ETag field. This means that running the generic test for stow will fail because there is a portion of code that calls the MD5 method and expects a 32 byte value.
-
 - An AWS account may have credentials which temporarily modifies permissions. This is specified by a token value. This feature is implemented but disabled and added as a TODO.
 
 ---

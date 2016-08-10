@@ -114,8 +114,6 @@ type Item interface {
 	// different, and the same when the item is the same.
 	// Usually this is the last modified datetime.
 	ETag() (string, error)
-	// MD5 gets a hash of the contents of the file.
-	MD5() (string, error)
 	// LastMod returns the last modified date of the file.
 	LastMod() (time.Time, error)
 }
