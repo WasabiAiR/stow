@@ -67,6 +67,7 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 	}
 	items := make([]stow.Item, len(listblobs.Blobs))
 	for i, blob := range listblobs.Blobs {
+
 		// Clean Etag just in case.
 		blob.Properties.Etag = cleanEtag(blob.Properties.Etag)
 
@@ -103,9 +104,40 @@ func (c *container) RemoveItem(id string) error {
 	return c.client.DeleteBlob(c.id, id, nil)
 }
 
+// Remove quotation marks from beginning and end. This includes quotations that
+// are escaped. Also removes leading `W/` from prefix for weak Etags.
+//
+// Based on the Etag spec, the full etag value (<FULL ETAG VALUE>) can include:
+// - W/"<ETAG VALUE>"
+// - "<ETAG VALUE>"
+// - ""
+// Source: https://tools.ietf.org/html/rfc7232#section-2.3
+//
+// Based on HTTP spec, forward slash is a separator and must be enclosed in
+// quotes to be used as a valid value. Hence, the returned value may include:
+// - "<FULL ETAG VALUE>"
+// - \"<FULL ETAG VALUE>\"
+// Source: https://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2
+//
+// This function contains a loop to check for the presence of the three possible
+// filler characters and strips them, resulting in only the Etag value.
 func cleanEtag(etag string) string {
-	etag = strings.Trim(etag, `"`)
-	etag = strings.Replace(etag, `W/`, "", 1)
+	for {
+		// Check if the filler characters are present
+		if strings.HasPrefix(etag, `\"`) {
+			etag = strings.Trim(etag, `\"`)
+
+		} else if strings.HasPrefix(etag, `"`) {
+			etag = strings.Trim(etag, `"`)
+
+		} else if strings.HasPrefix(etag, `W/`) {
+			etag = strings.Replace(etag, `W/`, "", 1)
+
+		} else {
+
+			break
+		}
+	}
 
 	return etag
 }
