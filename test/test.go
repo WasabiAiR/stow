@@ -13,20 +13,6 @@ import (
 	"github.com/graymeta/stow"
 )
 
-var letters = []rune("abcdefghijklmnopqrstuvwxyz")
-
-func init() {
-	rand.Seed(int64(time.Now().Nanosecond()))
-}
-
-func randName(length int) string {
-	b := make([]rune, length)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
 // All runs a generic suite of tests for Stow storage
 // implementations.
 // Passing the kind name and a configuration is enough,
@@ -268,4 +254,18 @@ func lastMod(is is.I, item stow.Item) time.Time {
 	lastMod, err := item.LastMod()
 	is.NoErr(err)
 	return lastMod
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+
+func init() {
+	rand.Seed(int64(time.Now().Nanosecond()))
+}
+
+func randName(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
