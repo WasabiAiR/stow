@@ -98,9 +98,6 @@ func TestCreateItem(t *testing.T) {
 
 	// get new item
 	item := items[len(items)-1]
-	md5, err := item.MD5()
-	is.NoErr(err)
-	is.Equal(md5, "1d4b28e33c8bfcfdb75e116ed2319632")
 	etag, err := item.ETag()
 	is.NoErr(err)
 	is.OK(etag)

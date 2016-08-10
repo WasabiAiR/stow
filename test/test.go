@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
-
 	"time"
 
 	"github.com/cheekybits/is"
@@ -106,11 +105,6 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, items[2]), 10)
 	is.Equal(readItemContents(is, item3), "item three")
 	is.NoErr(acceptableTime(is, items[2], item3))
-
-	// check MD5s
-	is.Equal(len(md5(is, items[0])), 32)
-	is.Equal(len(md5(is, items[1])), 32)
-	is.Equal(len(md5(is, items[2])), 32)
 
 	// check ETags
 	is.OK(etag(is, items[0]))
@@ -212,12 +206,6 @@ func readItemContents(is is.I, item stow.Item) string {
 	b, err := ioutil.ReadAll(r)
 	is.NoErr(err)
 	return string(b)
-}
-
-func md5(is is.I, item stow.Item) string {
-	md5, err := item.MD5()
-	is.NoErr(err)
-	return md5
 }
 
 func etag(is is.I, item stow.Item) string {
