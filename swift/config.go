@@ -58,7 +58,6 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 	key, _ := cfg.Config(ConfigKey)
 	tenantName, _ := cfg.Config(ConfigTenantName)
 	tenantAuthURL, _ := cfg.Config(ConfigTenantAuthURL)
-
 	client := swift.Connection{
 		UserName: username,
 		ApiKey:   key,
@@ -66,11 +65,9 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 		//Domain:   "domain", // Name of the domain (v3 auth only)
 		Tenant: tenantName, // Name of the tenant (v2 auth only)
 	}
-
 	err := client.Authenticate()
 	if err != nil {
 		return nil, errors.New("Unable to authenticate")
 	}
-
 	return &client, nil
 }
