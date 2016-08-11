@@ -3,16 +3,21 @@ package s3
 import (
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // A location contains a client + the configurations used to create the client.
 type location struct {
 	config stow.Config
 	client *s3.S3
+	id     string
+	idOnce sync.Once
 }
 
 // CreateContainer creates a new container, in this case an S3 bucket.
@@ -184,4 +189,49 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	}
 
 	return it, err
+}
+
+// ID returns a hashed value representing a location's configuration information.
+// The hash will be computed on the initial call.
+func (l *location) ID() string {
+	l.idOnce.Do(func() {
+		accessKey, _ := l.config.Config("access_key_id")
+		secretKey, _ := l.config.Config("secret_key")
+		region, _ := l.config.Config("region")
+
+		password := []byte(strings.Join([]string{accessKey, secretKey, region}, " "))
+
+		hashBytes, err := bcrypt.GenerateFromPassword(password, 14)
+		if err == nil {
+			l.id = string(hashBytes)
+		}
+	})
+
+	return l.id
+}
+
+// Equal accepts a location and compares the argument's location with its own information
+// to determine whether the two are duplicates. This approach compares the ID to the
+// original information.
+// Source: http://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts/6833165#6833165
+// ID returns a bcrypt hash which includes the salt and cipher text. Extract the ID From
+// the location being compared, and use the compare function of the bcrypt pkg to determine
+// whether the ID value represents the calling location's config information (password). Again, this
+// approach doesn't compare two IDs, but an ID and password (combo of a Location's fields).
+func (l *location) Equal(loc stow.Location) bool {
+	accessKey, _ := l.config.Config("access_key_id")
+	secretKey, _ := l.config.Config("secret_key")
+	region, _ := l.config.Config("region")
+
+	password := []byte(strings.Join([]string{accessKey, secretKey, region}, " "))
+
+	// Retrieve ID of location
+	ID := loc.ID()
+
+	err := bcrypt.CompareHashAndPassword([]byte(ID), password)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
