@@ -7,7 +7,7 @@ RUN yum -y install \
     wget \
     && yum clean all
 
-ENV goversion 1.6.3
+ENV goversion 1.7.0
 ENV gofile go${goversion}.linux-amd64.tar.gz
 ENV gourl https://storage.googleapis.com/golang/${gofile}
 
