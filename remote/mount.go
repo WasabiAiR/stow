@@ -19,12 +19,7 @@ func mount(source, target, fstype, options string) error {
 	if mounted {
 		return nil
 	}
-
 	timeout := 30 * time.Second
-	mountCmd, err := exec.LookPath("mount")
-	if err != nil {
-		return errors.New("mount not installed.")
-	}
 
 	info, err := os.Stat(target)
 	if err != nil {
@@ -39,7 +34,9 @@ func mount(source, target, fstype, options string) error {
 	}
 
 	doneCmd := make(chan struct{})
-	args := []string{}
+	// sudo mount -t ...
+	mountCmd := "sudo"
+	args := []string{"mount"}
 	if len(fstype) > 0 {
 		args = append(args, "-t", fstype)
 	}
@@ -76,7 +73,7 @@ func mount(source, target, fstype, options string) error {
 		if len(errBuf) > 0 {
 			errBufStr = ": " + string(errBuf)
 		}
-		err = fmt.Errorf("command 'mount %s' failed: %s%s", strings.Join(args, " "), err, errBufStr)
+		err = fmt.Errorf("command '%s %s' failed: %s%s", mountCmd, strings.Join(args, " "), err, errBufStr)
 		return err
 	}
 	return nil
@@ -88,7 +85,6 @@ func checkMount(target string) (bool, error) {
 	if err != nil {
 		return false, errors.New("mount not installed.")
 	}
-
 	doneCmd := make(chan struct{})
 	args := []string{}
 	cmd := exec.Command(mountCmd, args...)
@@ -135,48 +131,4 @@ func checkMount(target string) (bool, error) {
 		return false, err
 	}
 	return found, nil
-}
-
-func umount(target string) error {
-	timeout := 10 * time.Second
-	mountCmd, err := exec.LookPath("umount")
-	if err != nil {
-		return errors.New("umount not installed.")
-	}
-
-	doneCmd := make(chan struct{})
-	args := []string{target}
-	cmd := exec.Command(mountCmd, args...)
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return err
-	}
-	// killer after the timeout
-	go func() {
-		select {
-		case <-time.After(timeout):
-			cmd.Process.Kill()
-		case <-doneCmd:
-			return
-		}
-	}()
-
-	errBuf, _ := ioutil.ReadAll(stderr)
-	err = cmd.Wait()
-	close(doneCmd)
-	if err != nil {
-		errBufStr := ""
-		if len(errBuf) > 0 {
-			errBufStr = ": " + string(errBuf)
-		}
-		err = fmt.Errorf("command 'mount %s' failed: %s%s", strings.Join(args, " "), err, errBufStr)
-		return err
-	}
-	return nil
 }
