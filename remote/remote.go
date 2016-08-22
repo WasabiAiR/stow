@@ -37,10 +37,7 @@ func init() {
 			return nil, errors.New("missing type in config")
 		}
 
-		options, ok := config.Config(ConfigKeyOptions)
-		if !ok {
-			return nil, errors.New("missing options in config")
-		}
+		options, _ := config.Config(ConfigKeyOptions)
 
 		err := mount(source, target, fstype, options)
 		if err != nil {
