@@ -1,5 +1,5 @@
 # stow
-Blob storage abstraction.
+Storage abstraction package for Go.
 
 ## How it works
 
