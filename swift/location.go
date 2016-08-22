@@ -19,7 +19,7 @@ func (l *location) Close() error {
 }
 
 func (l *location) CreateContainer(name string) (stow.Container, error) {
-	err := l.client.ContainerCreate(name, swift.Headers{"Access-Control-Allow-Origin": "https://hub.sohonet.com"})
+	err := l.client.ContainerCreate(name, nil)
 	if err != nil {
 		return nil, err
 	}
