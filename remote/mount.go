@@ -29,7 +29,7 @@ func mount(source, target, fstype, options string) error {
 		}
 	} else {
 		if !info.IsDir() {
-			return errors.New("target should be a directory and is a file.")
+			return errors.New("target should be a directory and is a file")
 		}
 	}
 
@@ -83,7 +83,7 @@ func checkMount(target string) (bool, error) {
 	timeout := 10 * time.Second
 	mountCmd, err := exec.LookPath("mount")
 	if err != nil {
-		return false, errors.New("mount not installed.")
+		return false, errors.New("mount not installed")
 	}
 	doneCmd := make(chan struct{})
 	args := []string{}
