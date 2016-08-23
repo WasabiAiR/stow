@@ -11,7 +11,7 @@ func TestStow(t *testing.T) {
 	cfg := stow.ConfigMap{
 		"username":        "corey@graymeta.com",
 		"password":        "BHBmQ585mbctcfvD",
-		"identity_domain": "a422618",
+		"identity_domain": "storage-a422618",
 	}
 
 	test.All(t, "oracle", cfg)

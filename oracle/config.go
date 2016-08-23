@@ -72,10 +72,10 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 
 	// The username field is a combo of the user's email + resource type + identity domain
 	// storage-foobarbaz:santaclaus@northpole.com
-	swiftUsername := strings.Join([]string{"storage-", swiftTenantName, ":", cfgUsername}, "")
+	swiftUsername := strings.Join([]string{swiftTenantName, ":", cfgUsername}, "")
 
 	// The Package's auth URL includes a portion of the API endpoint.
-	swiftAuthURL := fmt.Sprintf(`https://storage-%s.storage.oraclecloud.com/auth/v1.0`,
+	swiftAuthURL := fmt.Sprintf(`https://%s.storage.oraclecloud.com/auth/v1.0`,
 		swiftTenantName)
 
 	client := swift.Connection{
