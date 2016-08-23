@@ -33,7 +33,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	// create two containers
 	c1 := createContainer(is, location, "stowtest"+randName(10))
 	c2 := createContainer(is, location, "stowtest"+randName(10))
-	_ = createContainer(is, location, "stowtest"+randName(10))
+	c3 := createContainer(is, location, "stowtest"+randName(10))
 	is.NotEqual(c1.ID(), c2.ID())
 
 	defer func() {
@@ -174,16 +174,24 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(testErr, err)
 
 	// container walking
-	var walkedContainers []stow.Container
+	found := 0
 	err = stow.WalkContainers(location, "", func(c stow.Container, err error) error {
 		if err != nil {
 			return err
 		}
-		walkedContainers = append(walkedContainers, c)
+		if c.Name() == c1.Name() {
+			found++
+		}
+		if c.Name() == c2.Name() {
+			found++
+		}
+		if c.Name() == c3.Name() {
+			found++
+		}
 		return nil
 	})
 	is.NoErr(err)
-	is.Equal(len(walkedContainers), 3)
+	is.Equal(found, 3) // should find three items
 
 }
 
