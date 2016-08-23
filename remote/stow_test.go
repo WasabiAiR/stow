@@ -13,7 +13,7 @@ import (
 )
 
 func TestStow(t *testing.T) {
-	os.Setenv("mountpath", "/tmp/test")
+	os.Setenv("stow_mountpath", "/tmp/test")
 	config := stow.ConfigMap{
 		"source":  "192.168.50.1:/tmp",
 		"type":    "nfs",

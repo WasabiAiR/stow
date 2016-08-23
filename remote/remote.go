@@ -55,7 +55,7 @@ func init() {
 }
 
 func calculateTargetMountPoint(source string) string {
-	const mountpath = "mountpath"
+	const mountpath = "stow_mountpath"
 	basepath := os.Getenv(mountpath)
 	if len(basepath) == 0 {
 		basepath = "/lib/graymeta/mounts"
