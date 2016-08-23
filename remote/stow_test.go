@@ -5,6 +5,7 @@ package remote
 // Needs a NFS filesytem to run the test
 // works on vagrant setup
 import (
+	"os"
 	"testing"
 
 	"github.com/graymeta/stow"
@@ -12,9 +13,9 @@ import (
 )
 
 func TestStow(t *testing.T) {
+	os.Setenv("stow_mountpath", "/tmp/test")
 	config := stow.ConfigMap{
 		"source":  "192.168.50.1:/tmp",
-		"target":  "/tmp/test/",
 		"type":    "nfs",
 		"options": "",
 	}

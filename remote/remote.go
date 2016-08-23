@@ -1,9 +1,13 @@
 package remote
 
 import (
+	"crypto/md5"
 	"errors"
+	"fmt"
+	"io"
 	"net/url"
-	"path"
+	"os"
+	"path/filepath"
 
 	"github.com/graymeta/stow"
 )
@@ -12,7 +16,6 @@ import (
 // remote storage (NFS, CIFS, SAMBA).
 const (
 	ConfigKeySource  = "source"
-	ConfigKeyTarget  = "target"
 	ConfigKeyType    = "type"
 	ConfigKeyOptions = "options"
 )
@@ -26,11 +29,7 @@ func init() {
 		if !ok {
 			return nil, errors.New("missing source in config")
 		}
-		target, ok := config.Config(ConfigKeyTarget)
-		if !ok {
-			return nil, errors.New("missing target in config")
-		}
-		target = path.Clean(target)
+		target := calculateTargetMountPoint(source)
 
 		fstype, ok := config.Config(ConfigKeyType)
 		if !ok {
@@ -44,6 +43,7 @@ func init() {
 			return nil, err
 		}
 		return &location{
+			target:   target,
 			config:   config,
 			pagesize: 10,
 		}, nil
@@ -52,4 +52,23 @@ func init() {
 		return u.Scheme == "remote"
 	}
 	stow.Register(Kind, makefn, kindfn)
+}
+
+func calculateTargetMountPoint(source string) string {
+	const mountpath = "stow_mountpath"
+	basepath := os.Getenv(mountpath)
+	if len(basepath) == 0 {
+		basepath = "/lib/graymeta/mounts"
+	}
+
+	mountpoint := filepath.Join(basepath, hash(source))
+	return mountpoint
+}
+
+func hash(args ...string) string {
+	h := md5.New()
+	for _, arg := range args {
+		io.WriteString(h, arg)
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

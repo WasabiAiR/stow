@@ -1,7 +1,6 @@
 package remote
 
 import (
-	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,6 +9,8 @@ import (
 )
 
 type location struct {
+	// target is the mount point calculated based on the config
+	target string
 	// config is the configuration for this location.
 	config stow.Config
 	// pagesize is the number of items to return
@@ -32,10 +33,8 @@ func (l *location) RemoveContainer(id string) error {
 }
 
 func (l *location) CreateContainer(name string) (stow.Container, error) {
-	path, ok := l.config.Config(ConfigKeyTarget)
-	if !ok {
-		return nil, errors.New("missing " + ConfigKeyTarget + " configuration")
-	}
+	path := l.target
+
 	fullpath := filepath.Join(path, name)
 	if err := os.Mkdir(fullpath, 0777); err != nil {
 		return nil, err
@@ -52,10 +51,7 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 }
 
 func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
-	path, ok := l.config.Config(ConfigKeyTarget)
-	if !ok {
-		return nil, "", errors.New("missing " + ConfigKeyTarget + " configuration")
-	}
+	path := l.target
 	files, err := filepath.Glob(filepath.Join(path, prefix+"*"))
 	if err != nil {
 		return nil, "", err
@@ -89,10 +85,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
-	path, ok := l.config.Config(ConfigKeyTarget)
-	if !ok {
-		return nil, errors.New("missing " + ConfigKeyTarget + " configuration")
-	}
+	path := l.target
 	containers, err := l.filesToContainers(path, id)
 	if err != nil {
 		if os.IsNotExist(err) {
