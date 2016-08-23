@@ -179,13 +179,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 		if err != nil {
 			return err
 		}
-		if c.Name() == c1.Name() {
-			found++
-		}
-		if c.Name() == c2.Name() {
-			found++
-		}
-		if c.Name() == c3.Name() {
+		switch c.Name() {
+		case c1.Name(), c2.Name(), c3.Name():
 			found++
 		}
 		return nil
