@@ -39,3 +39,41 @@ func Walk(container Container, prefix string, fn WalkFunc) error {
 	}
 	return nil
 }
+
+// WalkContainersFunc is a function called for each Container visited
+// by WalkContainers.
+// If there was a problem, the incoming error will describe
+// the problem and the function can decide how to handle
+// that error.
+// If an error is returned, processing stops.
+type WalkContainersFunc func(container Container, err error) error
+
+// WalkContainers walks all Containers in the Location.
+// Returns the first error returned by the WalkContainersFunc or
+// nil if no errors were returned.
+func WalkContainers(location Location, prefix string, fn WalkContainersFunc) error {
+	var (
+		err        error
+		containers []Container
+		cursor     = CursorStart
+	)
+	for {
+		containers, cursor, err = location.Containers(prefix, cursor)
+		if err != nil {
+			err = fn(nil, err)
+			if err != nil {
+				return err
+			}
+		}
+		for _, container := range containers {
+			err = fn(container, nil)
+			if err != nil {
+				return err
+			}
+		}
+		if IsCursorEnd(cursor) {
+			break
+		}
+	}
+	return nil
+}
