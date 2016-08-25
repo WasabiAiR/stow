@@ -3,6 +3,7 @@ package swift
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -79,10 +80,11 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 		swiftTenantName)
 
 	client := swift.Connection{
-		UserName: swiftUsername,
-		ApiKey:   swiftKey,
-		AuthUrl:  swiftAuthURL,
-		Tenant:   swiftTenantName,
+		UserName:  swiftUsername,
+		ApiKey:    swiftKey,
+		AuthUrl:   swiftAuthURL,
+		Tenant:    swiftTenantName,
+		Transport: &fixLastModifiedTransport{http.DefaultTransport},
 	}
 
 	err := client.Authenticate()
@@ -90,4 +92,19 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 		return nil, errors.New("Unable to authenticate")
 	}
 	return &client, nil
+}
+
+type fixLastModifiedTransport struct {
+	http.RoundTripper
+}
+
+func (t *fixLastModifiedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	res, err := t.RoundTripper.RoundTrip(r)
+	if err != nil {
+		return res, err
+	}
+	if lastMod := res.Header.Get("Last-Modified"); strings.Contains(lastMod, "UTC") {
+		res.Header.Set("Last-Modified", strings.Replace(lastMod, "UTC", "GMT", 1))
+	}
+	return res, err
 }
