@@ -13,7 +13,7 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 
 	hardlink := false
 	symlink := false
-	var symlinkTarget string
+	var linkTarget string
 
 	var inodedata interface{}
 	if inode, err := getInodeinfo(info); err != nil {
@@ -26,7 +26,7 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 	}
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		symlink = true
-		symlinkTarget, _ = filepath.EvalSymlinks(path)
+		linkTarget, _ = os.Readlink(path)
 	}
 	m := map[string]interface{}{
 		"path":        filepath.Clean(path),
@@ -40,7 +40,7 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 		"size":        info.Size(),
 		"is_hardlink": hardlink,
 		"is_symlink":  symlink,
-		"symlink":     symlinkTarget,
+		"link":        linkTarget,
 	}
 
 	if stat := info.Sys().(*syscall.Stat_t); stat != nil {
