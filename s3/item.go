@@ -93,6 +93,12 @@ func (i *item) LastMod() (time.Time, error) {
 	return *i.properties.LastModified, nil
 }
 
+// Metadata returns a nil map and no error.
+// TODO: Implement this.
+func (i *item) Metadata() (map[string]interface{}, error) {
+	return nil, nil
+}
+
 // ETag returns the ETag value from the properies field of an item.
 func (i *item) ETag() (string, error) {
 	return *(i.properties.ETag), nil

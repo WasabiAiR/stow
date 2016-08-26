@@ -116,6 +116,9 @@ type Item interface {
 	ETag() (string, error)
 	// LastMod returns the last modified date of the file.
 	LastMod() (time.Time, error)
+	// Metadata gets a map of key/values that blong
+	// to this Item.
+	Metadata() (map[string]interface{}, error)
 }
 
 // Config represents key/value configuraiton.

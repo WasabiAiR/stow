@@ -84,3 +84,9 @@ func (i *item) LastMod() (time.Time, error) {
 
 	return i.lastModified, nil
 }
+
+// Metadata returns a nil map and no error.
+// TODO: Implement this.
+func (i *item) Metadata() (map[string]interface{}, error) {
+	return nil, nil
+}
