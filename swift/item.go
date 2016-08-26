@@ -83,6 +83,12 @@ func (i *item) LastMod() (time.Time, error) {
 	return i.lastModified, nil
 }
 
+// Metadata returns a nil map and no error.
+// TODO: Implement this.
+func (i *item) Metadata() (map[string]interface{}, error) {
+	return nil, nil
+}
+
 // ensureInfo checks the fields that may be empty when an item is PUT.
 // Verify if the fields are empty, get information on the item, fill in
 // the missing fields.
