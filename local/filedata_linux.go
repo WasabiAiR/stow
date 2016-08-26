@@ -9,15 +9,11 @@ import (
 	"time"
 )
 
-func getFileMetadata(root, path string, info os.FileInfo) map[string]interface{} {
-
-	relpath, err := filepath.Rel(root, path)
-	if err != nil {
-		relpath = path
-	}
+func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 
 	hardlink := false
 	symlink := false
+	var symlinkTarget string
 
 	var inodedata interface{}
 	if inode, err := getInodeinfo(info); err != nil {
@@ -30,12 +26,12 @@ func getFileMetadata(root, path string, info os.FileInfo) map[string]interface{}
 	}
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		symlink = true
+		symlinkTarget, _ = filepath.EvalSymlinks(path)
 	}
-
 	m := map[string]interface{}{
-		"path":        relpath,
+		"path":        filepath.Clean(path),
 		"is_dir":      info.IsDir(),
-		"dir":         filepath.Dir(relpath),
+		"dir":         filepath.Dir(path),
 		"name":        info.Name(),
 		"mode":        fmt.Sprintf("%o", info.Mode()),
 		"mode_d":      fmt.Sprintf("%v", uint32(info.Mode())),
@@ -44,6 +40,7 @@ func getFileMetadata(root, path string, info os.FileInfo) map[string]interface{}
 		"size":        info.Size(),
 		"is_hardlink": hardlink,
 		"is_symlink":  symlink,
+		"symlink":     symlinkTarget,
 	}
 
 	if stat := info.Sys().(*syscall.Stat_t); stat != nil {

@@ -14,10 +14,11 @@ func TestFileData(t *testing.T) {
 	is.NoErr(err)
 	is.OK(info)
 
-	data := getFileMetadata("/", "./filedata_test.go", info)
+	data := getFileMetadata("./filedata_test.go", info)
 
 	is.Equal(data["is_dir"], false)
 	is.Equal(data["ext"], ".go")
+	is.Equal(data["path"], "filedata_test.go")
 	is.Equal(data["name"], "filedata_test.go")
 	is.Equal(data["mode"], "644")
 	is.Equal(data["mode_d"], "420")
@@ -36,7 +37,7 @@ func TestDotFile(t *testing.T) {
 	is.NoErr(err)
 	is.OK(info)
 
-	data := getFileMetadata("/", "./testdata/.dotfile", info)
+	data := getFileMetadata("./testdata/.dotfile", info)
 
 	is.Equal(data["ext"], ".dotfile")
 	is.Equal(data["name"], ".dotfile")

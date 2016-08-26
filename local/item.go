@@ -67,3 +67,14 @@ func (i *item) LastMod() (time.Time, error) {
 
 	return info.ModTime(), nil
 }
+
+// Metadata gets stat information for the file.
+// is_dir, mode.
+func (i *item) Metadata() (map[string]interface{}, error) {
+	info, err := i.getInfo()
+	if err != nil {
+		return nil, err
+	}
+	metadata := getFileMetadata(i.path, info)
+	return metadata, nil
+}
