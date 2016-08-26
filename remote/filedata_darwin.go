@@ -14,7 +14,6 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 	hardlink := false
 	symlink := false
 	var linkTarget string
-
 	var inodedata interface{}
 	if inode, err := getInodeinfo(info); err != nil {
 		inodedata = map[string]interface{}{"error": err.Error()}
