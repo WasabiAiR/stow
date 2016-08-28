@@ -37,3 +37,28 @@ func TestEtagCleanup(t *testing.T) {
 		}
 	}
 }
+
+func TestLocationID(t *testing.T) {
+	config := stow.ConfigMap{
+		"access_key_id": "AKIAIKXUQN43OZER6ZJQ",
+		"secret_key":    "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",
+		"region":        "us-west-1",
+	}
+
+	loc1, err := stow.Dial("s3", config)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	loc2, err := stow.Dial("s3", config)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	t.Logf("Loc 1 ID: %s\n", loc1.ID())
+	t.Logf("Loc 2 ID: %s\n", loc2.ID())
+
+	if !loc1.Equal(loc2) {
+		t.Errorf("test locations aren't equal, they should be.")
+	}
+}

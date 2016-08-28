@@ -46,6 +46,12 @@ func IsCursorEnd(cursor string) bool {
 // Location represents a storage location.
 type Location interface {
 	io.Closer
+	// Equal determines whether two locations represent the same configuration
+	// information
+	Equal(loc Location) bool
+	// ID gets a string that uniquely identifies this location.
+	// If two IDs are the same, they are logically the same location.
+	ID() string
 	// CreateContainer creates a new Container with the
 	// specified name.
 	CreateContainer(name string) (Container, error)
