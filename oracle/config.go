@@ -18,7 +18,7 @@ const (
 	// ConfigPassword is the user password associated with the account
 	ConfigPassword = "password"
 
-	// ConfigIdentityDomain is the identity domain associated with the account
+	// ConfigAuthEndpointis the identity domain associated with the account
 	ConfigAuthEndpoint = "authorization_endpoint"
 )
 
@@ -70,7 +70,7 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 
 	err = client.Authenticate()
 	if err != nil {
-		return nil, errors.New("Unable to authenticate")
+		return nil, errors.New("unable to authenticate")
 	}
 	return client, nil
 }
