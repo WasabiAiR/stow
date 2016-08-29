@@ -18,8 +18,8 @@ const (
 	// ConfigPassword is the user password associated with the account
 	ConfigPassword = "password"
 
-	// ConfigIdentityDomain is the identity domain associated with the account
-	ConfigIdentityDomain = "identity_domain"
+	// ConfigAuthEndpointis the identity domain associated with the account
+	ConfigAuthEndpoint = "authorization_endpoint"
 )
 
 // Kind is the kind of Location this package provides.
@@ -37,9 +37,9 @@ func init() {
 			return nil, errors.New("missing account password")
 		}
 
-		_, ok = config.Config(ConfigIdentityDomain)
+		_, ok = config.Config(ConfigAuthEndpoint)
 		if !ok {
-			return nil, errors.New("missing identity domain")
+			return nil, errors.New("missing authorization endpoint")
 		}
 
 		l := &location{
@@ -63,34 +63,60 @@ func init() {
 }
 
 func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
+	client, err := parseConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = client.Authenticate()
+	if err != nil {
+		return nil, errors.New("unable to authenticate")
+	}
+	return client, nil
+}
+
+func parseConfig(cfg stow.Config) (*swift.Connection, error) {
 	cfgUsername, _ := cfg.Config(ConfigUsername)
+	cfgAuthEndpoint, _ := cfg.Config(ConfigAuthEndpoint)
+
+	// Auth Endpoint contains most of the information needed to make a client,
+	// find the indexes of the symbols that separate them.
+	dotIndex := strings.Index(cfgAuthEndpoint, `.`)
+	dashIndex := strings.Index(cfgAuthEndpoint[:dotIndex], `-`)
+	slashIndex := strings.Index(cfgAuthEndpoint, `//`) + 1 // Add 1 to move index to second slash
+
+	var metered bool
+
+	// metered storage endpoints should not have a dash before the dot index.
+	if dashIndex == -1 {
+		metered = true
+	}
+
+	var swiftTenantName, swiftUsername, instanceName string
+	var startIndex int
+
+	if metered {
+		startIndex = slashIndex + 1
+		instanceName = "Storage"
+	} else {
+		startIndex = dashIndex + 1
+		instanceName = cfgAuthEndpoint[slashIndex+1 : dashIndex]
+	}
+
+	swiftTenantName = cfgAuthEndpoint[startIndex:dotIndex]
+	swiftUsername = fmt.Sprintf("%s-%s:%s", instanceName, swiftTenantName, cfgUsername)
 
 	// The client's key is the user account's Password
 	swiftKey, _ := cfg.Config(ConfigPassword)
 
-	// The client's tenant field is the container's Identity Domain
-	swiftTenantName, _ := cfg.Config(ConfigIdentityDomain)
-
-	// The username field is a combo of the user's email + resource type + identity domain
-	// storage-foobarbaz:santaclaus@northpole.com
-	swiftUsername := strings.Join([]string{swiftTenantName, ":", cfgUsername}, "")
-
-	// The Package's auth URL includes a portion of the API endpoint.
-	swiftAuthURL := fmt.Sprintf(`https://%s.storage.oraclecloud.com/auth/v1.0`,
-		swiftTenantName)
-
 	client := swift.Connection{
 		UserName:  swiftUsername,
 		ApiKey:    swiftKey,
-		AuthUrl:   swiftAuthURL,
+		AuthUrl:   cfgAuthEndpoint,
 		Tenant:    swiftTenantName,
 		Transport: &fixLastModifiedTransport{http.DefaultTransport},
 	}
 
-	err := client.Authenticate()
-	if err != nil {
-		return nil, errors.New("Unable to authenticate")
-	}
 	return &client, nil
 }
 

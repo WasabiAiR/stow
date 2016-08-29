@@ -8,29 +8,30 @@ import (
 	"github.com/graymeta/stow/test"
 )
 
-func TestStow(t *testing.T) {
-	cfg := stow.ConfigMap{
-		"username":        "corey@graymeta.com",
-		"password":        "BHBmQ585mbctcfvD",
-		"identity_domain": "storage-a422618",
-	}
+var cfgUnmetered = stow.ConfigMap{
+	"username":               "aaron@graymeta.com",
+	"password":               "HPdq85BwQ66r",
+	"authorization_endpoint": "https://storage-a422618.storage.oraclecloud.com/auth/v1.0",
+}
 
-	test.All(t, "oracle", cfg)
+var cfgMetered = stow.ConfigMap{
+	"username":               "aaron@graymeta.com",
+	"password":               "Wj41xKQdYwny",
+	"authorization_endpoint": "https://usoraclegm1.storage.oraclecloud.com/auth/v1.0",
+}
+
+func TestStow(t *testing.T) {
+	test.All(t, "oracle", cfgMetered)
 }
 
 func TestGetItemUTCLastModified(t *testing.T) {
-	cfg := stow.ConfigMap{
-		"username":        "corey@graymeta.com",
-		"password":        "BHBmQ585mbctcfvD",
-		"identity_domain": "storage-a422618",
-	}
 	tr := http.DefaultTransport
 	http.DefaultTransport = &bogusLastModifiedTransport{tr}
 	defer func() {
 		http.DefaultTransport = tr
 	}()
 
-	test.All(t, "oracle", cfg)
+	test.All(t, "oracle", cfgUnmetered)
 }
 
 type bogusLastModifiedTransport struct {

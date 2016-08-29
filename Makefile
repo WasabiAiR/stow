@@ -13,7 +13,7 @@ runcontainer:
 	docker run -v $(WORKSPACE):/mnt/src/github.com/graymeta/stow builder-stow
 
 deps:
-	go get bitbucket.org/tebeka/go2xunit
+	go get github.com/tebeka/go2xunit
 	go get github.com/Azure/azure-sdk-for-go/storage
 	go get github.com/aws/aws-sdk-go
 	go get github.com/ncw/swift
