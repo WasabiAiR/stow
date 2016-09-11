@@ -18,6 +18,9 @@ deps:
 	go get github.com/aws/aws-sdk-go
 	go get github.com/ncw/swift
 	go get github.com/cheekybits/is
+	go get golang.org/x/net/context
+	go get golang.org/x/oauth2/google
+	go get google.golang.org/api/storage/...
 
 test: clean deps vet
 	go test -v ./... | tee tests.out
