@@ -62,15 +62,24 @@ func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, 
 }
 
 func (l *location) Container(id string) (stow.Container, error) {
-	containers, _, err := l.Containers(id[:3], stow.CursorStart)
-	if err != nil {
-		return nil, stow.ErrNotFound
-	}
-	for _, i := range containers {
-		if i.ID() == id {
-			return i, nil
+	cursor := stow.CursorStart
+	for {
+		containers, crsr, err := l.Containers(id[:3], cursor)
+		if err != nil {
+			return nil, stow.ErrNotFound
+		}
+		for _, i := range containers {
+			if i.ID() == id {
+				return i, nil
+			}
+		}
+
+		cursor = crsr
+		if cursor == "" {
+			break
 		}
 	}
+
 	return nil, stow.ErrNotFound
 }
 
