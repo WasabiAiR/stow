@@ -41,6 +41,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 		is.NoErr(err)
 		err = location.RemoveContainer(c2.ID())
 		is.NoErr(err)
+		err = location.RemoveContainer(c3.ID())
+		is.NoErr(err)
 	}()
 
 	// add three items to c1
@@ -187,7 +189,6 @@ func All(t *testing.T, kind string, config stow.Config) {
 	})
 	is.NoErr(err)
 	is.Equal(found, 3) // should find three items
-
 }
 
 func createContainer(is is.I, location stow.Location, name string) stow.Container {
