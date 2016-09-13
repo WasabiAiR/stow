@@ -12,9 +12,10 @@ import (
 func TestStow(t *testing.T) {
 
 	credFile := os.Getenv("GOOGLE_CREDENTIALS_FILE")
+	projectId := os.Getenv("GOOGLE_PROJECT_ID")
 
-	if credFile == "" {
-		t.Skip("skipping test because GOOGLE_CREDENTIALS_FILE not set.")
+	if credFile == "" || projectId == "" {
+		t.Skip("skipping test because GOOGLE_CREDENTIALS_FILE or GOOGLE_PROJECT_ID not set.")
 	}
 
 	b, err := ioutil.ReadFile(credFile)
@@ -24,7 +25,7 @@ func TestStow(t *testing.T) {
 
 	config := stow.ConfigMap{
 		"json":       string(b),
-		"project_id": "testproject-142822",
+		"project_id": projectId,
 	}
 	test.All(t, "google", config)
 }

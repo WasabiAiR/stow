@@ -10,7 +10,7 @@ Item = File
 
 Configuration... You need to create a project in google, and then create a service account in google tied to that project. You will need to download a `.json` file with the configuration for the service account. To run the test suite, the service account will need edit privileges inside the project.
 
-To run the test suite, set the `GOOGLE_CREDENTIALS_FILE` environment variable to point to the location of the .json file containing the service account credentials, otherwise the test suite will not be run.
+To run the test suite, set the `GOOGLE_CREDENTIALS_FILE` environment variable to point to the location of the .json file containing the service account credentials and set `GOOGLE_PROJECT_ID` to the project ID, otherwise the test suite will not be run.
 
 ---
 
