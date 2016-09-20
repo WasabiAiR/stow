@@ -20,6 +20,7 @@ deps:
 	go get github.com/cheekybits/is
 	go get golang.org/x/net/context
 	go get golang.org/x/oauth2/google
+	go get github.com/pkg/errors
 	go get google.golang.org/api/storage/...
 
 test: clean deps vet

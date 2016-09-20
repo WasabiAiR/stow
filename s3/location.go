@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 // A location contains a client + the configurations used to create the client.
@@ -25,7 +26,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 
 	_, err := l.client.CreateBucket(createBucketParams)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "CreateContainer, creating the bucket")
 	}
 
 	region, _ := l.config.Config("region")
@@ -55,7 +56,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	// Response returns exported Owner(*s3.Owner) and Bucket(*s3.[]Bucket)
 	bucketList, err := l.client.ListBuckets(params)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "Containers, listing the buckets")
 	}
 
 	// Iterate through the slice of pointers to buckets
@@ -68,7 +69,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 		// Buckets with region 'US Standard' return nothing.
 		bucketLocResponse, err := l.client.GetBucketLocation(bucketLocParams)
 		if err != nil {
-			return nil, "", err
+			return nil, "", errors.Wrap(err, "Containers, getting the bucket location")
 		}
 
 		clientRegion, _ := l.config.Config("region")
@@ -115,7 +116,11 @@ func (l *location) Container(id string) (stow.Container, error) {
 
 	_, err := l.client.GetBucketLocation(params)
 	if err != nil {
-		return nil, stow.ErrNotFound
+		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
+		if strings.Contains(err.Error(), "NoSuchBucket") {
+			return nil, stow.ErrNotFound
+		}
+		return nil, errors.Wrap(err, "Container, getting the bucket location")
 	}
 
 	region, _ := l.config.Config("region")
@@ -137,7 +142,7 @@ func (l *location) RemoveContainer(id string) error {
 
 	_, err := l.client.DeleteBucket(params)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "RemoveContainer, deleting the bucket")
 	}
 
 	return nil
@@ -174,13 +179,13 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 	// Get the container by bucket name.
 	cont, err := l.Container(bucketName)
 	if err != nil {
-		return nil, stow.ErrNotFound
+		return nil, errors.Wrapf(err, "ItemByURL, getting container by the bucketname %v", bucketName)
 	}
 
 	// Get the item by object name.
 	it, err := cont.Item(objectPath)
 	if err != nil {
-		return nil, stow.ErrNotFound
+		return nil, errors.Wrapf(err, "ItemByURL, getting item by object name %v", objectPath)
 	}
 
 	return it, err
