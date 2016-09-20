@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 // Amazon S3 bucket contains a creationdate and a name.
@@ -51,7 +52,7 @@ func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, er
 
 	response, err := c.client.ListObjects(params)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "Items listing objects")
 	}
 
 	// Allocate space for the Item slice.
@@ -92,7 +93,7 @@ func (c *container) RemoveItem(id string) error {
 
 	_, err := c.client.DeleteObject(params)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "RemoveItem deleting object %+v", params)
 	}
 
 	return nil
@@ -119,7 +120,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	// Only Etag returned.
 	response, err := c.client.PutObject(params)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RemoveItem deleting object")
 	}
 
 	etag := cleanEtag(*response.ETag)
@@ -166,7 +167,11 @@ func (c *container) getItem(id string) (*item, error) {
 
 	response, err := c.client.GetObject(params)
 	if err != nil {
-		return nil, stow.ErrNotFound
+		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
+		if strings.Contains(err.Error(), "NoSuchKey") {
+			return nil, stow.ErrNotFound
+		}
+		return nil, errors.Wrap(err, "getItem, getting the object")
 	}
 
 	// etag string value contains quotations. Remove them.
