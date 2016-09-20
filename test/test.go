@@ -1,10 +1,14 @@
 package test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +25,12 @@ import (
 // Locations should be empty.
 func All(t *testing.T, kind string, config stow.Config) {
 	is := is.New(t)
+	startFDs := totalFDs(t)
+	defer func() {
+		endFDs := totalFDs(t)
+
+		is.Equal(0, endFDs-startFDs)
+	}()
 
 	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
@@ -189,6 +199,14 @@ func All(t *testing.T, kind string, config stow.Config) {
 	})
 	is.NoErr(err)
 	is.Equal(found, 3) // should find three items
+}
+
+func totalFDs(t *testing.T) int {
+	lsof, err := exec.Command("lsof", "-b", "-n", "-p", strconv.Itoa(os.Getpid())).Output()
+	if err != nil {
+		t.Skip("skipping test; error finding or running lsof")
+	}
+	return bytes.Count(lsof, []byte("\n"))
 }
 
 func createContainer(is is.I, location stow.Location, name string) stow.Container {
