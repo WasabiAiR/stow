@@ -204,7 +204,10 @@ func All(t *testing.T, kind string, config stow.Config) {
 func totalFDs(t *testing.T) int {
 	lsof, err := exec.Command("lsof", "-b", "-n", "-p", strconv.Itoa(os.Getpid())).Output()
 	if err != nil {
-		t.Skip("skipping test; error finding or running lsof")
+		if err, ok := err.(*exec.ExitError); ok {
+			t.Log(string(err.Stderr))
+		}
+		t.Errorf("error finding or running lsof: %s", err.Error())
 	}
 	return bytes.Count(lsof, []byte("\n"))
 }
