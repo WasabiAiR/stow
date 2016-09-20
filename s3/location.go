@@ -26,7 +26,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 
 	_, err := l.client.CreateBucket(createBucketParams)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating the bucket")
+		return nil, errors.Wrap(err, "CreateContainer, creating the bucket")
 	}
 
 	region, _ := l.config.Config("region")
@@ -56,7 +56,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 	// Response returns exported Owner(*s3.Owner) and Bucket(*s3.[]Bucket)
 	bucketList, err := l.client.ListBuckets(params)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "containers, listing the buckets")
+		return nil, "", errors.Wrap(err, "Containers, listing the buckets")
 	}
 
 	// Iterate through the slice of pointers to buckets
@@ -69,7 +69,7 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 		// Buckets with region 'US Standard' return nothing.
 		bucketLocResponse, err := l.client.GetBucketLocation(bucketLocParams)
 		if err != nil {
-			return nil, "", errors.Wrap(err, "containers, getting the bucket location")
+			return nil, "", errors.Wrap(err, "Containers, getting the bucket location")
 		}
 
 		clientRegion, _ := l.config.Config("region")
@@ -120,7 +120,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 		if strings.Contains(err.Error(), "NoSuchBucket") {
 			return nil, stow.ErrNotFound
 		}
-		return nil, errors.Wrap(err, "container, getting the bucket location")
+		return nil, errors.Wrap(err, "Container, getting the bucket location")
 	}
 
 	region, _ := l.config.Config("region")
@@ -142,7 +142,7 @@ func (l *location) RemoveContainer(id string) error {
 
 	_, err := l.client.DeleteBucket(params)
 	if err != nil {
-		return errors.Wrap(err, "removeConatienr, deleting the bucket")
+		return errors.Wrap(err, "RemoveContainer, deleting the bucket")
 	}
 
 	return nil

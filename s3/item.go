@@ -67,7 +67,7 @@ func (i *item) Open() (io.ReadCloser, error) {
 
 	response, err := i.client.GetObject(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "open, getting the object")
+		return nil, errors.Wrap(err, "Open, getting the object")
 	}
 
 	return response.Body, nil
@@ -82,7 +82,7 @@ func (i *item) LastMod() (time.Time, error) {
 	if i.properties.LastModified == nil {
 		it, err := i.container.getItem(i.ID())
 		if err != nil {
-			return time.Time{}, errors.Wrap(err, "lastMod, getting the item")
+			return time.Time{}, errors.Wrap(err, "LastMod, getting the item")
 		}
 
 		// Went through the work of sending a request to get this information.

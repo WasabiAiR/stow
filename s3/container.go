@@ -52,7 +52,7 @@ func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, er
 
 	response, err := c.client.ListObjects(params)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Items listing objects")
+		return nil, "", errors.Wrap(err, "Items, listing objects")
 	}
 
 	// Allocate space for the Item slice.
@@ -93,7 +93,7 @@ func (c *container) RemoveItem(id string) error {
 
 	_, err := c.client.DeleteObject(params)
 	if err != nil {
-		return errors.Wrapf(err, "RemoveItem deleting object %+v", params)
+		return errors.Wrapf(err, "RemoveItem, deleting object %+v", params)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	// Only Etag returned.
 	response, err := c.client.PutObject(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "RemoveItem deleting object")
+		return nil, errors.Wrap(err, "RemoveItem, deleting object")
 	}
 
 	etag := cleanEtag(*response.ETag)
