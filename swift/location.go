@@ -30,10 +30,9 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	return container, nil
 }
 
-func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
-	numitems := 10
+func (l *location) Containers(prefix, cursor string, count int) ([]stow.Container, string, error) {
 	params := &swift.ContainersOpts{
-		Limit:  numitems,
+		Limit:  count,
 		Prefix: prefix,
 		Marker: cursor,
 	}
@@ -51,7 +50,7 @@ func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, 
 		}
 	}
 	marker := ""
-	if len(response) == numitems {
+	if len(response) == count {
 		marker = response[len(response)-1].Name
 	}
 	return containers, marker, nil

@@ -41,12 +41,12 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 }
 
 // Containers returns a slice of the Container interface, a cursor, and an error.
-func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+func (l *location) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
 
 	projId, _ := l.config.Config(ConfigProjectId)
 
 	// List all objects in a bucket using pagination
-	call := l.client.Buckets.List(projId).MaxResults(10)
+	call := l.client.Buckets.List(projId).MaxResults(int64(count))
 
 	if prefix != "" {
 		call.Prefix(prefix)

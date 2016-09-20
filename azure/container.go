@@ -52,10 +52,10 @@ func (c *container) Item(id string) (stow.Item, error) {
 	return item, nil
 }
 
-func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
+func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
 	params := az.ListBlobsParameters{
 		Prefix:     prefix,
-		MaxResults: 10,
+		MaxResults: uint(count),
 	}
 	if cursor != "" {
 		params.Marker = cursor

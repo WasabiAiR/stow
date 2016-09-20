@@ -13,14 +13,14 @@ type WalkFunc func(item Item, err error) error
 // Walk walks all Items in the Container.
 // Returns the first error returned by the WalkFunc or
 // nil if no errors were returned.
-func Walk(container Container, prefix string, fn WalkFunc) error {
+func Walk(container Container, prefix string, count int, fn WalkFunc) error {
 	var (
 		err    error
 		items  []Item
 		cursor = CursorStart
 	)
 	for {
-		items, cursor, err = container.Items(prefix, cursor)
+		items, cursor, err = container.Items(prefix, cursor, count)
 		if err != nil {
 			err = fn(nil, err)
 			if err != nil {
@@ -51,14 +51,14 @@ type WalkContainersFunc func(container Container, err error) error
 // WalkContainers walks all Containers in the Location.
 // Returns the first error returned by the WalkContainersFunc or
 // nil if no errors were returned.
-func WalkContainers(location Location, prefix string, fn WalkContainersFunc) error {
+func WalkContainers(location Location, prefix string, count int, fn WalkContainersFunc) error {
 	var (
 		err        error
 		containers []Container
 		cursor     = CursorStart
 	)
 	for {
-		containers, cursor, err = location.Containers(prefix, cursor)
+		containers, cursor, err = location.Containers(prefix, cursor, count)
 		if err != nil {
 			err = fn(nil, err)
 			if err != nil {

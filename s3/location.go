@@ -48,7 +48,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 // This is because AWS user credentials can be tied to regions. One solution would be
 // to start a new client for every single container where the region matches, this would
 // also check the credentials on every new instance... Tabled for later.
-func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+func (l *location) Containers(prefix, cursor string, count int) ([]stow.Container, string, error) {
 	var params *s3.ListBucketsInput
 
 	var containers []stow.Container

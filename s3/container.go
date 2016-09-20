@@ -40,8 +40,8 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 // Items sends a request to retrieve a list of items that are prepended with
 // the prefix argument. The 'cursor' variable facilitates pagination.
-func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, error) {
-	itemLimit := int64(10)
+func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
+	itemLimit := int64(count)
 
 	params := &s3.ListObjectsInput{
 		Bucket:  aws.String(c.Name()),

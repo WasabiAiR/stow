@@ -35,8 +35,7 @@ func init() {
 			return nil, errors.New("path must be directory")
 		}
 		return &location{
-			config:   config,
-			pagesize: 10,
+			config: config,
 		}, nil
 	}
 	kindfn := func(u *url.URL) bool {

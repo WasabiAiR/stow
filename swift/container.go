@@ -27,10 +27,9 @@ func (c *container) Item(id string) (stow.Item, error) {
 	return c.getItem(id)
 }
 
-func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
-	numitems := 10
+func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
 	params := &swift.ObjectsOpts{
-		Limit:  numitems,
+		Limit:  count,
 		Marker: cursor,
 		Prefix: prefix,
 	}
@@ -51,7 +50,7 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 		}
 	}
 	marker := ""
-	if len(objects) == numitems {
+	if len(objects) == count {
 		marker = objects[len(objects)-1].Name
 	}
 	return items, marker, nil
