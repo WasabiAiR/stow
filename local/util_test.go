@@ -21,7 +21,7 @@ func setup() (string, func() error, error) {
 	done = func() error {
 		return os.RemoveAll(dir)
 	}
-	add some "containers"
+	// add some "containers"
 	err = os.Mkdir(filepath.Join(dir, "one"), 0777)
 	if err != nil {
 		return dir, done, err
