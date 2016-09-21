@@ -2,6 +2,7 @@ package swift
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 
 	"github.com/graymeta/stow"
@@ -64,6 +65,8 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 		AuthUrl:  tenantAuthURL,
 		//Domain:   "domain", // Name of the domain (v3 auth only)
 		Tenant: tenantName, // Name of the tenant (v2 auth only)
+		// Add Default transport
+		Transport: http.DefaultTransport,
 	}
 	err := client.Authenticate()
 	if err != nil {
