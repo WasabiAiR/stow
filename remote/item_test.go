@@ -1,4 +1,4 @@
-package local_test
+package remote
 
 import (
 	"io/ioutil"

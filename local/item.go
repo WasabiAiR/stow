@@ -41,7 +41,7 @@ func (i *item) URL() *url.URL {
 
 func (i *item) getInfo() (os.FileInfo, error) {
 	i.infoOnce.Do(func() {
-		i.info, i.infoErr = os.Stat(i.path)
+		i.info, i.infoErr = os.Lstat(i.path)
 	})
 	return i.info, i.infoErr
 }
