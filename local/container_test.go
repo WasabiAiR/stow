@@ -21,7 +21,7 @@ func TestItemsPaging(t *testing.T) {
 	is.OK(l)
 
 	// get the first container to work with
-	containers, _, err := l.Containers("", stow.CursorStart)
+	containers, _, err := l.Containers("", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.True(len(containers) > 0)
 	container := containers[0]
@@ -33,7 +33,7 @@ func TestItemsPaging(t *testing.T) {
 	}
 
 	// get the first page
-	items, cursor, err := container.Items("item-", stow.CursorStart)
+	items, cursor, err := container.Items("item-", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(items)
 	is.Equal(len(items), 10)
@@ -41,7 +41,7 @@ func TestItemsPaging(t *testing.T) {
 	is.Equal(cursor, "item-10")
 
 	// get the next page
-	items, cursor, err = container.Items("item-", cursor)
+	items, cursor, err = container.Items("item-", cursor, 10)
 	is.NoErr(err)
 	is.OK(items)
 	is.Equal(len(items), 10)
@@ -49,14 +49,14 @@ func TestItemsPaging(t *testing.T) {
 	is.Equal(cursor, "item-20")
 
 	// get the last page
-	items, cursor, err = container.Items("item-", cursor)
+	items, cursor, err = container.Items("item-", cursor, 10)
 	is.NoErr(err)
 	is.OK(items)
 	is.Equal(len(items), 5)
 	is.True(stow.IsCursorEnd(cursor))
 
 	// bad cursor
-	items, cursor, err = container.Items("item-", "made up cursor")
+	items, cursor, err = container.Items("item-", "made up cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
 }

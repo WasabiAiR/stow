@@ -37,7 +37,7 @@ func init() {
 			return nil, err
 		}
 		// test the connection
-		_, _, err = l.Containers("", stow.CursorStart)
+		_, _, err = l.Containers("", stow.CursorStart, 1)
 		if err != nil {
 			return nil, err
 		}

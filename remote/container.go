@@ -14,10 +14,6 @@ import (
 type container struct {
 	name string
 	path string
-
-	// pagesize is the number of items to return
-	// per page (for Containers and Items).
-	pagesize int
 }
 
 func (c *container) ID() string {
@@ -75,7 +71,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	return item, nil
 }
 
-func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
+func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
 	files, err := flatdirs(c.path)
 	if err != nil {
 		return nil, "", err
@@ -94,10 +90,10 @@ func (c *container) Items(prefix, cursor string) ([]stow.Item, string, error) {
 			return nil, "", stow.ErrBadCursor
 		}
 	}
-	if len(files) > c.pagesize {
-		cursor = files[c.pagesize].Name()
-		files = files[:c.pagesize]
-	} else if len(files) <= c.pagesize {
+	if len(files) > count {
+		cursor = files[count].Name()
+		files = files[:count]
+	} else if len(files) <= count {
 		cursor = "" // end
 	}
 	var items []stow.Item

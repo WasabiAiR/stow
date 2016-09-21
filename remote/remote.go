@@ -43,9 +43,8 @@ func init() {
 			return nil, err
 		}
 		return &location{
-			target:   target,
-			config:   config,
-			pagesize: 10,
+			target: target,
+			config: config,
 		}, nil
 	}
 	kindfn := func(u *url.URL) bool {

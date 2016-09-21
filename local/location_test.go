@@ -22,7 +22,7 @@ func TestContainers(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	items, cursor, err := l.Containers("", stow.CursorStart)
+	items, cursor, err := l.Containers("", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.Equal(cursor, "")
 	is.OK(items)
@@ -48,7 +48,7 @@ func TestContainersPrefix(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, cursor, err := l.Containers("t", stow.CursorStart)
+	containers, cursor, err := l.Containers("t", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(cursor, "")
@@ -76,7 +76,7 @@ func TestContainer(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, cursor, err := l.Containers("t", stow.CursorStart)
+	containers, cursor, err := l.Containers("t", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(cursor, "")
@@ -108,7 +108,7 @@ func TestCreateContainer(t *testing.T) {
 	is.Equal(c.ID(), filepath.Join(testDir, "new_test_container"))
 	is.Equal(c.Name(), "new_test_container")
 
-	containers, cursor, err := l.Containers("new", stow.CursorStart)
+	containers, cursor, err := l.Containers("new", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(cursor, "")
@@ -130,14 +130,14 @@ func TestByURL(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	containers, cursor, err := l.Containers("t", stow.CursorStart)
+	containers, cursor, err := l.Containers("t", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(cursor, "")
 
 	three, err := l.Container(containers[0].ID())
 	is.NoErr(err)
-	items, cursor, err := three.Items("", stow.CursorStart)
+	items, cursor, err := three.Items("", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(items)
 	is.Equal(cursor, "")
@@ -175,7 +175,7 @@ func TestContainersPaging(t *testing.T) {
 	}
 
 	// get the first page
-	containers, cursor, err := l.Containers("container-", stow.CursorStart)
+	containers, cursor, err := l.Containers("container-", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(len(containers), 10)
@@ -183,7 +183,7 @@ func TestContainersPaging(t *testing.T) {
 	is.Equal(filepath.Base(cursor), "container-10")
 
 	// get next page
-	containers, cursor, err = l.Containers("container-", cursor)
+	containers, cursor, err = l.Containers("container-", cursor, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(len(containers), 10)
@@ -191,14 +191,14 @@ func TestContainersPaging(t *testing.T) {
 	is.Equal(filepath.Base(cursor), "container-20")
 
 	// get last page
-	containers, cursor, err = l.Containers("container-", cursor)
+	containers, cursor, err = l.Containers("container-", cursor, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(len(containers), 5)
 	is.True(stow.IsCursorEnd(cursor))
 
 	// bad cursor
-	containers, cursor, err = l.Containers("container-", "made-up-cursor")
+	containers, cursor, err = l.Containers("container-", "made-up-cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
 }

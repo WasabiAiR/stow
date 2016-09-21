@@ -38,9 +38,9 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 	return container, nil
 }
 
-func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, error) {
+func (l *location) Containers(prefix, cursor string, count int) ([]stow.Container, string, error) {
 	params := az.ListContainersParameters{
-		MaxResults: 10,
+		MaxResults: uint(count),
 		Prefix:     prefix,
 	}
 	if cursor != stow.CursorStart {
@@ -64,7 +64,7 @@ func (l *location) Containers(prefix, cursor string) ([]stow.Container, string, 
 func (l *location) Container(id string) (stow.Container, error) {
 	cursor := stow.CursorStart
 	for {
-		containers, crsr, err := l.Containers(id[:3], cursor)
+		containers, crsr, err := l.Containers(id[:3], cursor, stow.NumberItems)
 		if err != nil {
 			return nil, stow.ErrNotFound
 		}
