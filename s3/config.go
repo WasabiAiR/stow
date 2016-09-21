@@ -1,14 +1,16 @@
 package s3
 
 import (
-	"errors"
+	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 // Kind represents the name of the location/storage type.
@@ -76,11 +78,22 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 	//	token, _ := config.Config(ConfigToken)
 	region, _ := config.Config(ConfigRegion)
 
-	sess := session.New(&aws.Config{
-		Region: aws.String(region),
-		// Removed token from credentials for now. Not necessary.
-		Credentials: credentials.NewStaticCredentials(accessKeyID, secretKey, ""),
-	})
+	tr := http.DefaultTransport
+	client := &http.Client{Transport: tr}
+
+	awsConfig := aws.NewConfig().
+		WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
+		WithRegion(region).
+		WithHTTPClient(client).
+		WithMaxRetries(aws.UseServiceDefaultRetries).
+		WithLogger(aws.NewDefaultLogger()).
+		WithLogLevel(aws.LogOff).
+		WithSleepDelay(time.Sleep)
+
+	sess, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating the S3 session")
+	}
 
 	s3Client := s3.New(sess)
 
