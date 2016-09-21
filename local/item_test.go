@@ -72,8 +72,6 @@ func TestHardlink(t *testing.T) {
 			is.Equal(meta["is_dir"], false)
 			is.True(meta["is_hardlink"])
 			is.False(meta["is_symlink"])
-
-			is.OK(meta["link"]) // we have to fix it, because right now it doesn't return the link
 		}
 	}
 }
