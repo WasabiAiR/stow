@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -25,19 +26,31 @@ import (
 // Locations should be empty.
 func All(t *testing.T, kind string, config stow.Config) {
 	is := is.New(t)
-	startFDs := totalFDs(t)
-	defer func() {
-		endFDs := totalFDs(t)
-
-		is.Equal(0, endFDs-startFDs)
-	}()
 
 	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
 	is.OK(location)
+
+	startFDs, fdsStart := totalNetFDs(t)
 	defer func() {
 		err := location.Close()
 		is.NoErr(err)
+
+		// Close Idle HTTP connectors before counting TCP File Descriptors
+		if tr, ok := http.DefaultTransport.(interface {
+			CloseIdleConnections()
+		}); ok {
+			tr.CloseIdleConnections()
+		}
+		endFDs, fds := totalNetFDs(t)
+		diffFDs := endFDs - startFDs
+		if diffFDs > 0 {
+			t.Log("File Descriptors test start")
+			t.Log(string(fdsStart))
+			t.Log("File Descriptors test end")
+			t.Log(string(fds))
+			t.Fatalf("Leaked %d TCP file descriptor", diffFDs)
+		}
 	}()
 
 	// create two containers
@@ -201,7 +214,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(found, 3) // should find three items
 }
 
-func totalFDs(t *testing.T) int {
+func totalNetFDs(t *testing.T) (int, []byte) {
 	lsof, err := exec.Command("lsof", "-b", "-n", "-p", strconv.Itoa(os.Getpid())).Output()
 	if err != nil {
 		if err, ok := err.(*exec.ExitError); ok {
@@ -209,7 +222,7 @@ func totalFDs(t *testing.T) int {
 		}
 		t.Errorf("error finding or running lsof: %s", err.Error())
 	}
-	return bytes.Count(lsof, []byte("\n"))
+	return bytes.Count(lsof, []byte("TCP")), lsof
 }
 
 func createContainer(is is.I, location stow.Location, name string) stow.Container {
