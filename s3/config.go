@@ -78,13 +78,10 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 	//	token, _ := config.Config(ConfigToken)
 	region, _ := config.Config(ConfigRegion)
 
-	tr := http.DefaultTransport
-	client := &http.Client{Transport: tr}
-
 	awsConfig := aws.NewConfig().
 		WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
 		WithRegion(region).
-		WithHTTPClient(client).
+		WithHTTPClient(http.DefaultClient).
 		WithMaxRetries(aws.UseServiceDefaultRetries).
 		WithLogger(aws.NewDefaultLogger()).
 		WithLogLevel(aws.LogOff).
