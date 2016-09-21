@@ -46,3 +46,11 @@ func (t *bogusLastModifiedTransport) RoundTrip(r *http.Request) (*http.Response,
 	res.Header.Set("Last-Modified", "Tue, 23 Aug 2016 15:12:44 UTC")
 	return res, err
 }
+
+func (t *bogusLastModifiedTransport) CloseIdleConnections() {
+	if tr, ok := t.RoundTripper.(interface {
+		CloseIdleConnections()
+	}); ok {
+		tr.CloseIdleConnections()
+	}
+}
