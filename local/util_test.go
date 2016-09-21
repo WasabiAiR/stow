@@ -1,7 +1,6 @@
 package local_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,10 +18,10 @@ func setup() (string, func() error, error) {
 	if err != nil {
 		return dir, done, err
 	}
-	// done = func() error {
-	// 	return os.RemoveAll(dir)
-	// }
-	// add some "containers"
+	done = func() error {
+		return os.RemoveAll(dir)
+	}
+	add some "containers"
 	err = os.Mkdir(filepath.Join(dir, "one"), 0777)
 	if err != nil {
 		return dir, done, err
@@ -69,7 +68,10 @@ func setup() (string, func() error, error) {
 
 	// make hard- and softlinks themselves
 	err = os.Symlink(filepath.Join(dir, "links", "symtarget"), filepath.Join(dir, "links", "symlink"))
-	fmt.Println(err)
+	if err != nil {
+		return dir, done, err
+	}
+	err = os.Link(filepath.Join(dir, "links", "hardtarget"), filepath.Join(dir, "links", "hardlink"))
 	if err != nil {
 		return dir, done, err
 	}
