@@ -35,6 +35,10 @@ var (
 	// CursorStart is a string representing a cursor pointing
 	// to the first page of items or containers.
 	CursorStart = ""
+
+	// NumberItems is an integer for the number of items to return
+	// when calling the various list functions
+	NumberItems = 100
 )
 
 // IsCursorEnd checks whether the cursor indicates there are no
@@ -55,9 +59,10 @@ type Location interface {
 	// the containers to get. It it obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
+	// count is the number of items to return per page.
 	// The returned cursor can be checked with IsCursorEnd to
 	// decide if there are any more items or not.
-	Containers(prefix string, cursor string) ([]Container, string, error)
+	Containers(prefix string, cursor string, count int) ([]Container, string, error)
 	// Container gets the Container with the specified
 	// identifier.
 	Container(id string) (Container, error)
@@ -82,9 +87,10 @@ type Container interface {
 	// the items to get. It it obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
+	// count is the number of items to return per page.
 	// The returned cursor can be checked with IsCursorEnd to
 	// decide if there are any more items or not.
-	Items(prefix, cursor string) ([]Item, string, error)
+	Items(prefix, cursor string, count int) ([]Item, string, error)
 	// RemoveItem removes the Item with the specified ID.
 	RemoveItem(id string) error
 	// Put creates a new Item with the specified name, and contents

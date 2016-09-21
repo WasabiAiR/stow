@@ -13,9 +13,6 @@ type location struct {
 	target string
 	// config is the configuration for this location.
 	config stow.Config
-	// pagesize is the number of items to return
-	// per page (for Containers and Items).
-	pagesize int
 }
 
 func (l *location) Close() error {
@@ -44,13 +41,12 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 		return nil, err
 	}
 	return &container{
-		pagesize: l.pagesize,
-		name:     name,
-		path:     abspath,
+		name: name,
+		path: abspath,
 	}, nil
 }
 
-func (l *location) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+func (l *location) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
 	path := l.target
 	files, err := filepath.Glob(filepath.Join(path, prefix+"*"))
 	if err != nil {
@@ -74,10 +70,10 @@ func (l *location) Containers(prefix string, cursor string) ([]stow.Container, s
 			return nil, "", stow.ErrBadCursor
 		}
 	}
-	if len(cs) > l.pagesize {
-		cursor = cs[l.pagesize].ID()
-		cs = cs[:l.pagesize] // limit cs to pagesize
-	} else if len(cs) <= l.pagesize {
+	if len(cs) > count {
+		cursor = cs[count].ID()
+		cs = cs[:count] // limit cs to count
+	} else if len(cs) <= count {
 		cursor = ""
 	}
 
@@ -124,9 +120,8 @@ func (l *location) filesToContainers(root string, files ...string) ([]stow.Conta
 			return nil, err
 		}
 		cs = append(cs, &container{
-			pagesize: l.pagesize,
-			name:     name,
-			path:     path,
+			name: name,
+			path: path,
 		})
 	}
 	return cs, nil

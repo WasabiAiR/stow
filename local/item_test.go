@@ -19,13 +19,13 @@ func TestItemReader(t *testing.T) {
 	l, err := stow.Dial(local.Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
-	containers, cursor, err := l.Containers("t", stow.CursorStart)
+	containers, cursor, err := l.Containers("t", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.OK(containers)
 	is.Equal(cursor, "")
 	three, err := l.Container(containers[0].ID())
 
-	items, cursor, err := three.Items("", stow.CursorStart)
+	items, cursor, err := three.Items("", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.Equal(cursor, "")
 	item1 := items[0]

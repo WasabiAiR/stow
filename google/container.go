@@ -61,9 +61,9 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 // Items retrieves a list of items that are prepended with
 // the prefix argument. The 'cursor' variable facilitates pagination.
-func (c *container) Items(prefix string, cursor string) ([]stow.Item, string, error) {
+func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item, string, error) {
 	// List all objects in a bucket using pagination
-	call := c.client.Objects.List(c.name).MaxResults(10)
+	call := c.client.Objects.List(c.name).MaxResults(int64(count))
 
 	if prefix != "" {
 		call.Prefix(prefix)

@@ -38,7 +38,7 @@ func (l *testLocation) RemoveContainer(id string) error {
 func (l *testLocation) Container(id string) (stow.Container, error) {
 	return nil, nil
 }
-func (l *testLocation) Containers(prefix string, cursor string) ([]stow.Container, string, error) {
+func (l *testLocation) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
 	return nil, "", nil
 }
 
