@@ -52,26 +52,27 @@ func setup() (string, func() error, error) {
 	// make symlinks and hardlinks
 
 	// make seperate "container" for links
-	err = os.Mkdir(filepath.Join(dir, "links"), 0777)
+	// naming it with "z-" prefix, so other tests that depend on container order do not fail
+	err = os.Mkdir(filepath.Join(dir, "z-links"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
 	// make sym- and hardlink targets
-	err = ioutil.WriteFile(filepath.Join(dir, "links", "symtarget"), []byte("symlink target"), 0777)
+	err = ioutil.WriteFile(filepath.Join(dir, "z-links", "symtarget"), []byte("symlink target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
-	err = ioutil.WriteFile(filepath.Join(dir, "links", "hardtarget"), []byte("hardlink target"), 0777)
+	err = ioutil.WriteFile(filepath.Join(dir, "z-links", "hardtarget"), []byte("hardlink target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
 
 	// make hard- and softlinks themselves
-	err = os.Symlink(filepath.Join(dir, "links", "symtarget"), filepath.Join(dir, "links", "symlink"))
+	err = os.Symlink(filepath.Join(dir, "z-links", "symtarget"), filepath.Join(dir, "z-links", "symlink"))
 	if err != nil {
 		return dir, done, err
 	}
-	err = os.Link(filepath.Join(dir, "links", "hardtarget"), filepath.Join(dir, "links", "hardlink"))
+	err = os.Link(filepath.Join(dir, "z-links", "hardtarget"), filepath.Join(dir, "z-links", "hardlink"))
 	if err != nil {
 		return dir, done, err
 	}
