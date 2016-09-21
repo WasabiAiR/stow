@@ -173,6 +173,7 @@ func (c *container) getItem(id string) (*item, error) {
 		}
 		return nil, errors.Wrap(err, "getItem, getting the object")
 	}
+	defer response.Body.Close()
 
 	// etag string value contains quotations. Remove them.
 	etag := cleanEtag(*response.ETag)
