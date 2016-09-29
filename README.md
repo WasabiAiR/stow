@@ -61,11 +61,11 @@ if err != nil {
 	return err
 }
 defer location.Close()
-containers, _, err := location.Containers("", stow.CursorStart)
+containers, _, err := location.Containers(stow.NoPrefix, stow.CursorStart, 10)
 if err != nil {
 	return err
 }
-err = stow.Walk(containers[0], "", func(item stow.Item, err error) error {
+err = stow.Walk(containers[0], stow.NoPrefix, func(item stow.Item, err error) error {
 	if err != nil {
 		return err
 	}

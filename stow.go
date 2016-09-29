@@ -36,6 +36,11 @@ var (
 	// to the first page of items or containers.
 	CursorStart = ""
 
+	// NoPrefix is a string representing no prefix. It can be used
+	// in any function that asks for a prefix value, but where one is
+	// not appropriate.
+	NoPrefix = ""
+
 	// NumberItems is an integer for the number of items to return
 	// when calling the various list functions
 	NumberItems = 100
