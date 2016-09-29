@@ -84,7 +84,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// make sure we can get a small set of paginated results
-	items, cursor, err := c1.Items("", stow.CursorStart, 1)
+	items, cursor, err := c1.Items(stow.NoPrefix, stow.CursorStart, 1)
 	is.NoErr(err)
 	is.Equal(len(items), 1)
 	is.NotEqual(cursor, "")
@@ -95,7 +95,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(len(items), 2)
 
 	// make sure we get these three items from the container
-	items, _, err = c1.Items("", stow.CursorStart, stow.NumberItems)
+	items, _, err = c1.Items(stow.NoPrefix, stow.CursorStart, stow.NumberItems)
 	is.NoErr(err)
 	is.Equal(len(items), 3)
 
@@ -170,7 +170,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking
 	var walkedItems []stow.Item
-	err = stow.Walk(c1, "", stow.NumberItems, func(item stow.Item, err error) error {
+	err = stow.Walk(c1, stow.NoPrefix, stow.NumberItems, func(item stow.Item, err error) error {
 		if err != nil {
 			return err
 		}
@@ -199,14 +199,14 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking error
 	testErr := errors.New("test error")
-	err = stow.Walk(c1, "", stow.NumberItems, func(item stow.Item, err error) error {
+	err = stow.Walk(c1, stow.NoPrefix, stow.NumberItems, func(item stow.Item, err error) error {
 		return testErr
 	})
 	is.Equal(testErr, err)
 
 	// container walking
 	found := 0
-	err = stow.WalkContainers(location, "", stow.NumberItems, func(c stow.Container, err error) error {
+	err = stow.WalkContainers(location, stow.NoPrefix, stow.NumberItems, func(c stow.Container, err error) error {
 		if err != nil {
 			return err
 		}
