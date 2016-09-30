@@ -19,9 +19,9 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 
 The concepts of Stow are modelled around the most popular object storage services, and are made up of three main objects:
 
-* Location - a place where many `Container` objects are stored
-* Container - a named group of `Item` objects
-* Item - an individual file
+* `Location` - a place where many `Container` objects are stored
+* `Container` - a named group of `Item` objects
+* `Item` - an individual file
 
 ```
 location1 (e.g. Azure)
