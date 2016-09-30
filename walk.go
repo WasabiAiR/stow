@@ -13,14 +13,15 @@ type WalkFunc func(item Item, err error) error
 // Walk walks all Items in the Container.
 // Returns the first error returned by the WalkFunc or
 // nil if no errors were returned.
-func Walk(container Container, prefix string, count int, fn WalkFunc) error {
+// The pageSize is the number of Items to get per request.
+func Walk(container Container, prefix string, pageSize int, fn WalkFunc) error {
 	var (
 		err    error
 		items  []Item
 		cursor = CursorStart
 	)
 	for {
-		items, cursor, err = container.Items(prefix, cursor, count)
+		items, cursor, err = container.Items(prefix, cursor, pageSize)
 		if err != nil {
 			err = fn(nil, err)
 			if err != nil {
@@ -51,14 +52,15 @@ type WalkContainersFunc func(container Container, err error) error
 // WalkContainers walks all Containers in the Location.
 // Returns the first error returned by the WalkContainersFunc or
 // nil if no errors were returned.
-func WalkContainers(location Location, prefix string, count int, fn WalkContainersFunc) error {
+// The pageSize is the number of Containers to get per request.
+func WalkContainers(location Location, prefix string, pageSize int, fn WalkContainersFunc) error {
 	var (
 		err        error
 		containers []Container
 		cursor     = CursorStart
 	)
 	for {
-		containers, cursor, err = location.Containers(prefix, cursor, count)
+		containers, cursor, err = location.Containers(prefix, cursor, pageSize)
 		if err != nil {
 			err = fn(nil, err)
 			if err != nil {
