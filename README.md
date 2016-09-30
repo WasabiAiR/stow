@@ -1,8 +1,8 @@
 # stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow) [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
 Cloud storage abstraction package for Go. 
 
-Version: 0.1.0
-Project status: Approaching v1.0 release
+* Version: 0.1.0
+* Project status: Approaching v1.0 release
 
 ## How it works
 
