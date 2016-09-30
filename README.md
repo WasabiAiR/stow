@@ -66,6 +66,25 @@ The underscore indicates that you do not intend to use the package in your code.
 
 * For more information about using Stow, see the [Best practices documentation](BestPractices.md).
 
+### Connecting to locations
+
+To connect to a location, you need to know the `kind` string (available by accessing the `Kind` constant in the implementation package) and a `stow.Config` object that contains any required configuration information (such as account names, API keys, credentials, etc). Configuration is implementation specific, so you should consult each implementation to see what fields are required.
+
+```
+kind := "s3"
+config := stow.ConfigMap{
+	"account-name": "stow"
+	"api-key":      "abc123",
+}
+location, err := stow.Dial(kind, config)
+if err != nil {
+	return err
+}
+defer location.Close()
+
+// TODO: use location
+```
+
 ### Walking all items
 
 ```go
