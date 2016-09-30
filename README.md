@@ -42,10 +42,11 @@ location2 (e.g. local storage)
 ├───── item2.2
 ```
 
-* A Location contains many containers
+* A location contains many containers
 * A container contains many items
 * Containers do not contain other containers
 * Items must belong to a container
+* Item names may be a path
 
 ## Guides
 
