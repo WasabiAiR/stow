@@ -10,6 +10,7 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 * Local (folders are containers, files are items)
 * Remote (mounted) drives (NFS, CIFS, etc.)
 * Amazon S3
+* Google Cloud Storage
 * Microsoft Azure Blob Storage
 * Openstack Swift (with auth v2)
 * Oracle Storage Cloud Service
