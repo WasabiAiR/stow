@@ -8,7 +8,7 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 ## Implementations
 
 * Local (folders are containers, files are items)
-* Remote (mounted) drives (NFS, CIFS, etc.)
+* Remote (mounted) drives (SMB, NFS, CIFS, etc.)
 * Amazon S3
 * Google Cloud Storage
 * Microsoft Azure Blob Storage
@@ -50,6 +50,22 @@ location2 (e.g. local storage)
 
 ## Guides
 
+### Using Stow
+
+Import stow plus any of the implementation packages that you wish to provide. For example, to support Google Cloud Storage and Amazon S3 you would write:
+
+```go
+import (
+	"github.com/graymeta/stow"
+	_ "github.com/graymeta/stow/google"
+	_ "github.com/graymeta/stow/s3"
+)
+```
+
+The underscore indicates that you do not intend to use the package in your code. Importing it is enough, as the implementation packages register themselves with Stow during initialization.
+
+* For more information about using Stow, see the [Best practices documentation](BestPractices.md).
+
 ### Walking all items
 
 ```go
@@ -79,7 +95,11 @@ if err != nil {
 }
 ```
 
-### Getting an `Item` by URL
+### Stow URLs
+
+An `Item` can return a URL via the `URL()` method. While a valid URL, they are useful only within the context of Stow. Within a Location, you can get items using these URLs via the `Location.ItemByURL` method.
+
+#### Getting an `Item` by URL
 
 If you have a stow URL, you can use it to lookup the kind of location:
 
