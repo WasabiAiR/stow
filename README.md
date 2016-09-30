@@ -1,6 +1,9 @@
 # stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow) [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
 Cloud storage abstraction package for Go. 
 
+Version: 0.1.0
+Project status: Approaching v1.0 release
+
 ## How it works
 
 Stow provides implementations for storage services, blob stores, cloud storage etc.
@@ -85,24 +88,44 @@ defer location.Close()
 // TODO: use location
 ```
 
-### Walking all items
+### Walking containers
+
+You can walk every Container using the `stow.WalkContainers` function:
+
+```
+func WalkContainers(location Location, prefix string, pageSize int, fn WalkContainersFunc) error
+```
+
+For example:
+
+```
+err = stow.WalkContainers(location, stow.NoPrefix, 100, func(c stow.Container, err error) error {
+	if err != nil {
+		return err
+	}
+	switch c.Name() {
+	case c1.Name(), c2.Name(), c3.Name():
+		found++
+	}
+	return nil
+})
+if err != nil {
+	return err
+}
+```
+
+### Walking items
+
+Once you have a `Container`, you can walk every Item inside it using the `stow.Walk` function:
 
 ```go
-kind := "s3"
-config := stow.ConfigMap{
-	"account-name": "stow"
-	"api-key":      "abc123",
-}
-location, err := stow.Dial(kind, config)
-if err != nil {
-	return err
-}
-defer location.Close()
-containers, _, err := location.Containers(stow.NoPrefix, stow.CursorStart, 10)
-if err != nil {
-	return err
-}
-err = stow.Walk(containers[0], stow.NoPrefix, func(item stow.Item, err error) error {
+func Walk(container Container, prefix string, pageSize int, fn WalkFunc) error
+```
+
+For example:
+
+```go
+err = stow.Walk(containers[0], stow.NoPrefix, 100, func(item stow.Item, err error) error {
 	if err != nil {
 		return err
 	}
