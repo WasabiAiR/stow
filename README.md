@@ -73,7 +73,7 @@ The underscore indicates that you do not intend to use the package in your code.
 
 To connect to a location, you need to know the `kind` string (available by accessing the `Kind` constant in the implementation package) and a `stow.Config` object that contains any required configuration information (such as account names, API keys, credentials, etc). Configuration is implementation specific, so you should consult each implementation to see what fields are required.
 
-```
+```go
 kind := "s3"
 config := stow.ConfigMap{
 	s3.ConfigAccessKeyID: "246810"
@@ -93,13 +93,13 @@ defer location.Close()
 
 You can walk every Container using the `stow.WalkContainers` function:
 
-```
+```go
 func WalkContainers(location Location, prefix string, pageSize int, fn WalkContainersFunc) error
 ```
 
 For example:
 
-```
+```go
 err = stow.WalkContainers(location, stow.NoPrefix, 100, func(c stow.Container, err error) error {
 	if err != nil {
 		return err
