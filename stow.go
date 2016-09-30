@@ -40,10 +40,6 @@ var (
 	// in any function that asks for a prefix value, but where one is
 	// not appropriate.
 	NoPrefix = ""
-
-	// NumberItems is an integer for the number of items to return
-	// when calling the various list functions
-	NumberItems = 100
 )
 
 // IsCursorEnd checks whether the cursor indicates there are no

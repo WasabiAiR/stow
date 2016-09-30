@@ -90,12 +90,12 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.NotEqual(cursor, "")
 
 	// get the items with a prefix (should only get 2)
-	items, _, err = c1.Items("a_", stow.CursorStart, stow.NumberItems)
+	items, _, err = c1.Items("a_", stow.CursorStart, 100)
 	is.NoErr(err)
 	is.Equal(len(items), 2)
 
 	// make sure we get these three items from the container
-	items, _, err = c1.Items(stow.NoPrefix, stow.CursorStart, stow.NumberItems)
+	items, _, err = c1.Items(stow.NoPrefix, stow.CursorStart, 100)
 	is.NoErr(err)
 	is.Equal(len(items), 3)
 
@@ -170,7 +170,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking
 	var walkedItems []stow.Item
-	err = stow.Walk(c1, stow.NoPrefix, stow.NumberItems, func(item stow.Item, err error) error {
+	err = stow.Walk(c1, stow.NoPrefix, 100, func(item stow.Item, err error) error {
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking with a prefix
 	walkedItems = make([]stow.Item, 0)
-	err = stow.Walk(c1, "a_", stow.NumberItems, func(item stow.Item, err error) error {
+	err = stow.Walk(c1, "a_", 100, func(item stow.Item, err error) error {
 		if err != nil {
 			return err
 		}
@@ -199,14 +199,14 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// test walking error
 	testErr := errors.New("test error")
-	err = stow.Walk(c1, stow.NoPrefix, stow.NumberItems, func(item stow.Item, err error) error {
+	err = stow.Walk(c1, stow.NoPrefix, 100, func(item stow.Item, err error) error {
 		return testErr
 	})
 	is.Equal(testErr, err)
 
 	// container walking
 	found := 0
-	err = stow.WalkContainers(location, stow.NoPrefix, stow.NumberItems, func(c stow.Container, err error) error {
+	err = stow.WalkContainers(location, stow.NoPrefix, 100, func(c stow.Container, err error) error {
 		if err != nil {
 			return err
 		}
