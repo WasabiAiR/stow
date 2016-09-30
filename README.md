@@ -52,7 +52,7 @@ location2 (e.g. local storage)
 
 ### Using Stow
 
-Import stow plus any of the implementation packages that you wish to provide. For example, to support Google Cloud Storage and Amazon S3 you would write:
+Import Stow plus any of the implementation packages that you wish to provide. For example, to support Google Cloud Storage and Amazon S3 you would write:
 
 ```go
 import (
@@ -101,7 +101,7 @@ An `Item` can return a URL via the `URL()` method. While a valid URL, they are u
 
 #### Getting an `Item` by URL
 
-If you have a stow URL, you can use it to lookup the kind of location:
+If you have a Stow URL, you can use it to lookup the kind of location:
 
 ```go
 kind, err := stow.KindByURL(url)
