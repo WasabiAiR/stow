@@ -1,4 +1,4 @@
-# stow
+# stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow)
 Storage abstraction package for Go.
 
 ## How it works
