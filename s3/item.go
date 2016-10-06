@@ -4,10 +4,12 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +28,26 @@ type item struct {
 	client *s3.S3
 
 	// Properties represent the characteristics of the file. Name, Etag, etc.
-	properties *s3.Object
+	properties Properties
+
+	infoOnce sync.Once
+	infoErr  error
+}
+
+type Properties struct {
+	ETag *string `type:"string"`
+
+	Key *string `min:"1" type:"string"`
+
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+
+	Owner *s3.Owner `type:"structure"`
+
+	Size *int64 `type:"integer"`
+
+	StorageClass *string `type:"string" enum:"ObjectStorageClass"`
+
+	Metadata map[string]interface{}
 }
 
 // ID returns a string value that represents the name of a file.
@@ -94,13 +115,45 @@ func (i *item) LastMod() (time.Time, error) {
 	return *i.properties.LastModified, nil
 }
 
-// Metadata returns a nil map and no error.
-// TODO: Implement this.
 func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	err := i.ensureInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return i.properties.Metadata, nil
+	//	return map[string]interface{}{}, nil
 }
 
 // ETag returns the ETag value from the properies field of an item.
 func (i *item) ETag() (string, error) {
 	return *(i.properties.ETag), nil
+}
+
+func (i *item) ensureInfo() error {
+	if i.properties.Metadata == nil {
+		i.infoOnce.Do(func() {
+			itemInfo, infoErr := i.getInfo()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+
+			i.properties.Metadata, infoErr = itemInfo.Metadata()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+		})
+	}
+
+	return i.infoErr
+}
+
+func (i *item) getInfo() (stow.Item, error) {
+	itemInfo, err := i.container.getItem(i.ID())
+	if err != nil {
+		return nil, err
+	}
+	return itemInfo, nil
 }

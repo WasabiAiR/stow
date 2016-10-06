@@ -14,12 +14,9 @@ import (
 
 // Amazon S3 bucket contains a creationdate and a name.
 type container struct {
-	// Name is needed to retrieve items.
-	name string
-
-	// Client is responsible for performing the requests.
-	client *s3.S3
-	region string
+	name   string // Name is needed to retrieve items.
+	client *s3.S3 // Client is responsible for performing the requests.
+	region string // Describes the AWS Availability Zone of the S3 Bucket.
 }
 
 // ID returns a string value which represents the name of the container.
@@ -67,9 +64,16 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		object.ETag = &etag
 
 		containerItems[i] = &item{
-			container:  c,
-			client:     c.client,
-			properties: object,
+			container: c,
+			client:    c.client,
+			properties: Properties{
+				ETag:         object.ETag,
+				Key:          object.Key,
+				LastModified: object.LastModified,
+				Owner:        object.Owner,
+				Size:         object.Size,
+				StorageClass: object.StorageClass,
+			},
 		}
 	}
 
@@ -133,7 +137,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	newItem := &item{
 		container: c,
 		client:    c.client,
-		properties: &s3.Object{
+		properties: Properties{
 			ETag: &etag,
 			Key:  &name,
 			Size: &size,
@@ -166,6 +170,7 @@ func (c *container) getItem(id string) (*item, error) {
 	}
 
 	response, err := c.client.GetObject(params)
+
 	if err != nil {
 		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
 		if strings.Contains(err.Error(), "NoSuchKey") {
@@ -178,16 +183,22 @@ func (c *container) getItem(id string) (*item, error) {
 	// etag string value contains quotations. Remove them.
 	etag := cleanEtag(*response.ETag)
 
+	mdMap := make(map[string]interface{}, len(response.Metadata))
+	for key, value := range response.Metadata {
+		mdMap[key] = *value // value is a pointer to a string
+	}
+
 	i := &item{
 		container: c,
 		client:    c.client,
-		properties: &s3.Object{
+		properties: Properties{
 			ETag:         &etag,
 			Key:          &id,
 			LastModified: response.LastModified,
 			Owner:        nil, // Weird that it's not returned in the response.
 			Size:         response.ContentLength,
 			StorageClass: response.StorageClass,
+			Metadata:     mdMap,
 		},
 	}
 
@@ -224,7 +235,6 @@ func cleanEtag(etag string) string {
 			etag = strings.Replace(etag, `W/`, "", 1)
 
 		} else {
-
 			break
 		}
 	}
