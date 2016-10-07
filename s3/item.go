@@ -122,7 +122,6 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 	}
 
 	return i.properties.Metadata, nil
-	//	return map[string]interface{}{}, nil
 }
 
 // ETag returns the ETag value from the properies field of an item.
