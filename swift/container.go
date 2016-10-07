@@ -75,13 +75,14 @@ func (c *container) RemoveItem(id string) error {
 }
 
 func (c *container) getItem(id string) (*item, error) {
-	info, _, err := c.client.Object(c.id, id)
+	info, headers, err := c.client.Object(c.id, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "Object Not Found") {
 			return nil, stow.ErrNotFound
 		}
 		return nil, err
 	}
+
 	item := &item{
 		id:           id,
 		container:    c,
@@ -90,5 +91,12 @@ func (c *container) getItem(id string) (*item, error) {
 		size:         info.Bytes,
 		lastModified: info.LastModified,
 	}
+
+	mdMap := make(map[string]interface{}, len(headers))
+	for key, value := range headers {
+		mdMap[key] = value
+	}
+	item.metadata = mdMap
+
 	return item, nil
 }

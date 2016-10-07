@@ -20,6 +20,7 @@ type item struct {
 	size         int64
 	url          url.URL
 	lastModified time.Time
+	metadata     map[string]interface{}
 
 	infoOnce sync.Once
 	infoErr  error
@@ -86,7 +87,12 @@ func (i *item) LastMod() (time.Time, error) {
 // Metadata returns a nil map and no error.
 // TODO: Implement this.
 func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	err := i.ensureInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return i.metadata, nil
 }
 
 // ensureInfo checks the fields that may be empty when an item is PUT.
@@ -95,7 +101,7 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 func (i *item) ensureInfo() error {
 	// If lastModified is empty, so is hash. get info on the Item and
 	// update the necessary fields at the same time.
-	if i.lastModified.IsZero() || i.hash == "" {
+	if i.lastModified.IsZero() || i.hash == "" || i.metadata == nil {
 		i.infoOnce.Do(func() {
 			itemInfo, infoErr := i.getInfo()
 			if infoErr != nil {
