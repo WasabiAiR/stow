@@ -1,9 +1,17 @@
 package s3
 
 import (
+	"bytes"
 	"fmt"
+	"net/http"
 	"testing"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
@@ -36,4 +44,86 @@ func TestEtagCleanup(t *testing.T) {
 				index, permutations[index], cleanTestStr)
 		}
 	}
+}
+
+// Find some way to PUT an item with metadata, use stow to retrieve it and make assertions
+// as needed
+func TestMetadata(t *testing.T) {
+	is := is.New(t)
+
+	accessKeyID := "AKIAIKXUQN43OZER6ZJQ"
+	secretKey := "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"
+	region := "us-west-1"
+	containerName := "stowtestcontainer" // TODO: randomize
+	objectName := "testObject.txt"
+	objectContent := []byte("foobarbaz")
+	objectLength := int64(len(objectContent))
+
+	awsConfig := aws.NewConfig().
+		WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
+		WithRegion(region).
+		WithHTTPClient(http.DefaultClient).
+		WithMaxRetries(aws.UseServiceDefaultRetries).
+		WithLogger(aws.NewDefaultLogger()).
+		WithLogLevel(aws.LogOff).
+		WithSleepDelay(time.Sleep)
+
+	sess := session.New(awsConfig)
+	is.NotNil(sess)
+
+	s3Client := s3.New(sess)
+	is.NotNil(s3Client)
+
+	createContainerParams := &s3.CreateBucketInput{
+		Bucket: aws.String(containerName),
+	}
+
+	_, err := s3Client.CreateBucket(createContainerParams)
+	is.NoErr(err)
+	defer func() {
+		_, err = s3Client.DeleteBucket(&s3.DeleteBucketInput{
+			Bucket: &containerName,
+		})
+		is.NoErr(err)
+	}()
+
+	putParams := &s3.PutObjectInput{
+		Bucket:        aws.String(containerName),      // Container name
+		Key:           (&objectName),                  // Item name
+		ContentLength: &objectLength,                  // Item content length
+		Body:          bytes.NewReader(objectContent), // Item body
+		Metadata: map[string]*string{
+			"whos-the-man": aws.String("Bruce Lee"), // metadata as key value
+		},
+	}
+
+	_, err = s3Client.PutObject(putParams)
+	is.NoErr(err)
+	defer func() {
+		s3Client.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String(containerName),
+			Key:    aws.String(objectName),
+		})
+	}()
+
+	// Use Stow to grab the item and its metadata
+	config := stow.ConfigMap{
+		"access_key_id": "AKIAIKXUQN43OZER6ZJQ",
+		"secret_key":    "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",
+		"region":        "us-west-1",
+	}
+
+	stowLoc, err := stow.Dial("s3", config)
+	is.NoErr(err)
+
+	stowCon, err := stowLoc.Container(containerName)
+	is.NoErr(err)
+
+	stowIt, err := stowCon.Item(objectName)
+	is.NoErr(err)
+
+	itMetadata, err := stowIt.Metadata()
+	is.NoErr(err)
+
+	is.Equal(itMetadata["Whos-The-Man"], "Bruce Lee")
 }
