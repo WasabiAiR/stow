@@ -69,9 +69,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// add three items to c1
-	item1 := putItem(is, c1, "a_first/the item", "item one")
-	item2 := putItem(is, c1, "a_second/the item", "item two")
-	item3 := putItem(is, c1, "the_third/the item", "item three")
+	item1 := putItem(is, c1, "a_first/the item", "item one", nil)
+	item2 := putItem(is, c1, "a_second/the item", "item two", nil)
+	item3 := putItem(is, c1, "the_third/the item", "item three", nil)
 	is.OK(item1, item2, item3)
 
 	defer func() {
@@ -240,8 +240,8 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 	return container
 }
 
-func putItem(is is.I, container stow.Container, name, content string) stow.Item {
-	item, err := container.Put(name, strings.NewReader(content), int64(len(content)))
+func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) stow.Item {
+	item, err := container.Put(name, strings.NewReader(content), int64(len(content)), nil)
 	is.NoErr(err)
 	is.OK(item)
 	return item

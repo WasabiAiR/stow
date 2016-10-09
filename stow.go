@@ -96,7 +96,7 @@ type Container interface {
 	RemoveItem(id string) error
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
-	Put(name string, r io.Reader, size int64) (Item, error)
+	Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (Item, error)
 }
 
 // Item represents an item inside a Container.

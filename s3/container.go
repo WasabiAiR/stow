@@ -107,10 +107,15 @@ func (c *container) RemoveItem(id string) error {
 // received are the name of the item (S3 Object), a reader representing the
 // content, and the size of the file. Many more attributes can be given to the
 // file, including metadata. Keeping it simple for now.
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	content, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, nil
+	}
+
+	md, err := setMetadata(metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "converting Item metadata")
 	}
 
 	params := &s3.PutObjectInput{
@@ -119,6 +124,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		ContentLength: aws.Int64(size),
 		Body:          bytes.NewReader(content),
 		// Metadata map[string]*string,
+		Metadata: md,
 	}
 
 	// Only Etag returned.
@@ -238,6 +244,17 @@ func cleanEtag(etag string) string {
 			break
 		}
 	}
-
 	return etag
+}
+
+func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
+	m := make(map[string]*string, len(mdMap))
+	for key, value := range mdMap {
+		strValue, valid := value.(*string)
+		if !valid {
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string pointer.`, key)
+		}
+		m[key] = strValue
+	}
+	return m, nil
 }

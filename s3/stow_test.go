@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -126,4 +128,81 @@ func TestMetadata(t *testing.T) {
 	is.NoErr(err)
 
 	is.Equal(itMetadata["Whos-The-Man"], "Bruce Lee")
+}
+
+func TestSetMetadataSuccess(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]*string)
+	m["one"] = aws.String("two")
+	m["3"] = aws.String("4")
+	m["ninety-nine"] = aws.String("100")
+
+	mCopy := make(map[string]interface{})
+	for key, value := range m {
+		mCopy[key] = value
+	}
+
+	returnedMap, err := setMetadata(mCopy)
+	is.NoErr(err)
+
+	if !reflect.DeepEqual(m, returnedMap) {
+		t.Error("Expected and returned maps are not equal.")
+	}
+}
+
+func TestSetMetadataFailure(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]interface{})
+	m["name"] = "Corey"
+	m["number"] = 9
+
+	_, err := setMetadata(m)
+	is.Err(err)
+}
+
+func TestItemMetadata(t *testing.T) {
+	is := is.New(t)
+
+	containerName := "stowtestintegrationfoobargraymeta"
+	objectName := "onetwothree"
+	content := "HELLO WORLD"
+
+	objectMetadata := map[string]interface{}{
+		"hey": aws.String("you"),
+	}
+
+	// Use Stow to grab the item and its metadata
+	config := stow.ConfigMap{
+		"access_key_id": "AKIAIKXUQN43OZER6ZJQ",
+		"secret_key":    "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",
+		"region":        "us-west-1",
+	}
+
+	stowLoc, err := stow.Dial("s3", config)
+	is.NoErr(err)
+
+	stowCon, err := stowLoc.CreateContainer(containerName)
+	is.NoErr(err)
+
+	stowCon, err = stowLoc.Container(containerName)
+	is.NoErr(err)
+	defer func() {
+		stowLoc.RemoveContainer(containerName)
+	}()
+
+	stowIt, err := stowCon.Put(objectName, strings.NewReader(content), int64(len(content)), objectMetadata)
+	is.NoErr(err)
+
+	stowIt, err = stowCon.Item(objectName)
+	is.NoErr(err)
+	defer func() {
+		stowCon.RemoveItem(objectName)
+	}()
+
+	itMetadata, err := stowIt.Metadata()
+	is.NoErr(err)
+
+	t.Logf("Metadata: %v", itMetadata)
 }
