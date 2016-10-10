@@ -120,6 +120,12 @@ func (i *item) ensureInfo() error {
 				i.infoErr = infoErr
 				return
 			}
+
+			i.metadata, i.infoErr = itemInfo.Metadata()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
 		})
 	}
 	return i.infoErr
