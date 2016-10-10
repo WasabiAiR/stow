@@ -123,8 +123,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		Key:           aws.String(name),   // Required
 		ContentLength: aws.Int64(size),
 		Body:          bytes.NewReader(content),
-		// Metadata map[string]*string,
-		Metadata: md,
+		Metadata:      md, // map[string]*string
 	}
 
 	// Only Etag returned.
@@ -189,10 +188,7 @@ func (c *container) getItem(id string) (*item, error) {
 	// etag string value contains quotations. Remove them.
 	etag := cleanEtag(*response.ETag)
 
-	mdMap := make(map[string]interface{}, len(response.Metadata))
-	for key, value := range response.Metadata {
-		mdMap[key] = *value // value is a pointer to a string
-	}
+	mdMap := parseMetadata(response.Metadata)
 
 	i := &item{
 		container: c,
@@ -250,11 +246,20 @@ func cleanEtag(etag string) string {
 func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
 	m := make(map[string]*string, len(mdMap))
 	for key, value := range mdMap {
-		strValue, valid := value.(*string)
+		strValue, valid := value.(string)
 		if !valid {
-			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string pointer.`, key)
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string or string pointer.`, key)
 		}
-		m[key] = strValue
+		m[key] = aws.String(strValue)
 	}
 	return m, nil
+}
+
+func parseMetadata(mdMap map[string]*string) map[string]interface{} {
+	m := make(map[string]interface{}, len(mdMap))
+	for key, value := range mdMap {
+		k := strings.ToLower(key)
+		m[k] = *value // type of `value` should be a pointer to a string
+	}
+	return m
 }
