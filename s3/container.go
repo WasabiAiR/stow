@@ -243,6 +243,7 @@ func cleanEtag(etag string) string {
 	return etag
 }
 
+// TODO: validation for key values.
 func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
 	m := make(map[string]*string, len(mdMap))
 	for key, value := range mdMap {
@@ -255,6 +256,10 @@ func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
 	return m, nil
 }
 
+// Dereference map values which yield strings, return appropriate map type.
+// The first letter of a dash separated key value is capitalized. Perform a ToLower on it.
+// This Key and Value transformation is to be consistent with metadata parsing of other
+// Locations.
 func parseMetadata(mdMap map[string]*string) map[string]interface{} {
 	m := make(map[string]interface{}, len(mdMap))
 	for key, value := range mdMap {

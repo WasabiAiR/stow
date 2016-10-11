@@ -4,6 +4,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/graymeta/stow"
 	"github.com/ncw/swift"
 )
@@ -56,16 +58,24 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, marker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
-	_, err := c.client.ObjectPut(c.id, name, r, false, "", "", swift.Headers{})
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
+	mdParsed, err := setMetadata(mdRaw)
+	h, err := c.client.ObjectPut(c.id, name, r, false, "", "", mdParsed)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create new Item")
 	}
+
+	mdReturned, err := parseMetadata(h)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create new item, parsing metadata")
+	}
+
 	item := &item{
 		id:        name,
 		container: c,
 		client:    c.client,
 		size:      size,
+		metadata:  mdReturned,
 	}
 	return item, nil
 }
@@ -80,7 +90,12 @@ func (c *container) getItem(id string) (*item, error) {
 		if strings.Contains(err.Error(), "Object Not Found") {
 			return nil, stow.ErrNotFound
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "error retrieving item")
+	}
+
+	md, err := parseMetadata(headers)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving item, could not parse metadata")
 	}
 
 	item := &item{
@@ -90,13 +105,29 @@ func (c *container) getItem(id string) (*item, error) {
 		hash:         info.Hash,
 		size:         info.Bytes,
 		lastModified: info.LastModified,
+		metadata:     md,
 	}
+	return item, nil
+}
 
-	mdMap := make(map[string]interface{}, len(headers))
-	for key, value := range headers {
+// returns metadata keys in all lowercase
+func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
+	mdMap := make(map[string]interface{}, len(md))
+	for key, value := range md.ObjectMetadata() {
 		mdMap[key] = value
 	}
-	item.metadata = mdMap
+	return mdMap, nil
+}
 
-	return item, nil
+// TODO determine invalid keys
+func setMetadata(md map[string]interface{}) (map[string]string, error) {
+	parsedMap := make(map[string]string, len(md))
+	for key, value := range md {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
+		}
+		parsedMap["X-Object-Meta-"+key] = str
+	}
+	return parsedMap, nil
 }
