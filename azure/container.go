@@ -7,6 +7,7 @@ import (
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 // timeFormat is the time format for azure.
@@ -80,12 +81,23 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, listblobs.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
 	name = strings.Replace(name, " ", "+", -1)
-	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
+	err = c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, md)
 	if err != nil {
 		return nil, err
 	}
+
+	md, err := convertMap(mdRaw)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse")
+	}
+
+	err = c.client.SetBlobMetadata(c.id, name, md, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to set metadata")
+	}
+
 	item := &item{
 		id:        name,
 		container: c,
@@ -97,6 +109,28 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		},
 	}
 	return item, nil
+}
+
+// rename this to something better
+func parseMetadata(md map[string]string) (map[string]interface{}, error) {
+	mdMap := make(map[string]interface{}, len(md))
+	for key, value := range md {
+		mdMap[key] = value
+	}
+	return mdMap, nil
+}
+
+// rename this to something better
+func convertMap(md map[string]interface{}) (map[string]string, error) {
+	returnMap := make(map[string]string, len(md))
+	for key, value := range md {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
+		}
+		returnMap[key] = str
+	}
+	return returnMap, nil
 }
 
 func (c *container) RemoveItem(id string) error {

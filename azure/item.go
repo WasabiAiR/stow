@@ -3,10 +3,12 @@ package azure
 import (
 	"io"
 	"net/url"
+	"sync"
 	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 type item struct {
@@ -15,6 +17,9 @@ type item struct {
 	client     *az.BlobStorageClient
 	properties az.BlobProperties
 	url        url.URL
+	metadata   map[string]interface{}
+	infoOnce   sync.Once
+	infoErr    error
 }
 
 var _ stow.Item = (*item)(nil)
@@ -53,5 +58,41 @@ func (i *item) LastMod() (time.Time, error) {
 // Metadata returns a nil map and no error.
 // TODO: Implement this.
 func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	err := i.ensureInfo()
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving metadata")
+	}
+
+	return i.metadata, nil
+}
+
+func (i *item) ensureInfo() error {
+	if i.metadata == nil {
+		i.infoOnce.Do(func() {
+			md, infoErr := i.client.GetBlobMetadata(i.container.Name(), i.Name())
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+
+			// parse
+			mdParsed, infoErr := parseMetadata(md)
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+
+			i.metadata = mdParsed
+		})
+	}
+
+	return i.infoErr
+}
+
+func (i *item) getInfo() (stow.Item, error) {
+	itemInfo, err := i.container.Item(i.ID())
+	if err != nil {
+		return nil, err
+	}
+	return itemInfo, nil
 }
