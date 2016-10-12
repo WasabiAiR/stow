@@ -44,11 +44,8 @@ func (c *container) Item(id string) (stow.Item, error) {
 		properties: *blobProperties,
 	}
 
-	// Etags returned from this method include quotes. Strip them.
-	etag := cleanEtag(item.properties.Etag)
-
-	// Assign the corrected string value to the field.
-	item.properties.Etag = etag
+	etag := cleanEtag(item.properties.Etag) // Etags returned from this method include quotes. Strip them.
+	item.properties.Etag = etag             // Assign the corrected string value to the field.
 
 	return item, nil
 }
@@ -81,21 +78,21 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, listblobs.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
 	name = strings.Replace(name, " ", "+", -1)
-	err = c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, md)
+	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	md, err := convertMap(mdRaw)
+	metadataParsed, err := prepareMetadata(metadataRaw)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse")
+		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
 	}
 
-	err = c.client.SetBlobMetadata(c.id, name, md, nil)
+	err = c.SetItemMetadata(name, metadataParsed)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to set metadata")
+		return nil, errors.Wrap(err, "creating item, unable to set metadata")
 	}
 
 	item := &item{
@@ -111,22 +108,24 @@ func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]i
 	return item, nil
 }
 
-// rename this to something better
-func parseMetadata(md map[string]string) (map[string]interface{}, error) {
-	mdMap := make(map[string]interface{}, len(md))
-	for key, value := range md {
-		mdMap[key] = value
-	}
-	return mdMap, nil
+func (c *container) SetItemMetadata(itemName string, md map[string]string) error {
+	return c.client.SetBlobMetadata(c.id, itemName, md, nil)
 }
 
-// rename this to something better
-func convertMap(md map[string]interface{}) (map[string]string, error) {
-	returnMap := make(map[string]string, len(md))
-	for key, value := range md {
+func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
+	metadataParsedMap := make(map[string]interface{}, len(metadataParsed))
+	for key, value := range metadataParsed {
+		metadataParsedMap[key] = value
+	}
+	return metadataParsedMap, nil
+}
+
+func prepareMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
+	returnMap := make(map[string]string, len(metadataParsed))
+	for key, value := range metadataParsed {
 		str, ok := value.(string)
 		if !ok {
-			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
 		}
 		returnMap[key] = str
 	}

@@ -55,8 +55,6 @@ func (i *item) LastMod() (time.Time, error) {
 	return time.Parse(timeFormat, i.properties.LastModified)
 }
 
-// Metadata returns a nil map and no error.
-// TODO: Implement this.
 func (i *item) Metadata() (map[string]interface{}, error) {
 	err := i.ensureInfo()
 	if err != nil {
@@ -75,13 +73,11 @@ func (i *item) ensureInfo() error {
 				return
 			}
 
-			// parse
 			mdParsed, infoErr := parseMetadata(md)
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return
 			}
-
 			i.metadata = mdParsed
 		})
 	}
