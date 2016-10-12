@@ -63,7 +63,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 }
 
 // Put creates or updates a CloudStorage object within the given container.
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
 	_, err := c.client.ObjectPut(c.id, name, r, false, "", "", swift.Headers{})
 	if err != nil {
 		return nil, err

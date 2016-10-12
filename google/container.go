@@ -112,7 +112,7 @@ func (c *container) RemoveItem(id string) error {
 // Put sends a request to upload content to the container. The arguments
 // received are the name of the item, a reader representing the
 // content, and the size of the file.
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
 
 	object := &storage.Object{Name: name}
 	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()

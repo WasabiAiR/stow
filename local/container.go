@@ -47,7 +47,7 @@ func (c *container) RemoveItem(id string) error {
 	return os.Remove(id)
 }
 
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
 	path := filepath.Join(c.path, name)
 	item := &item{
 		path: path,
