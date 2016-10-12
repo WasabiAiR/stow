@@ -70,9 +70,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// metadata, key may be modified. Example: S3 capitalizes first word.
-	md1 := map[string]interface{}{"stowmetadata": "foo"}
-	md2 := map[string]interface{}{"stowmetadata": "bar"}
-	md3 := map[string]interface{}{"stowmetadata": "baz"}
+	md1 := map[string]interface{}{"stow-metadata": "foo"}
+	md2 := map[string]interface{}{"stow-metadata": "bar"}
+	md3 := map[string]interface{}{"stow-metadata": "baz"}
 
 	// add three items to c1
 	item1 := putItem(is, c1, "a_first/the item", "item one", md1)

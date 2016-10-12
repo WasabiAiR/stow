@@ -110,12 +110,12 @@ func (c *container) RemoveItem(id string) error {
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	content, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, nil
+		return nil, errors.Wrap(err, "unable to create new item, reading content")
 	}
 
-	md, err := setMetadata(metadata)
+	md, err := prepareMetadata(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "converting Item metadata")
+		return nil, errors.Wrap(err, "unable to create new item, preparing metadata")
 	}
 
 	params := &s3.PutObjectInput{
@@ -175,7 +175,6 @@ func (c *container) getItem(id string) (*item, error) {
 	}
 
 	response, err := c.client.GetObject(params)
-
 	if err != nil {
 		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
 		if strings.Contains(err.Error(), "NoSuchKey") {
@@ -188,7 +187,10 @@ func (c *container) getItem(id string) (*item, error) {
 	// etag string value contains quotations. Remove them.
 	etag := cleanEtag(*response.ETag)
 
-	mdMap := parseMetadata(response.Metadata)
+	md, err := parseMetadata(response.Metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
+	}
 
 	i := &item{
 		container: c,
@@ -200,7 +202,7 @@ func (c *container) getItem(id string) (*item, error) {
 			Owner:        nil, // Weird that it's not returned in the response.
 			Size:         response.ContentLength,
 			StorageClass: response.StorageClass,
-			Metadata:     mdMap,
+			Metadata:     md,
 		},
 	}
 
@@ -244,12 +246,12 @@ func cleanEtag(etag string) string {
 }
 
 // TODO: validation for key values.
-func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
-	m := make(map[string]*string, len(mdMap))
-	for key, value := range mdMap {
+func prepareMetadata(md map[string]interface{}) (map[string]*string, error) {
+	m := make(map[string]*string, len(md))
+	for key, value := range md {
 		strValue, valid := value.(string)
 		if !valid {
-			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string or string pointer.`, key)
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
 		}
 		m[key] = aws.String(strValue)
 	}
@@ -260,11 +262,11 @@ func setMetadata(mdMap map[string]interface{}) (map[string]*string, error) {
 // The first letter of a dash separated key value is capitalized. Perform a ToLower on it.
 // This Key and Value transformation is to be consistent with metadata parsing of other
 // Locations.
-func parseMetadata(mdMap map[string]*string) map[string]interface{} {
-	m := make(map[string]interface{}, len(mdMap))
-	for key, value := range mdMap {
+func parseMetadata(md map[string]*string) (map[string]interface{}, error) {
+	m := make(map[string]interface{}, len(md))
+	for key, value := range md {
 		k := strings.ToLower(key)
-		m[k] = *value // type of `value` should be a pointer to a string
+		m[k] = *value
 	}
-	return m
+	return m, nil
 }

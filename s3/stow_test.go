@@ -41,7 +41,7 @@ func TestEtagCleanup(t *testing.T) {
 	}
 }
 
-func TestSetMetadataSuccess(t *testing.T) {
+func TestPrepareMetadataSuccess(t *testing.T) {
 	is := is.New(t)
 
 	m := make(map[string]*string)
@@ -55,7 +55,7 @@ func TestSetMetadataSuccess(t *testing.T) {
 		m2[key] = str
 	}
 
-	returnedMap, err := setMetadata(m2)
+	returnedMap, err := prepareMetadata(m2)
 	is.NoErr(err)
 
 	if !reflect.DeepEqual(m, returnedMap) {
@@ -63,13 +63,13 @@ func TestSetMetadataSuccess(t *testing.T) {
 	}
 }
 
-func TestSetMetadataFailure(t *testing.T) {
+func TestPrepareMetadataFailure(t *testing.T) {
 	is := is.New(t)
 
 	m := make(map[string]interface{})
 	m["name"] = "Corey"
 	m["number"] = 9
 
-	_, err := setMetadata(m)
+	_, err := prepareMetadata(m)
 	is.Err(err)
 }
