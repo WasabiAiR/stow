@@ -68,14 +68,7 @@ func (i *item) LastMod() (time.Time, error) {
 	// If an object is PUT, certain information is missing. Detect
 	// if the lastModified field is missing, send a request to retrieve
 	// it, and save both this and other missing information so that a
-	// request doesn't have to be sent again. Could be placed in PUT,
-	// but right now it seems cleaner to have a request sent when this
-	// field is needed for a maximimum of a single request, rather than
-	// sending a request to get the missing info every time an object
-	// is PUT.
-
-	// Checks if the field is empty, if so, do a GET on the Item and
-	// assign the values to the field.
+	// request doesn't have to be sent again.
 	err := i.ensureInfo()
 	if err != nil {
 		return time.Time{}, err

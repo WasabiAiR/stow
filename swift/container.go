@@ -58,14 +58,18 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, marker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
-	mdParsed, err := setMetadata(mdRaw)
-	h, err := c.client.ObjectPut(c.id, name, r, false, "", "", mdParsed)
+func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
+	md, err := prepareMetadata(metadataRaw)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create new item, preparing metadata")
+	}
+
+	headers, err := c.client.ObjectPut(c.id, name, r, false, "", "", md)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	mdReturned, err := parseMetadata(h)
+	metadataParsed, err := parseMetadata(headers)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new item, parsing metadata")
 	}
@@ -75,7 +79,7 @@ func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]i
 		container: c,
 		client:    c.client,
 		size:      size,
-		metadata:  mdReturned,
+		metadata:  metadataParsed,
 	}
 	return item, nil
 }
@@ -95,7 +99,7 @@ func (c *container) getItem(id string) (*item, error) {
 
 	md, err := parseMetadata(headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving item, could not parse metadata")
+		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
 	}
 
 	item := &item{
@@ -110,24 +114,23 @@ func (c *container) getItem(id string) (*item, error) {
 	return item, nil
 }
 
-// returns metadata keys in all lowercase
 func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
-	mdMap := make(map[string]interface{}, len(md))
+	m := make(map[string]interface{}, len(md))
 	for key, value := range md.ObjectMetadata() {
-		mdMap[key] = value
+		m[key] = value
 	}
-	return mdMap, nil
+	return m, nil
 }
 
 // TODO determine invalid keys
-func setMetadata(md map[string]interface{}) (map[string]string, error) {
-	parsedMap := make(map[string]string, len(md))
+func prepareMetadata(md map[string]interface{}) (map[string]string, error) {
+	m := make(map[string]string, len(md))
 	for key, value := range md {
 		str, ok := value.(string)
 		if !ok {
 			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
 		}
-		parsedMap["X-Object-Meta-"+key] = str
+		m["X-Object-Meta-"+key] = str
 	}
-	return parsedMap, nil
+	return m, nil
 }
