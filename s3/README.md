@@ -12,9 +12,13 @@ Helpful Links:
 
 ---
 
-Concerns:
+SDK Notes:
 
-- More testing needs to be done for nested files and files with spaces.
+- Metadata of an S3 Object can only be set when the Object is created.
+
+---
+
+Concerns:
 
 - An AWS account may have credentials which temporarily modifies permissions. This is specified by a token value. This feature is implemented but disabled and added as a TODO.
 
@@ -24,10 +28,7 @@ Things to know:
 
 - Paging for the list of containers doesn't exist yet, this is because there's a hard limit of about 100 containers for every account.
 
-- At around Line 49 of container.go, the owner field is nil because it's not provided in the response.
-
-- A client is required to provide a region. Manipulating buckets that reside within other regions isn't possible. A workaround involves creating a new client for every container. This is correct and makes sense, but should probably be tabled for another iteration.
-
+- A client is required to provide a region. Manipulating buckets that reside within other regions isn't possible.
 ---
 
 Testing:

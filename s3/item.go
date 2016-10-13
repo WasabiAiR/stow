@@ -78,7 +78,6 @@ func (i *item) Open() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Open, getting the object")
 	}
-
 	return response.Body, nil
 }
 
@@ -92,7 +91,6 @@ func (i *item) LastMod() (time.Time, error) {
 	if err != nil {
 		return time.Time{}, errors.Wrap(err, "retrieving Last Modified information of Item")
 	}
-
 	return *i.properties.LastModified, nil
 }
 
@@ -104,9 +102,8 @@ func (i *item) ETag() (string, error) {
 func (i *item) Metadata() (map[string]interface{}, error) {
 	err := i.ensureInfo()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "retrieving metadata")
 	}
-
 	return i.properties.Metadata, nil
 }
 
@@ -136,7 +133,6 @@ func (i *item) ensureInfo() error {
 			i.properties.LastModified = &lmValue
 		})
 	}
-
 	return i.infoErr
 }
 
