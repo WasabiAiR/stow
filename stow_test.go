@@ -1,6 +1,7 @@
 package stow_test
 
 import (
+	"errors"
 	"net/url"
 	"testing"
 
@@ -27,4 +28,12 @@ func TestIsCursorEnd(t *testing.T) {
 	is := is.New(t)
 	is.True(stow.IsCursorEnd(""))
 	is.False(stow.IsCursorEnd("anything"))
+}
+
+func TestErrNotSupported(t *testing.T) {
+	is := is.New(t)
+	err := errors.New("something")
+	is.False(stow.IsNotSupported(err))
+	err = stow.NotSupported("feature")
+	is.True(stow.IsNotSupported(err))
 }
