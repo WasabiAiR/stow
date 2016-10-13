@@ -58,18 +58,18 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, marker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
-	md, err := prepareMetadata(metadataRaw)
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
+	mdPrepped, err := prepMetadata(mdRaw)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
 	}
 
-	headers, err := c.client.ObjectPut(c.id, name, r, false, "", "", md)
+	headers, err := c.client.ObjectPut(c.id, name, r, false, "", "", mdPrepped)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	metadataParsed, err := parseMetadata(headers)
+	mdParsed, err := parseMetadata(headers)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item, parsing metadata")
 	}
@@ -79,7 +79,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[st
 		container: c,
 		client:    c.client,
 		size:      size,
-		metadata:  metadataParsed,
+		metadata:  mdParsed,
 	}
 	return item, nil
 }
@@ -114,7 +114,7 @@ func (c *container) getItem(id string) (*item, error) {
 	return item, nil
 }
 
-// Keys are returned as all lowercase
+// Keys are returned as all lowercase, dashes are allowed
 func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
 	m := make(map[string]interface{}, len(md))
 	for key, value := range md.ObjectMetadata() {
@@ -123,8 +123,8 @@ func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
 	return m, nil
 }
 
-// TODO determine invalid keys. Dashes are not allowed
-func prepareMetadata(md map[string]interface{}) (map[string]string, error) {
+// TODO determine invalid keys.
+func prepMetadata(md map[string]interface{}) (map[string]string, error) {
 	m := make(map[string]string, len(md))
 	for key, value := range md {
 		str, ok := value.(string)

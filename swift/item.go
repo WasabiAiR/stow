@@ -64,15 +64,10 @@ func (i *item) ETag() (string, error) {
 }
 
 func (i *item) LastMod() (time.Time, error) {
-	// If an object is PUT, certain information is missing. Detect
-	// if the lastModified field is missing, send a request to retrieve
-	// it, and save both this and other missing information so that a
-	// request doesn't have to be sent again.
 	err := i.ensureInfo()
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	return i.lastModified, nil
 }
 
@@ -82,7 +77,6 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return i.metadata, nil
 }
 
@@ -99,20 +93,16 @@ func (i *item) ensureInfo() error {
 				i.infoErr = infoErr
 				return
 			}
-
 			i.hash, i.infoErr = itemInfo.ETag()
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return
 			}
-
 			i.lastModified, i.infoErr = itemInfo.LastMod()
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return
 			}
-
-			// broken
 			i.metadata, i.infoErr = itemInfo.Metadata()
 			if infoErr != nil {
 				i.infoErr = infoErr
