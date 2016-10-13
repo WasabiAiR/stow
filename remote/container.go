@@ -47,7 +47,11 @@ func (c *container) RemoveItem(id string) error {
 	return os.Remove(id)
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+	if len(metadata) > 0 {
+		return nil, stow.NotSupported("metadata")
+	}
+
 	path := filepath.Join(c.path, name)
 	item := &item{
 		path: path,

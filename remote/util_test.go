@@ -106,7 +106,7 @@ func TestCreateItem(t *testing.T) {
 	beforecount := len(items)
 
 	content := "new item contents"
-	newitem, err := c1.Put("new_item", strings.NewReader(content), int64(len(content)))
+	newitem, err := c1.Put("new_item", strings.NewReader(content), int64(len(content)), nil)
 	is.NoErr(err)
 	is.OK(newitem)
 	is.Equal(newitem.Name(), "new_item")
