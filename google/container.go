@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 	storage "google.golang.org/api/storage/v1"
 )
 
@@ -114,11 +115,19 @@ func (c *container) RemoveItem(id string) error {
 // content, and the size of the file.
 func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
 
-	object := &storage.Object{Name: name}
-	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
-
+	mdPrepped, err := prepareMetadata(md)
 	if err != nil {
-		return nil, nil
+		return nil, err
+	}
+
+	object := &storage.Object{
+		Name:     name,
+		Metadata: mdPrepped,
+	}
+
+	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
+	if err != nil {
+		return nil, err
 	}
 
 	t, err := time.Parse(time.RFC3339, res.Updated)
@@ -143,4 +152,24 @@ func (c *container) Put(name string, r io.Reader, size int64, md map[string]inte
 	}
 
 	return newItem, nil
+}
+
+func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
+	metadataParsedMap := make(map[string]interface{}, len(metadataParsed))
+	for key, value := range metadataParsed {
+		metadataParsedMap[key] = value
+	}
+	return metadataParsedMap, nil
+}
+
+func prepareMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
+	returnMap := make(map[string]string, len(metadataParsed))
+	for key, value := range metadataParsed {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
+		}
+		returnMap[key] = str
+	}
+	return returnMap, nil
 }

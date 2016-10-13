@@ -78,14 +78,14 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, listblobs.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	name = strings.Replace(name, " ", "+", -1)
 	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	mdParsed, err := prepMetadata(mdRaw)
+	mdParsed, err := prepMetadata(metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
 	}
