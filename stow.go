@@ -208,3 +208,22 @@ func (e errUnknownKind) Error() string {
 	}
 	return "stow: unknown kind"
 }
+
+type errNotSupported string
+
+func (e errNotSupported) Error() string {
+	return "not supported: " + string(e)
+}
+
+// IsNotSupported gets whether the error is due to
+// a feature not being supported by a specific implementation.
+func IsNotSupported(err error) bool {
+	_, ok := err.(errNotSupported)
+	return ok
+}
+
+// NotSupported gets an error describing the feature
+// as not supported by this implementation.
+func NotSupported(feature string) error {
+	return errNotSupported(feature)
+}
