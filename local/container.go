@@ -47,22 +47,16 @@ func (c *container) RemoveItem(id string) error {
 	return os.Remove(id)
 }
 
-//TODO parsing of keys in metadata pairs
-func prepMetadata(md map[string]interface{}) (map[string]interface{}, error) {
-	return md, nil
-}
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+	if len(metadata) > 0 {
+		return nil, stow.NotSupported("metadata")
+	}
 
-func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
 	path := filepath.Join(c.path, name)
-	mdPrepped, err := prepMetadata(mdRaw)
-	if err != nil {
-		return nil, errors.New("unable to PUT Item, prepping metadata")
-	}
 	item := &item{
-		path:     path,
-		metadata: mdPrepped,
+		path: path,
 	}
-	err = os.MkdirAll(filepath.Dir(path), 0777)
+	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
 		return nil, err
 	}

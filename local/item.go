@@ -66,7 +66,7 @@ func (i *item) ensureInfo() error {
 	i.infoOnce.Do(func() {
 		i.info, i.infoErr = os.Lstat(i.path) // retrieve item file info
 
-		i.infoErr = i.mergeMetadata(i.info) // merge file and metadata maps
+		i.infoErr = i.setMetadata(i.info) // merge file and metadata maps
 		if i.infoErr != nil {
 			return
 		}
@@ -79,16 +79,9 @@ func (i *item) getInfo() (os.FileInfo, error) {
 	return i.info, i.infoErr
 }
 
-func (i *item) mergeMetadata(info os.FileInfo) error {
+func (i *item) setMetadata(info os.FileInfo) error {
 	fileMetadata := getFileMetadata(i.path, info) // retrieve file metadata
-
-	if i.metadata == nil {
-		i.metadata = fileMetadata
-	} else {
-		for key, value := range fileMetadata { // merge the two maps
-			i.metadata[key] = value
-		}
-	}
+	i.metadata = fileMetadata
 	return nil
 }
 

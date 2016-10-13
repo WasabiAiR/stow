@@ -69,15 +69,15 @@ func All(t *testing.T, kind string, config stow.Config) {
 		is.NoErr(err)
 	}()
 
-	// metadata, key may be modified. Example: S3 capitalizes first word.
+	// Item metadata. Keys are usually transposed differently depending on the sdk.
 	md1 := map[string]interface{}{"stowmetadata": "foo"}
 	md2 := map[string]interface{}{"stowmetadata": "bar"}
 	md3 := map[string]interface{}{"stowmetadata": "baz"}
 
 	// add three items to c1
-	item1 := putItem(is, c1, "a_first/the item", "item one", md1)
-	item2 := putItem(is, c1, "a_second/the item", "item two", md2)
-	item3 := putItem(is, c1, "the_third/the item", "item three", md3)
+	item1, skip1 := putItem(is, c1, "a_first/the item", "item one", md1)
+	item2, skip2 := putItem(is, c1, "a_second/the item", "item two", md2)
+	item3, skip3 := putItem(is, c1, "the_third/the item", "item three", md3)
 	is.OK(item1, item2, item3)
 
 	defer func() {
@@ -113,7 +113,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, items[0]), 8)
 	is.Equal(readItemContents(is, item1), "item one")
 	is.NoErr(acceptableTime(t, is, items[0], item1))
-	is.True(checkMetadata(t, is, item1, md1))
+	is.NoErr(checkMetadata(t, is, item1, md1, skip1))
 
 	is.OK(item2.ID())
 	is.OK(item2.Name())
@@ -122,7 +122,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, items[1]), 8)
 	is.Equal(readItemContents(is, item2), "item two")
 	is.NoErr(acceptableTime(t, is, items[1], item2))
-	is.True(checkMetadata(t, is, item2, md2))
+	is.NoErr(checkMetadata(t, is, item2, md2, skip2))
 
 	is.OK(item3.ID())
 	is.OK(item3.Name())
@@ -131,7 +131,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, items[2]), 10)
 	is.Equal(readItemContents(is, item3), "item three")
 	is.NoErr(acceptableTime(t, is, items[2], item3))
-	is.True(checkMetadata(t, is, item3, md3))
+	is.NoErr(checkMetadata(t, is, item3, md3, skip3))
 
 	// check ETags from items retrieved by the Items() method
 	is.OK(etag(t, is, items[0]))
@@ -249,11 +249,16 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 	return container
 }
 
-func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) stow.Item {
+func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) (stow.Item, bool) {
+	var skipAssertion bool // metadata wasn't set, so the assertion should be skipped
 	item, err := container.Put(name, strings.NewReader(content), int64(len(content)), md)
+	if stow.IsNotSupported(err) {
+		item, err = container.Put(name, strings.NewReader(content), int64(len(content)), nil)
+		skipAssertion = true
+	}
 	is.NoErr(err)
 	is.OK(item)
-	return item
+	return item, skipAssertion
 }
 
 func readItemContents(is is.I, item stow.Item) string {
@@ -266,7 +271,6 @@ func readItemContents(is is.I, item stow.Item) string {
 }
 
 func etag(t *testing.T, is is.I, item stow.Item) string {
-
 	etag, err := item.ETag()
 	is.NoErr(err)
 
@@ -328,13 +332,19 @@ func randName(length int) string {
 	return string(b)
 }
 
-func checkMetadata(t *testing.T, is is.I, item stow.Item, md map[string]interface{}) bool {
+func checkMetadata(t *testing.T, is is.I, item stow.Item, md map[string]interface{}, skip bool) error {
 	itemMD, err := item.Metadata()
-	if err != nil {
+	if skip {
+		return nil
+	} else if err != nil {
 		is.Failf("error retrieving item metadata: %v", err)
 	}
 
 	t.Logf("Item metadata: %v", itemMD)
 	t.Logf("Expected item metadata: %v", md)
-	return reflect.DeepEqual(itemMD, md)
+
+	if !reflect.DeepEqual(itemMD, md) {
+		return errors.New("metadata mismatch")
+	}
+	return nil
 }
