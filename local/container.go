@@ -47,12 +47,22 @@ func (c *container) RemoveItem(id string) error {
 	return os.Remove(id)
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
+//TODO parsing of keys in metadata pairs
+func prepMetadata(md map[string]interface{}) (map[string]interface{}, error) {
+	return md, nil
+}
+
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
 	path := filepath.Join(c.path, name)
-	item := &item{
-		path: path,
+	mdPrepped, err := prepMetadata(mdRaw)
+	if err != nil {
+		return nil, errors.New("unable to PUT Item, prepping metadata")
 	}
-	err := os.MkdirAll(filepath.Dir(path), 0777)
+	item := &item{
+		path:     path,
+		metadata: mdPrepped,
+	}
+	err = os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +135,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 	if info.IsDir() {
 		return nil, errors.New("unexpected directory")
 	}
+
 	item := &item{
 		path: path,
 	}
