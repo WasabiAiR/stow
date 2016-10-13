@@ -74,11 +74,6 @@ func (i *item) ensureInfo() error {
 	return i.infoErr
 }
 
-func (i *item) getInfo() (os.FileInfo, error) {
-	i.info, i.infoErr = os.Lstat(i.path)
-	return i.info, i.infoErr
-}
-
 func (i *item) setMetadata(info os.FileInfo) error {
 	fileMetadata := getFileMetadata(i.path, info) // retrieve file metadata
 	i.metadata = fileMetadata
