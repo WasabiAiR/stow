@@ -78,21 +78,21 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, listblobs.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
 	name = strings.Replace(name, " ", "+", -1)
 	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	metadataParsed, err := prepareMetadata(metadataRaw)
+	mdParsed, err := prepMetadata(mdRaw)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
 	}
 
-	err = c.SetItemMetadata(name, metadataParsed)
+	err = c.SetItemMetadata(name, mdParsed)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating item, unable to set metadata")
+		return nil, errors.Wrap(err, "unable to create new item, setting Item metadata")
 	}
 
 	item := &item{
@@ -112,24 +112,24 @@ func (c *container) SetItemMetadata(itemName string, md map[string]string) error
 	return c.client.SetBlobMetadata(c.id, itemName, md, nil)
 }
 
-func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
-	metadataParsedMap := make(map[string]interface{}, len(metadataParsed))
-	for key, value := range metadataParsed {
-		metadataParsedMap[key] = value
+func parseMetadata(md map[string]string) (map[string]interface{}, error) {
+	rtnMap := make(map[string]interface{}, len(md))
+	for key, value := range md {
+		rtnMap[key] = value
 	}
-	return metadataParsedMap, nil
+	return rtnMap, nil
 }
 
-func prepareMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
-	returnMap := make(map[string]string, len(metadataParsed))
-	for key, value := range metadataParsed {
+func prepMetadata(md map[string]interface{}) (map[string]string, error) {
+	rtnMap := make(map[string]string, len(md))
+	for key, value := range md {
 		str, ok := value.(string)
 		if !ok {
 			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
 		}
-		returnMap[key] = str
+		rtnMap[key] = str
 	}
-	return returnMap, nil
+	return rtnMap, nil
 }
 
 func (c *container) RemoveItem(id string) error {

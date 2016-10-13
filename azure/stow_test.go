@@ -2,8 +2,10 @@ package azure
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
+	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
@@ -37,4 +39,37 @@ func TestEtagCleanup(t *testing.T) {
 				index, permutations[index], cleanTestStr)
 		}
 	}
+}
+
+func TestPrepMetadataSuccess(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]string)
+	m["one"] = "two"
+	m["3"] = "4"
+	m["ninety-nine"] = "100"
+
+	m2 := make(map[string]interface{})
+	for key, value := range m {
+		m2[key] = value
+	}
+
+	//returns map[string]interface
+	returnedMap, err := prepMetadata(m2)
+	is.NoErr(err)
+
+	if !reflect.DeepEqual(returnedMap, m) {
+		t.Errorf("Expected map (%+v) and returned map (%+v) are not equal.", m, returnedMap)
+	}
+}
+
+func TestPrepMetadataFailure(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]interface{})
+	m["name"] = "Corey"
+	m["number"] = 9
+
+	_, err := prepMetadata(m)
+	is.Err(err)
 }
