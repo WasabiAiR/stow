@@ -21,9 +21,8 @@ type item struct {
 	url          url.URL
 	lastModified time.Time
 	metadata     map[string]interface{}
-
-	infoOnce sync.Once
-	infoErr  error
+	infoOnce     sync.Once
+	infoErr      error
 }
 
 var _ stow.Item = (*item)(nil)
@@ -113,6 +112,7 @@ func (i *item) ensureInfo() error {
 				return
 			}
 
+			// broken
 			i.metadata, i.infoErr = itemInfo.Metadata()
 			if infoErr != nil {
 				i.infoErr = infoErr
