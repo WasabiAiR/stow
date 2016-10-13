@@ -65,27 +65,20 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 }
 
 // Put creates or updates a CloudStorage object within the given container.
-func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
-	md, err := prepareMetadata(metadataRaw)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
-	}
-
-	_, err = c.client.ObjectPut(c.id, name, r, false, "", "", md)
+func (c *container) Put(name string, r io.Reader, size int64, mdRaw map[string]interface{}) (stow.Item, error) {
+	_, err := c.client.ObjectPut(c.id, name, r, false, "", "", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create new Item")
 	}
 
-	// need to implement parser
-	/*
-		metadataParsed, err := parseMetadata(headers)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to create new Item, parsing metadata")
-		}*/
-
-	err = c.client.ObjectUpdate(c.id, name, md)
+	mdPrepped, err := prepMetadata(mdRaw)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to update metadata")
+		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
+	}
+
+	err = c.client.ObjectUpdate(c.id, name, mdPrepped)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to update Item metadata")
 	}
 
 	item := &item{
@@ -93,6 +86,9 @@ func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[st
 		container: c,
 		client:    c.client,
 		size:      size,
+		// not setting metadata here, the refined version isn't available
+		// unless an explicit getItem() is done. Possible to write a func to facilitate
+		// this.
 	}
 	return item, nil
 }
@@ -139,12 +135,12 @@ func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
 	return m, nil
 }
 
-func prepareMetadata(md map[string]interface{}) (map[string]string, error) {
+func prepMetadata(md map[string]interface{}) (map[string]string, error) {
 	m := make(map[string]string, len(md))
 	for key, value := range md {
 		str, ok := value.(string)
 		if !ok {
-			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
 		}
 		m["X-Object-Meta-"+key] = str
 	}

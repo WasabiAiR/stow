@@ -75,7 +75,6 @@ func (i *item) LastMod() (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	return i.lastModified, nil
 }
 
@@ -85,7 +84,6 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return i.metadata, nil
 }
 
