@@ -6,6 +6,7 @@ import (
 
 	"github.com/graymeta/stow"
 	"github.com/ncw/swift"
+	"github.com/pkg/errors"
 )
 
 type container struct {
@@ -43,6 +44,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	if err != nil {
 		return nil, "", err
 	}
+
 	items := make([]stow.Item, len(objects))
 	for i, obj := range objects {
 
@@ -63,11 +65,29 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 }
 
 // Put creates or updates a CloudStorage object within the given container.
-func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
-	_, err := c.client.ObjectPut(c.id, name, r, false, "", "", swift.Headers{})
+func (c *container) Put(name string, r io.Reader, size int64, metadataRaw map[string]interface{}) (stow.Item, error) {
+	md, err := prepareMetadata(metadataRaw)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
 	}
+
+	_, err = c.client.ObjectPut(c.id, name, r, false, "", "", md)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create new Item")
+	}
+
+	// need to implement parser
+	/*
+		metadataParsed, err := parseMetadata(headers)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to create new Item, parsing metadata")
+		}*/
+
+	err = c.client.ObjectUpdate(c.id, name, md)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to update metadata")
+	}
+
 	item := &item{
 		id:        name,
 		container: c,
@@ -84,13 +104,19 @@ func (c *container) RemoveItem(id string) error {
 }
 
 func (c *container) getItem(id string) (*item, error) {
-	info, _, err := c.client.Object(c.id, id)
+	info, headers, err := c.client.Object(c.id, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "Object Not Found") {
 			return nil, stow.ErrNotFound
 		}
 		return nil, err
 	}
+
+	md, err := parseMetadata(headers)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
+	}
+
 	item := &item{
 		id:           id,
 		container:    c,
@@ -98,6 +124,29 @@ func (c *container) getItem(id string) (*item, error) {
 		hash:         info.Hash,
 		size:         info.Bytes,
 		lastModified: info.LastModified,
+		metadata:     md,
 	}
+
 	return item, nil
+}
+
+// Keys are returned as all lowercase
+func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
+	m := make(map[string]interface{}, len(md))
+	for key, value := range md.ObjectMetadata() {
+		m[key] = value
+	}
+	return m, nil
+}
+
+func prepareMetadata(md map[string]interface{}) (map[string]string, error) {
+	m := make(map[string]string, len(md))
+	for key, value := range md {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.New("could not convert key value") // add a msg mentioning strings only?
+		}
+		m["X-Object-Meta-"+key] = str
+	}
+	return m, nil
 }
