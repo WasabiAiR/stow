@@ -81,7 +81,7 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 		cursor = ""
 	}
 
-	if prefix == "" {
+	if prefix == "" && cursor == stow.CursorStart {
 		allContainer := container{
 			name: "All",
 			path: path,
