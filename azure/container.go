@@ -82,17 +82,17 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	name = strings.Replace(name, " ", "+", -1)
 	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item")
+		return nil, errors.Wrap(err, "unable to create or update Item")
 	}
 
 	mdParsed, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
+		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
 	}
 
 	err = c.SetItemMetadata(name, mdParsed)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new item, setting Item metadata")
+		return nil, errors.Wrap(err, "unable to create or update item, setting Item metadata")
 	}
 
 	item := &item{

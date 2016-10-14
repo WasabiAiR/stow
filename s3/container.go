@@ -104,13 +104,13 @@ func (c *container) RemoveItem(id string) error {
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	content, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new item, reading content")
+		return nil, errors.Wrap(err, "unable to create or update item, reading content")
 	}
 
 	// Convert map[string]interface{} to map[string]*string
 	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new item, preparing metadata")
+		return nil, errors.Wrap(err, "unable to create or update item, preparing metadata")
 	}
 
 	params := &s3.PutObjectInput{

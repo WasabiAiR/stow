@@ -61,17 +61,17 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item, preparing metadata")
+		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
 	}
 
 	headers, err := c.client.ObjectPut(c.id, name, r, false, "", "", mdPrepped)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item")
+		return nil, errors.Wrap(err, "unable to create or update Item")
 	}
 
 	mdParsed, err := parseMetadata(headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create new Item, parsing metadata")
+		return nil, errors.Wrap(err, "unable to create or update Item, parsing metadata")
 	}
 
 	item := &item{
