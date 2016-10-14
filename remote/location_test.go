@@ -7,8 +7,37 @@ import (
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
 )
+
+func TestAllContainer(t *testing.T) {
+	is := is.New(t)
+
+	testDir, teardown, err := setup()
+	is.NoErr(err)
+	defer teardown()
+
+	cfg := stow.ConfigMap{"path": testDir}
+
+	l, err := stow.Dial(Kind, cfg)
+	is.NoErr(err)
+	is.OK(l)
+
+	items, cursor, err := l.Containers("", stow.CursorStart, 10)
+	is.NoErr(err)
+	is.Equal(cursor, "")
+	is.OK(items)
+
+	ok := false
+
+	for _, it := range items {
+		fmt.Println(it.Name())
+		if it.Name() == "all" {
+			ok = true
+		}
+	}
+
+	is.True(ok)
+}
 
 func TestContainers(t *testing.T) {
 	is := is.New(t)
@@ -18,7 +47,7 @@ func TestContainers(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -44,7 +73,7 @@ func TestContainersPrefix(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -72,7 +101,7 @@ func TestContainer(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -98,7 +127,7 @@ func TestCreateContainer(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -126,7 +155,7 @@ func TestByURL(t *testing.T) {
 
 	cfg := stow.ConfigMap{"path": testDir}
 
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 
@@ -148,7 +177,7 @@ func TestByURL(t *testing.T) {
 	// make sure we know the kind by URL
 	kind, err := stow.KindByURL(item1.URL())
 	is.NoErr(err)
-	is.Equal(kind, local.Kind)
+	is.Equal(kind, Kind)
 
 	i, err := l.ItemByURL(item1.URL())
 	is.NoErr(err)
@@ -165,7 +194,7 @@ func TestContainersPaging(t *testing.T) {
 	is.NoErr(err)
 	defer teardown()
 	cfg := stow.ConfigMap{"path": testDir}
-	l, err := stow.Dial(local.Kind, cfg)
+	l, err := stow.Dial(Kind, cfg)
 	is.NoErr(err)
 	is.OK(l)
 

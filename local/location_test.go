@@ -27,13 +27,34 @@ func TestContainers(t *testing.T) {
 	is.Equal(cursor, "")
 	is.OK(items)
 
-	is.Equal(len(items), 4)
+	is.Equal(len(items), 5)
 	isDir(is, items[0].ID())
 	is.Equal(items[0].Name(), "one")
 	isDir(is, items[1].ID())
 	is.Equal(items[1].Name(), "three")
 	isDir(is, items[2].ID())
 	is.Equal(items[2].Name(), "two")
+}
+
+func TestAllContainer(t *testing.T) {
+	is := is.New(t)
+
+	testDir, teardown, err := setup()
+	is.NoErr(err)
+	defer teardown()
+
+	cfg := stow.ConfigMap{"path": testDir}
+
+	l, err := stow.Dial(local.Kind, cfg)
+	is.NoErr(err)
+	is.OK(l)
+
+	containers, cursor, err := l.Containers("", stow.CursorStart, 10)
+	is.NoErr(err)
+	is.Equal(cursor, "")
+	is.OK(containers)
+
+	is.Equal(containers[4].Name(), "All")
 }
 
 func TestContainersPrefix(t *testing.T) {

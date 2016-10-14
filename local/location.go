@@ -81,6 +81,15 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 		cursor = ""
 	}
 
+	if prefix == "" {
+		allContainer := container{
+			name: "All",
+			path: path,
+		}
+
+		cs = append(cs, &allContainer)
+	}
+
 	return cs, cursor, err
 }
 
