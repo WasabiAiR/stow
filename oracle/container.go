@@ -66,14 +66,14 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 
 // Put creates or updates a CloudStorage object within the given container.
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	_, err := c.client.ObjectPut(c.id, name, r, false, "", "", nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item")
-	}
-
 	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
+	}
+
+	_, err = c.client.ObjectPut(c.id, name, r, false, "", "", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update Item")
 	}
 
 	err = c.client.ObjectUpdate(c.id, name, mdPrepped)

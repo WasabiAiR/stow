@@ -79,15 +79,15 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 }
 
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	name = strings.Replace(name, " ", "+", -1)
-	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item")
-	}
-
 	mdParsed, err := prepMetadata(metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
+	}
+
+	name = strings.Replace(name, " ", "+", -1)
+	err = c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update Item")
 	}
 
 	err = c.SetItemMetadata(name, mdParsed)
