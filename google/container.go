@@ -30,7 +30,6 @@ func (c *container) Name() string {
 // Item returns a stow.Item instance of a container based on the
 // name of the container
 func (c *container) Item(id string) (stow.Item, error) {
-
 	res, err := c.client.Objects.Get(c.name, id).Do()
 	if err != nil {
 		return nil, stow.ErrNotFound
@@ -46,6 +45,11 @@ func (c *container) Item(id string) (stow.Item, error) {
 		return nil, err
 	}
 
+	mdParsed, err := parseMetadata(res.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	i := &item{
 		name:         id,
 		container:    c,
@@ -55,6 +59,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 		hash:         res.Md5Hash,
 		lastModified: t,
 		url:          u,
+		metadata:     mdParsed,
 	}
 
 	return i, nil
@@ -91,6 +96,11 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			return nil, "", err
 		}
 
+		mdParsed, err := parseMetadata(o.Metadata)
+		if err != nil {
+			return nil, "", err
+		}
+
 		containerItems[i] = &item{
 			name:         o.Name,
 			container:    c,
@@ -100,6 +110,7 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			hash:         o.Md5Hash,
 			lastModified: t,
 			url:          u,
+			metadata:     mdParsed,
 		}
 	}
 
@@ -113,9 +124,8 @@ func (c *container) RemoveItem(id string) error {
 // Put sends a request to upload content to the container. The arguments
 // received are the name of the item, a reader representing the
 // content, and the size of the file.
-func (c *container) Put(name string, r io.Reader, size int64, md map[string]interface{}) (stow.Item, error) {
-
-	mdPrepped, err := prepareMetadata(md)
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +150,11 @@ func (c *container) Put(name string, r io.Reader, size int64, md map[string]inte
 		return nil, err
 	}
 
+	mdParsed, err := parseMetadata(res.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	newItem := &item{
 		name:         name,
 		container:    c,
@@ -149,8 +164,8 @@ func (c *container) Put(name string, r io.Reader, size int64, md map[string]inte
 		hash:         res.Md5Hash,
 		lastModified: t,
 		url:          u,
+		metadata:     mdParsed,
 	}
-
 	return newItem, nil
 }
 
@@ -162,7 +177,7 @@ func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, er
 	return metadataParsedMap, nil
 }
 
-func prepareMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
+func prepMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
 	returnMap := make(map[string]string, len(metadataParsed))
 	for key, value := range metadataParsed {
 		str, ok := value.(string)
