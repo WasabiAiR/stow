@@ -169,3 +169,8 @@ Cursors are strings that provide a pointer to items in sets allowing for paging 
 Call such methods first passing in `stow.CursorStart` as the cursor, which indicates the first item/page. The method will, as one of its return arguments, provide a new cursor which you can pass into subsequent calls to the same method.
 
 When `stow.IsCursorEnd(cursor)` returns `true`, you have reached the end of the set.
+
+## Contributing
+
+Note that for some packages like `remote` tests are guarded with `int` (_integration_) build tags, because they require external dependencies like e.g. NFS Server with specific address (for `remote`).
+If you contribute to any of these implementations, be sure to run these integration tests on your machine before submitting a change.
