@@ -55,6 +55,12 @@ func TestAllContainer(t *testing.T) {
 	is.OK(containers)
 
 	is.Equal(containers[4].Name(), "All")
+
+	items, cursor, err := containers[4].Items("root", stow.CursorStart, 10)
+	is.Equal(cursor, "")
+	is.OK(items)
+	is.NoErr(err)
+	is.Equal(len(items), 1)
 }
 
 func TestContainersPrefix(t *testing.T) {

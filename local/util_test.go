@@ -77,6 +77,12 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 
+	// make some root item
+	err = ioutil.WriteFile(filepath.Join(dir, "rootitem"), []byte("root target"), 0777)
+	if err != nil {
+		return dir, done, err
+	}
+
 	// make testpath absolute
 	absdir, err := filepath.Abs(dir)
 	if err != nil {
