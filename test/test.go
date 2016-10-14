@@ -71,26 +71,20 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// Item metadata. Keys are usually transposed differently depending on the sdk.
 	md1 := map[string]interface{}{"stowmetadata": "foo"}
-	md2 := map[string]interface{}{"stowmetadata": "bar"}
-	md3 := map[string]interface{}{"stowmetadata": "baz"}
 
-	// add three items to c1 + assert metadata if the implementation allows.
-	item1, skip := putItem(is, c1, "a_first/the item", "item one", md1)
-	if !skip {
+	// add three items to c1 + add metadata to one item, assert if the implementation allows.
+	// Tests metadata retrieval on PUTs.
+	item1, skip1 := putItem(is, c1, "a_first/the item", "item one", md1)
+	is.OK(item1)
+	if !skip1 {
 		is.NoErr(checkMetadata(t, is, item1, md1))
 	}
 
-	item2, skip := putItem(is, c1, "a_second/the item", "item two", md2)
-	if !skip {
-		is.NoErr(checkMetadata(t, is, item2, md2))
-	}
+	item2, _ := putItem(is, c1, "a_second/the item", "item two", nil)
+	is.OK(item2)
 
-	item3, skip := putItem(is, c1, "the_third/the item", "item three", md3)
-	if !skip {
-		is.NoErr(checkMetadata(t, is, item3, md3))
-	}
-
-	is.OK(item1, item2, item3)
+	item3, _ := putItem(is, c1, "the_third/the item", "item three", nil)
+	is.OK(item3)
 
 	defer func() {
 		err := c1.RemoveItem(item1.ID())
@@ -116,6 +110,11 @@ func All(t *testing.T, kind string, config stow.Config) {
 	items, _, err = c1.Items(stow.NoPrefix, stow.CursorStart, 100)
 	is.NoErr(err)
 	is.Equal(len(items), 3)
+
+	// Test metadata retrieval on Items() method
+	if !skip1 {
+		is.NoErr(checkMetadata(t, is, items[0], md1))
+	}
 
 	// make sure the items are identical
 	is.OK(item1.ID())
@@ -167,6 +166,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, item1copy), size(is, item1))
 	is.Equal(readItemContents(is, item1copy), "item one")
 	is.OK(etag(t, is, item1copy))
+	if !skip1 {
+		is.NoErr(checkMetadata(t, is, item1copy, md1))
+	}
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -259,9 +261,10 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 }
 
 func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) (stow.Item, bool) {
-	var skipAssertion bool // metadata wasn't set, so the assertion should be skipped
+	var skipAssertion bool // skip metadata assertion
 	item, err := container.Put(name, strings.NewReader(content), int64(len(content)), md)
 
+	// Metadata retrieval isn't supported
 	if stow.IsNotSupported(err) {
 		item, err = container.Put(name, strings.NewReader(content), int64(len(content)), nil)
 		skipAssertion = true
@@ -269,6 +272,7 @@ func putItem(is is.I, container stow.Container, name, content string, md map[str
 
 	is.NoErr(err)
 	is.OK(item)
+
 	return item, skipAssertion
 }
 
