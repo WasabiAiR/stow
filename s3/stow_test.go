@@ -2,8 +2,11 @@ package s3
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
@@ -36,4 +39,37 @@ func TestEtagCleanup(t *testing.T) {
 				index, permutations[index], cleanTestStr)
 		}
 	}
+}
+
+func TestPrepMetadataSuccess(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]*string)
+	m["one"] = aws.String("two")
+	m["3"] = aws.String("4")
+	m["ninety-nine"] = aws.String("100")
+
+	m2 := make(map[string]interface{})
+	for key, value := range m {
+		str := *value
+		m2[key] = str
+	}
+
+	returnedMap, err := prepMetadata(m2)
+	is.NoErr(err)
+
+	if !reflect.DeepEqual(m, returnedMap) {
+		t.Error("Expected and returned maps are not equal.")
+	}
+}
+
+func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]interface{})
+	m["float"] = 8.9
+	m["number"] = 9
+
+	_, err := prepMetadata(m)
+	is.Err(err)
 }

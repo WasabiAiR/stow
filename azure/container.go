@@ -7,6 +7,7 @@ import (
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 // timeFormat is the time format for azure.
@@ -43,11 +44,8 @@ func (c *container) Item(id string) (stow.Item, error) {
 		properties: *blobProperties,
 	}
 
-	// Etags returned from this method include quotes. Strip them.
-	etag := cleanEtag(item.properties.Etag)
-
-	// Assign the corrected string value to the field.
-	item.properties.Etag = etag
+	etag := cleanEtag(item.properties.Etag) // Etags returned from this method include quotes. Strip them.
+	item.properties.Etag = etag             // Assign the corrected string value to the field.
 
 	return item, nil
 }
@@ -80,12 +78,23 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, listblobs.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
-	name = strings.Replace(name, " ", "+", -1)
-	err := c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+	mdParsed, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
 	}
+
+	name = strings.Replace(name, " ", "+", -1)
+	err = c.client.CreateBlockBlobFromReader(c.id, name, uint64(size), r, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update Item")
+	}
+
+	err = c.SetItemMetadata(name, mdParsed)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update item, setting Item metadata")
+	}
+
 	item := &item{
 		id:        name,
 		container: c,
@@ -97,6 +106,30 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		},
 	}
 	return item, nil
+}
+
+func (c *container) SetItemMetadata(itemName string, md map[string]string) error {
+	return c.client.SetBlobMetadata(c.id, itemName, md, nil)
+}
+
+func parseMetadata(md map[string]string) (map[string]interface{}, error) {
+	rtnMap := make(map[string]interface{}, len(md))
+	for key, value := range md {
+		rtnMap[key] = value
+	}
+	return rtnMap, nil
+}
+
+func prepMetadata(md map[string]interface{}) (map[string]string, error) {
+	rtnMap := make(map[string]string, len(md))
+	for key, value := range md {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
+		}
+		rtnMap[key] = str
+	}
+	return rtnMap, nil
 }
 
 func (c *container) RemoveItem(id string) error {

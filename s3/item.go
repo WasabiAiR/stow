@@ -4,10 +4,12 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 )
 
@@ -19,14 +21,21 @@ import (
 // for more info.
 // All fields are unexported because methods exist to facilitate retrieval.
 type item struct {
-	// Container information is required by a few methods.
-	container *container
+	container  *container // Container information is required by a few methods.
+	client     *s3.S3     // A client is needed to make requests.
+	properties Properties // Properties represent the characteristics of the file. Name, Etag, etc.
+	infoOnce   sync.Once
+	infoErr    error
+}
 
-	// A client is needed to make requests.
-	client *s3.S3
-
-	// Properties represent the characteristics of the file. Name, Etag, etc.
-	properties *s3.Object
+type Properties struct {
+	ETag         *string    `type:"string"`
+	Key          *string    `min:"1" type:"string"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	Owner        *s3.Owner  `type:"structure"`
+	Size         *int64     `type:"integer"`
+	StorageClass *string    `type:"string" enum:"ObjectStorageClass"`
+	Metadata     map[string]interface{}
 }
 
 // ID returns a string value that represents the name of a file.
@@ -69,7 +78,6 @@ func (i *item) Open() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Open, getting the object")
 	}
-
 	return response.Body, nil
 }
 
@@ -79,28 +87,59 @@ func (i *item) Open() (io.ReadCloser, error) {
 // does return the specified field. This more detailed information is kept so that we
 // won't have to do it again.
 func (i *item) LastMod() (time.Time, error) {
-	if i.properties.LastModified == nil {
-		it, err := i.container.getItem(i.ID())
-		if err != nil {
-			return time.Time{}, errors.Wrap(err, "LastMod, getting the item")
-		}
-
-		// Went through the work of sending a request to get this information.
-		// Let's keep it since the response contains more specific information
-		// about itself.
-		i.properties = it.properties
+	err := i.ensureInfo()
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, "retrieving Last Modified information of Item")
 	}
-
 	return *i.properties.LastModified, nil
-}
-
-// Metadata returns a nil map and no error.
-// TODO: Implement this.
-func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
 }
 
 // ETag returns the ETag value from the properies field of an item.
 func (i *item) ETag() (string, error) {
 	return *(i.properties.ETag), nil
+}
+
+func (i *item) Metadata() (map[string]interface{}, error) {
+	err := i.ensureInfo()
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving metadata")
+	}
+	return i.properties.Metadata, nil
+}
+
+func (i *item) ensureInfo() error {
+	if i.properties.Metadata == nil || i.properties.LastModified == nil {
+		i.infoOnce.Do(func() {
+			// Retrieve Item information
+			itemInfo, infoErr := i.getInfo()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+
+			// Set metadata field
+			i.properties.Metadata, infoErr = itemInfo.Metadata()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+
+			// Set LastModified field
+			lmValue, infoErr := itemInfo.LastMod()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+			i.properties.LastModified = &lmValue
+		})
+	}
+	return i.infoErr
+}
+
+func (i *item) getInfo() (stow.Item, error) {
+	itemInfo, err := i.container.getItem(i.ID())
+	if err != nil {
+		return nil, err
+	}
+	return itemInfo, nil
 }
