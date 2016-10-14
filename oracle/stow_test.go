@@ -84,11 +84,11 @@ func TestPrepMetadataSuccess(t *testing.T) {
 	}
 }
 
-func TestPrepMetadataFailure(t *testing.T) {
+func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 	is := is.New(t)
 
 	m := make(map[string]interface{})
-	m["name"] = "Corey"
+	m["float"] = 8.9
 	m["number"] = 9
 
 	_, err := prepMetadata(m)
