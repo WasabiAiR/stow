@@ -31,7 +31,7 @@ func TestGetItemUTCLastModified(t *testing.T) {
 		http.DefaultTransport = tr
 	}()
 
-	test.All(t, "oracle", cfgUnmetered)
+	test.All(t, "oracle", cfgMetered)
 }
 
 type bogusLastModifiedTransport struct {
