@@ -87,9 +87,9 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 		WithLogLevel(aws.LogOff).
 		WithSleepDelay(time.Sleep)
 
-	sess, err := session.NewSession(awsConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating the S3 session")
+	sess := session.New(awsConfig)
+	if sess == nil {
+		return nil, errors.New("creating the S3 session")
 	}
 
 	s3Client := s3.New(sess)

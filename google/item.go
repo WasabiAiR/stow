@@ -3,6 +3,7 @@ package google
 import (
 	"io"
 	"net/url"
+
 	//	"strings"
 	"time"
 
@@ -10,18 +11,15 @@ import (
 )
 
 type item struct {
-	// Container information is required by a few methods.
-	container *container
-
-	// A client is needed to make requests.
-	client *storage.Service
-
+	container    *container       // Container information is required by a few methods.
+	client       *storage.Service // A client is needed to make requests.
 	name         string
 	hash         string
 	etag         string
 	size         int64
 	url          *url.URL
 	lastModified time.Time
+	metadata     map[string]interface{}
 }
 
 // ID returns a string value that represents the name of a file.
@@ -62,7 +60,7 @@ func (i *item) LastMod() (time.Time, error) {
 // Metadata returns a nil map and no error.
 // TODO: Implement this.
 func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	return i.metadata, nil
 }
 
 // ETag returns the ETag value

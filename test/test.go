@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -68,11 +69,22 @@ func All(t *testing.T, kind string, config stow.Config) {
 		is.NoErr(err)
 	}()
 
-	// add three items to c1
-	item1 := putItem(is, c1, "a_first/the item", "item one")
-	item2 := putItem(is, c1, "a_second/the item", "item two")
-	item3 := putItem(is, c1, "the_third/the item", "item three")
-	is.OK(item1, item2, item3)
+	// Item metadata. Keys are usually transposed differently depending on the sdk.
+	md1 := map[string]interface{}{"stowmetadata": "foo"}
+
+	// add three items to c1 + add metadata to one item, assert if the implementation allows.
+	// Tests metadata retrieval on PUTs.
+	item1, skip1 := putItem(is, c1, "a_first/the item", "item one", md1)
+	is.OK(item1)
+	if !skip1 {
+		is.NoErr(checkMetadata(t, is, item1, md1))
+	}
+
+	item2, _ := putItem(is, c1, "a_second/the item", "item two", nil)
+	is.OK(item2)
+
+	item3, _ := putItem(is, c1, "the_third/the item", "item three", nil)
+	is.OK(item3)
 
 	defer func() {
 		err := c1.RemoveItem(item1.ID())
@@ -98,6 +110,11 @@ func All(t *testing.T, kind string, config stow.Config) {
 	items, _, err = c1.Items(stow.NoPrefix, stow.CursorStart, 100)
 	is.NoErr(err)
 	is.Equal(len(items), 3)
+
+	// Test metadata retrieval on Items() method
+	if !skip1 {
+		is.NoErr(checkMetadata(t, is, items[0], md1))
+	}
 
 	// make sure the items are identical
 	is.OK(item1.ID())
@@ -149,6 +166,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(size(is, item1copy), size(is, item1))
 	is.Equal(readItemContents(is, item1copy), "item one")
 	is.OK(etag(t, is, item1copy))
+	if !skip1 {
+		is.NoErr(checkMetadata(t, is, item1copy, md1))
+	}
 
 	// get an item by ID that doesn't exist
 	noItem, err := c1copy.Item(item1.ID() + "nope")
@@ -240,11 +260,20 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 	return container
 }
 
-func putItem(is is.I, container stow.Container, name, content string) stow.Item {
-	item, err := container.Put(name, strings.NewReader(content), int64(len(content)))
+func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) (stow.Item, bool) {
+	var skipAssertion bool // skip metadata assertion
+	item, err := container.Put(name, strings.NewReader(content), int64(len(content)), md)
+
+	// Metadata retrieval isn't supported
+	if stow.IsNotSupported(err) {
+		item, err = container.Put(name, strings.NewReader(content), int64(len(content)), nil)
+		skipAssertion = true
+	}
+
 	is.NoErr(err)
 	is.OK(item)
-	return item
+
+	return item, skipAssertion
 }
 
 func readItemContents(is is.I, item stow.Item) string {
@@ -257,7 +286,6 @@ func readItemContents(is is.I, item stow.Item) string {
 }
 
 func etag(t *testing.T, is is.I, item stow.Item) string {
-
 	etag, err := item.ETag()
 	is.NoErr(err)
 
@@ -317,4 +345,19 @@ func randName(length int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func checkMetadata(t *testing.T, is is.I, item stow.Item, md map[string]interface{}) error {
+	itemMD, err := item.Metadata()
+	if err != nil {
+		is.Failf("error retrieving item metadata: %v", err)
+	}
+
+	t.Logf("Item metadata: %v", itemMD)
+	t.Logf("Expected item metadata: %v", md)
+
+	if !reflect.DeepEqual(itemMD, md) {
+		return errors.New("metadata mismatch")
+	}
+	return nil
 }

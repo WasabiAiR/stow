@@ -20,9 +20,9 @@ type item struct {
 	size         int64
 	url          url.URL
 	lastModified time.Time
-
-	infoOnce sync.Once
-	infoErr  error
+	metadata     map[string]interface{}
+	infoOnce     sync.Once
+	infoErr      error
 }
 
 var _ stow.Item = (*item)(nil)
@@ -64,29 +64,20 @@ func (i *item) ETag() (string, error) {
 }
 
 func (i *item) LastMod() (time.Time, error) {
-	// If an object is PUT, certain information is missing. Detect
-	// if the lastModified field is missing, send a request to retrieve
-	// it, and save both this and other missing information so that a
-	// request doesn't have to be sent again. Could be placed in PUT,
-	// but right now it seems cleaner to have a request sent when this
-	// field is needed for a maximimum of a single request, rather than
-	// sending a request to get the missing info every time an object
-	// is PUT.
-
-	// Checks if the field is empty, if so, do a GET on the Item and
-	// assign the values to the field.
 	err := i.ensureInfo()
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	return i.lastModified, nil
 }
 
-// Metadata returns a nil map and no error.
-// TODO: Implement this.
+// Metadata returns a map of key value pairs representing an Item's metadata
 func (i *item) Metadata() (map[string]interface{}, error) {
-	return map[string]interface{}{}, nil
+	err := i.ensureInfo()
+	if err != nil {
+		return nil, err
+	}
+	return i.metadata, nil
 }
 
 // ensureInfo checks the fields that may be empty when an item is PUT.
@@ -95,21 +86,24 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 func (i *item) ensureInfo() error {
 	// If lastModified is empty, so is hash. get info on the Item and
 	// update the necessary fields at the same time.
-	if i.lastModified.IsZero() || i.hash == "" {
+	if i.lastModified.IsZero() || i.hash == "" || i.metadata == nil {
 		i.infoOnce.Do(func() {
 			itemInfo, infoErr := i.getInfo()
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return
 			}
-
 			i.hash, i.infoErr = itemInfo.ETag()
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return
 			}
-
 			i.lastModified, i.infoErr = itemInfo.LastMod()
+			if infoErr != nil {
+				i.infoErr = infoErr
+				return
+			}
+			i.metadata, i.infoErr = itemInfo.Metadata()
 			if infoErr != nil {
 				i.infoErr = infoErr
 				return

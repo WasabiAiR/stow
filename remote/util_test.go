@@ -1,4 +1,4 @@
-package local_test
+package remote
 
 import (
 	"io/ioutil"
@@ -73,12 +73,6 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 	err = os.Link(filepath.Join(dir, "z-links", "hardtarget"), filepath.Join(dir, "z-links", "hardlink"))
-	if err != nil {
-		return dir, done, err
-	}
-
-	// make some root item
-	err = ioutil.WriteFile(filepath.Join(dir, "rootitem"), []byte("root target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}

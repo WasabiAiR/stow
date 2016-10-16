@@ -14,12 +14,9 @@ import (
 
 // Amazon S3 bucket contains a creationdate and a name.
 type container struct {
-	// Name is needed to retrieve items.
-	name string
-
-	// Client is responsible for performing the requests.
-	client *s3.S3
-	region string
+	name   string // Name is needed to retrieve items.
+	client *s3.S3 // Client is responsible for performing the requests.
+	region string // Describes the AWS Availability Zone of the S3 Bucket.
 }
 
 // ID returns a string value which represents the name of the container.
@@ -55,21 +52,23 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		return nil, "", errors.Wrap(err, "Items, listing objects")
 	}
 
-	// Allocate space for the Item slice.
-	containerItems := make([]stow.Item, len(response.Contents))
+	containerItems := make([]stow.Item, len(response.Contents)) // Allocate space for the Item slice.
 
 	for i, object := range response.Contents {
-
-		// Copy etag value and remove the strings.
-		etag := cleanEtag(*object.ETag)
-
-		// Assign the value to the object field representing the item.
-		object.ETag = &etag
+		etag := cleanEtag(*object.ETag) // Copy etag value and remove the strings.
+		object.ETag = &etag             // Assign the value to the object field representing the item.
 
 		containerItems[i] = &item{
-			container:  c,
-			client:     c.client,
-			properties: object,
+			container: c,
+			client:    c.client,
+			properties: Properties{
+				ETag:         object.ETag,
+				Key:          object.Key,
+				LastModified: object.LastModified,
+				Owner:        object.Owner,
+				Size:         object.Size,
+				StorageClass: object.StorageClass,
+			},
 		}
 	}
 
@@ -95,7 +94,6 @@ func (c *container) RemoveItem(id string) error {
 	if err != nil {
 		return errors.Wrapf(err, "RemoveItem, deleting object %+v", params)
 	}
-
 	return nil
 }
 
@@ -103,10 +101,16 @@ func (c *container) RemoveItem(id string) error {
 // received are the name of the item (S3 Object), a reader representing the
 // content, and the size of the file. Many more attributes can be given to the
 // file, including metadata. Keeping it simple for now.
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	content, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, nil
+		return nil, errors.Wrap(err, "unable to create or update item, reading content")
+	}
+
+	// Convert map[string]interface{} to map[string]*string
+	mdPrepped, err := prepMetadata(metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update item, preparing metadata")
 	}
 
 	params := &s3.PutObjectInput{
@@ -114,15 +118,14 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		Key:           aws.String(name),   // Required
 		ContentLength: aws.Int64(size),
 		Body:          bytes.NewReader(content),
-		// Metadata map[string]*string,
+		Metadata:      mdPrepped, // map[string]*string
 	}
 
-	// Only Etag returned.
+	// Only Etag is returned.
 	response, err := c.client.PutObject(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "RemoveItem, deleting object")
 	}
-
 	etag := cleanEtag(*response.ETag)
 
 	// Some fields are empty because this information isn't included in the response.
@@ -133,7 +136,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	newItem := &item{
 		container: c,
 		client:    c.client,
-		properties: &s3.Object{
+		properties: Properties{
 			ETag: &etag,
 			Key:  &name,
 			Size: &size,
@@ -146,8 +149,7 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	return newItem, nil
 }
 
-// Region returns a string representing the region/availability zone
-// of the container.
+// Region returns a string representing the region/availability zone of the container.
 func (c *container) Region() string {
 	return c.region
 }
@@ -175,19 +177,23 @@ func (c *container) getItem(id string) (*item, error) {
 	}
 	defer response.Body.Close()
 
-	// etag string value contains quotations. Remove them.
-	etag := cleanEtag(*response.ETag)
+	etag := cleanEtag(*response.ETag) // etag string value contains quotations. Remove them.
+	md, err := parseMetadata(response.Metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
+	}
 
 	i := &item{
 		container: c,
 		client:    c.client,
-		properties: &s3.Object{
+		properties: Properties{
 			ETag:         &etag,
 			Key:          &id,
 			LastModified: response.LastModified,
-			Owner:        nil, // Weird that it's not returned in the response.
+			Owner:        nil, // not returned in the response.
 			Size:         response.ContentLength,
 			StorageClass: response.StorageClass,
+			Metadata:     md,
 		},
 	}
 
@@ -224,10 +230,33 @@ func cleanEtag(etag string) string {
 			etag = strings.Replace(etag, `W/`, "", 1)
 
 		} else {
-
 			break
 		}
 	}
-
 	return etag
+}
+
+// prepMetadata parses a raw map into the native type required by S3 to set metadata (map[string]*string).
+// TODO: validation for key values. This function also assumes that the value of a key value pair is a string.
+func prepMetadata(md map[string]interface{}) (map[string]*string, error) {
+	m := make(map[string]*string, len(md))
+	for key, value := range md {
+		strValue, valid := value.(string)
+		if !valid {
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
+		}
+		m[key] = aws.String(strValue)
+	}
+	return m, nil
+}
+
+// The first letter of a dash separated key value is capitalized, so perform a ToLower on it.
+// This Key transformation of returning lowercase is consistent with other locations..
+func parseMetadata(md map[string]*string) (map[string]interface{}, error) {
+	m := make(map[string]interface{}, len(md))
+	for key, value := range md {
+		k := strings.ToLower(key)
+		m[k] = *value
+	}
+	return m, nil
 }

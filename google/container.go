@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 	storage "google.golang.org/api/storage/v1"
 )
 
@@ -29,7 +30,6 @@ func (c *container) Name() string {
 // Item returns a stow.Item instance of a container based on the
 // name of the container
 func (c *container) Item(id string) (stow.Item, error) {
-
 	res, err := c.client.Objects.Get(c.name, id).Do()
 	if err != nil {
 		return nil, stow.ErrNotFound
@@ -45,6 +45,11 @@ func (c *container) Item(id string) (stow.Item, error) {
 		return nil, err
 	}
 
+	mdParsed, err := parseMetadata(res.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
 	i := &item{
 		name:         id,
 		container:    c,
@@ -54,6 +59,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 		hash:         res.Md5Hash,
 		lastModified: t,
 		url:          u,
+		metadata:     mdParsed,
 	}
 
 	return i, nil
@@ -90,6 +96,11 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			return nil, "", err
 		}
 
+		mdParsed, err := parseMetadata(o.Metadata)
+		if err != nil {
+			return nil, "", err
+		}
+
 		containerItems[i] = &item{
 			name:         o.Name,
 			container:    c,
@@ -99,6 +110,7 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			hash:         o.Md5Hash,
 			lastModified: t,
 			url:          u,
+			metadata:     mdParsed,
 		}
 	}
 
@@ -112,13 +124,20 @@ func (c *container) RemoveItem(id string) error {
 // Put sends a request to upload content to the container. The arguments
 // received are the name of the item, a reader representing the
 // content, and the size of the file.
-func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error) {
-
-	object := &storage.Object{Name: name}
-	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
-
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, nil
+		return nil, err
+	}
+
+	object := &storage.Object{
+		Name:     name,
+		Metadata: mdPrepped,
+	}
+
+	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
+	if err != nil {
+		return nil, err
 	}
 
 	t, err := time.Parse(time.RFC3339, res.Updated)
@@ -127,6 +146,11 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 	}
 
 	u, err := prepUrl(res.MediaLink)
+	if err != nil {
+		return nil, err
+	}
+
+	mdParsed, err := parseMetadata(res.Metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +164,27 @@ func (c *container) Put(name string, r io.Reader, size int64) (stow.Item, error)
 		hash:         res.Md5Hash,
 		lastModified: t,
 		url:          u,
+		metadata:     mdParsed,
 	}
-
 	return newItem, nil
+}
+
+func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
+	metadataParsedMap := make(map[string]interface{}, len(metadataParsed))
+	for key, value := range metadataParsed {
+		metadataParsedMap[key] = value
+	}
+	return metadataParsedMap, nil
+}
+
+func prepMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
+	returnMap := make(map[string]string, len(metadataParsed))
+	for key, value := range metadataParsed {
+		str, ok := value.(string)
+		if !ok {
+			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
+		}
+		returnMap[key] = str
+	}
+	return returnMap, nil
 }
