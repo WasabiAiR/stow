@@ -1,3 +1,5 @@
+// +build int
+
 package swift
 
 import (

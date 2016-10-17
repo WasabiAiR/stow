@@ -27,7 +27,7 @@ func TestContainers(t *testing.T) {
 	is.Equal(cursor, "")
 	is.OK(items)
 
-	is.Equal(len(items), 4)
+	is.Equal(len(items), 5)
 	isDir(is, items[0].ID())
 	is.Equal(items[0].Name(), "one")
 	isDir(is, items[1].ID())
