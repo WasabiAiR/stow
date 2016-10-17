@@ -9,8 +9,6 @@ Create a file called `storage.go` in your package and add the following code:
 ```go
 import (
 	"github.com/graymeta/stow"
-	// support remote storage (SMB, NFS, CIFS)
-	_ "github.com/graymeta/stow/remote"
 	// support Azure storage
 	_ "github.com/graymeta/stow/azure"
 	// support Google storage
