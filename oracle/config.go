@@ -18,7 +18,7 @@ const (
 	// ConfigPassword is the user password associated with the account
 	ConfigPassword = "password"
 
-	// ConfigAuthEndpointis the identity domain associated with the account
+	// ConfigAuthEndpoint is the identity domain associated with the account
 	ConfigAuthEndpoint = "authorization_endpoint"
 )
 
