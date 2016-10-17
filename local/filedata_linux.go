@@ -28,18 +28,18 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 		linkTarget, _ = os.Readlink(path)
 	}
 	m := map[string]interface{}{
-		"path":        filepath.Clean(path),
-		"is_dir":      info.IsDir(),
-		"dir":         filepath.Dir(path),
-		"name":        info.Name(),
-		"mode":        fmt.Sprintf("%o", info.Mode()),
-		"mode_d":      fmt.Sprintf("%v", uint32(info.Mode())),
-		"perm":        info.Mode().String(),
-		"inode":       inodedata,
-		"size":        info.Size(),
-		"is_hardlink": hardlink,
-		"is_symlink":  symlink,
-		"link":        linkTarget,
+		MetadataPath:       filepath.Clean(path),
+		MetadataIsDir:      info.IsDir(),
+		MetadataDir:        filepath.Dir(path),
+		MetadataName:       info.Name(),
+		MetadataMode:       fmt.Sprintf("%o", info.Mode()),
+		MetadataModeD:      fmt.Sprintf("%v", uint32(info.Mode())),
+		MetadataPerm:       info.Mode().String(),
+		MetadataINode:      inodedata,
+		MetadataSize:       info.Size(),
+		MetadataIsHardlink: hardlink,
+		MetadataIsSymlink:  symlink,
+		MetadataLink:       linkTarget,
 	}
 
 	if stat := info.Sys().(*syscall.Stat_t); stat != nil {

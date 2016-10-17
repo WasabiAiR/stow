@@ -9,6 +9,21 @@ import (
 	"time"
 )
 
+const (
+	MetadataPath       = "path"
+	MetadataIsDir      = "is_dir"
+	MetadataDir        = "dir"
+	MetadataName       = "name"
+	MetadataMode       = "mode"
+	MetadataModeD      = "mode_d"
+	MetadataPerm       = "perm"
+	MetadataINode      = "inode"
+	MetadataSize       = "size"
+	MetadataIsHardlink = "is_hardlink"
+	MetadataIsSymlink  = "is_symlink"
+	MetadataLink       = "link"
+)
+
 type item struct {
 	path     string
 	infoOnce sync.Once // protects info
