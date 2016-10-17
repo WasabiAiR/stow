@@ -1,58 +1,98 @@
-package oracle
+// +build int
+
+package swift
 
 import (
-	"encoding/json"
+	"net/http"
+	"reflect"
 	"testing"
 
+	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
+	"github.com/graymeta/stow/test"
 )
 
-var config = stow.ConfigMap{
-	"username": "storage-a422618:corey@graymeta.com",
-	"password": "",
-	"endpoint": `https://storage-a422618.storage.oraclecloud.com/auth/v1.0`,
+var cfgUnmetered = stow.ConfigMap{
+	"username":               "aaron@graymeta.com",
+	"password":               "HPdq85BwQ66r",
+	"authorization_endpoint": "https://storage-a422618.storage.oraclecloud.com/auth/v1.0",
 }
 
-// TestOracleClient
-func TestNewOracleClient(t *testing.T) {
-	client, err := newOracleClient(config)
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Auth  Key is %s", client.AuthInfo.AuthToken)
+var cfgMetered = stow.ConfigMap{
+	"username":               "aaron@graymeta.com",
+	"password":               "Wj41xKQdYwny",
+	"authorization_endpoint": "https://usoraclegm1.storage.oraclecloud.com/auth/v1.0",
 }
 
-// TestListContainers
-// change response to containers
-func TestListContainers(t *testing.T) {
-	client, err := newOracleClient(config)
-	if err != nil {
-		t.Error(err)
-	}
-
-	response, err := client.ListContainers()
-	if err != nil {
-		t.Error(err)
-	}
-
-	responseJSON, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Response Bytes:\n%s", responseJSON)
+func TestStow(t *testing.T) {
+	test.All(t, "oracle", cfgMetered)
 }
 
-func TestListItems(t *testing.T) {
-	client, err := newOracleClient(config)
+func TestGetItemUTCLastModified(t *testing.T) {
+	tr := http.DefaultTransport
+	http.DefaultTransport = &bogusLastModifiedTransport{tr}
+	defer func() {
+		http.DefaultTransport = tr
+	}()
+
+	test.All(t, "oracle", cfgMetered)
+}
+
+type bogusLastModifiedTransport struct {
+	http.RoundTripper
+}
+
+func (t *bogusLastModifiedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	res, err := t.RoundTripper.RoundTrip(r)
 	if err != nil {
-		t.Error(err)
+		return res, err
+	}
+	res.Header.Set("Last-Modified", "Tue, 23 Aug 2016 15:12:44 UTC")
+	return res, err
+}
+
+func (t *bogusLastModifiedTransport) CloseIdleConnections() {
+	if tr, ok := t.RoundTripper.(interface {
+		CloseIdleConnections()
+	}); ok {
+		tr.CloseIdleConnections()
+	}
+}
+
+func TestPrepMetadataSuccess(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]string)
+	m["one"] = "two"
+	m["3"] = "4"
+	m["ninety-nine"] = "100"
+
+	m2 := make(map[string]interface{})
+	for key, value := range m {
+		m2[key] = value
 	}
 
-	// add prefixes and other header stuff
-	_, err = client.ListItems("c1")
-	if err != nil {
-		t.Error(err)
+	assertionM := make(map[string]string)
+	assertionM["X-Object-Meta-one"] = "two"
+	assertionM["X-Object-Meta-3"] = "4"
+	assertionM["X-Object-Meta-ninety-nine"] = "100"
+
+	//returns map[string]interface
+	returnedMap, err := prepMetadata(m2)
+	is.NoErr(err)
+
+	if !reflect.DeepEqual(returnedMap, assertionM) {
+		t.Errorf("Expected map (%+v) and returned map (%+v) are not equal.", assertionM, returnedMap)
 	}
+}
+
+func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
+	is := is.New(t)
+
+	m := make(map[string]interface{})
+	m["float"] = 8.9
+	m["number"] = 9
+
+	_, err := prepMetadata(m)
+	is.Err(err)
 }
