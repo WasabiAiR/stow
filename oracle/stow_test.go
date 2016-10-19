@@ -2,6 +2,7 @@ package swift
 
 import (
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 
@@ -11,15 +12,15 @@ import (
 )
 
 var cfgUnmetered = stow.ConfigMap{
-	"username":               "aaron@graymeta.com",
-	"password":               "HPdq85BwQ66r",
-	"authorization_endpoint": "https://storage-a422618.storage.oraclecloud.com/auth/v1.0",
+	"username":               os.Getenv("SWIFTUNMETEREDUSERNAME"),
+	"password":               os.Getenv("SWIFTUNMETEREDPASSWORD"),
+	"authorization_endpoint": os.Getenv("SWIFTUNMETEREDAUTHENDPOINT"),
 }
 
 var cfgMetered = stow.ConfigMap{
-	"username":               "aaron@graymeta.com",
-	"password":               "Wj41xKQdYwny",
-	"authorization_endpoint": "https://usoraclegm1.storage.oraclecloud.com/auth/v1.0",
+	"username":               os.Getenv("SWIFTMETEREDUSERNAME"),
+	"password":               os.Getenv("SWIFTMETEREDPASSWORD"),
+	"authorization_endpoint": os.Getenv("SWIFTMETEREDAUTHENDPOINT"),
 }
 
 func TestStow(t *testing.T) {
