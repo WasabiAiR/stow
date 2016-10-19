@@ -5,14 +5,16 @@ import (
 	"reflect"
 	"testing"
 
+	"os"
+
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
 
-const (
-	azureaccount = "piotrsplaygroundblock"
-	azurekey     = "u8M0wFeizJtIKWlSC1rQsJ0w1C+QZbVeL5eavup9fTusRcUp1RN5+JMNCv6lc5usdNCAOg05cKbuOo2nZNG2Sw=="
+var (
+	azureaccount = os.Getenv("AZUREACCOUNT")
+	azurekey     = os.Getenv("AZUREKEY")
 )
 
 func TestStow(t *testing.T) {
