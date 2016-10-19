@@ -2,6 +2,7 @@ package s3
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -13,9 +14,9 @@ import (
 
 func TestStow(t *testing.T) {
 	config := stow.ConfigMap{
-		"access_key_id": "AKIAIKXUQN43OZER6ZJQ",
-		"secret_key":    "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",
-		"region":        "us-west-1",
+		"access_key_id": os.Getenv("S3ACCESSKEYID"),
+		"secret_key":    os.Getenv("S3SECRETKEY"),
+		"region":        os.Getenv("S3REGION"),
 	}
 	test.All(t, "s3", config)
 }
