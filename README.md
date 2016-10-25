@@ -57,6 +57,13 @@ location2 (e.g. local storage)
 
 ## Guides
 
+* [Using Stow](#using-stow)
+* [Connecting to locations](#connecting-to-locations)
+* [Walking containers](#walking-containers)
+* [Walking items](#walking-items)
+* [Stow URLs](#stow-urls)
+* [Cursors](#cursors)
+
 ### Using Stow
 
 Import Stow plus any of the implementation packages that you wish to provide. For example, to support Google Cloud Storage and Amazon S3 you would write:
