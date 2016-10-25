@@ -1,12 +1,13 @@
 # stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow) [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
+
+![Stow definition](stow-definition.png)
+
 Cloud storage abstraction package for Go. 
 
 * Version: 0.1.0
 * Contributors: [Mat Ryer](https://github.com/matryer), [David Hernandez](https://github.com/dahernan), [Corey Prak](https://github.com/Xercoy), [Piotr Rojek](https://github.com/piotrrojek), [Jason Hancock](https://github.com/jasonhancock)
 * Project status: Stable. Approaching v1 release
 * It is recommended that you vendor this package as changes are possible before v1
-
-![Stow definition](stow-definition.png)
 
 ## How it works
 
