@@ -1,4 +1,4 @@
-# stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow) [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow) [![Travis build](https://travis-ci.org/graymeta/stow.svg?branch=master)](https://travis-ci.org/graymeta/stow)
+# Stow [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow) [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow) [![Travis build](https://travis-ci.org/graymeta/stow.svg?branch=master)](https://travis-ci.org/graymeta/stow)
 Cloud storage abstraction package for Go. 
 
 * Version: 0.1.0
