@@ -4,7 +4,7 @@
 Cloud storage abstraction package for Go. 
 
 * Version: 0.1.0
-* Contributors: [Mat Ryer](https://github.com/matryer), [David Hernandez](https://github.com/dahernan), [Corey Prak](https://github.com/Xercoy), [Piotr Rojek](https://github.com/piotrrojek), [Jason Hancock](https://github.com/jasonhancock)
+* Contributors: [Mat Ryer](https://github.com/matryer), [David Hernandez](https://github.com/dahernan), [Ernesto Jiménez](https://github.com/ernesto-jimenez), [Corey Prak](https://github.com/Xercoy), [Piotr Rojek](https://github.com/piotrrojek), [Jason Hancock](https://github.com/jasonhancock)
 * Project status: Stable. Approaching v1 release
 * It is recommended that you vendor this package as changes are possible before v1
 
