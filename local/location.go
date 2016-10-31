@@ -56,10 +56,25 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 	if err != nil {
 		return nil, "", err
 	}
-	cs, err := l.filesToContainers(path, files...)
+
+	var cs []stow.Container
+
+	if prefix == stow.NoPrefix && cursor == stow.CursorStart {
+		allContainer := container{
+			name: "All",
+			path: path,
+		}
+
+		cs = append(cs, &allContainer)
+	}
+
+	cc, err := l.filesToContainers(path, files...)
 	if err != nil {
 		return nil, "", err
 	}
+
+	cs = append(cs, cc...)
+
 	if cursor != stow.CursorStart {
 		// seek to the cursor
 		ok := false
@@ -79,15 +94,6 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 		cs = cs[:count] // limit cs to count
 	} else if len(cs) <= count {
 		cursor = ""
-	}
-
-	if prefix == stow.NoPrefix && cursor == stow.CursorStart {
-		allContainer := container{
-			name: "All",
-			path: path,
-		}
-
-		cs = append(cs, &allContainer)
 	}
 
 	return cs, cursor, err
