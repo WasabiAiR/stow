@@ -1,3 +1,4 @@
+![Stow logo](stow-logo.png)
 ![Stow definition](stow-definition.png)
 [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow)
 [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
