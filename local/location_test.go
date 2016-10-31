@@ -29,11 +29,13 @@ func TestContainers(t *testing.T) {
 
 	is.Equal(len(items), 5)
 	isDir(is, items[0].ID())
-	is.Equal(items[0].Name(), "one")
+	is.Equal(items[0].Name(), "All")
 	isDir(is, items[1].ID())
-	is.Equal(items[1].Name(), "three")
+	is.Equal(items[1].Name(), "one")
 	isDir(is, items[2].ID())
-	is.Equal(items[2].Name(), "two")
+	is.Equal(items[2].Name(), "three")
+	isDir(is, items[3].ID())
+	is.Equal(items[3].Name(), "two")
 }
 
 func TestAllContainer(t *testing.T) {
@@ -54,9 +56,9 @@ func TestAllContainer(t *testing.T) {
 	is.Equal(cursor, "")
 	is.OK(containers)
 
-	is.Equal(containers[4].Name(), "All")
+	is.Equal(containers[0].Name(), "All")
 
-	items, cursor, err := containers[4].Items("root", stow.CursorStart, 10)
+	items, cursor, err := containers[0].Items("root", stow.CursorStart, 10)
 	is.Equal(cursor, "")
 	is.OK(items)
 	is.NoErr(err)

@@ -20,11 +20,11 @@ func TestItemsPaging(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	// get the first container to work with
+	// get the first actual container to work with (not "All" container)
 	containers, _, err := l.Containers("", stow.CursorStart, 10)
 	is.NoErr(err)
 	is.True(len(containers) > 0)
-	container := containers[0]
+	container := containers[1]
 
 	// make 25 items
 	for i := 0; i < 25; i++ {
