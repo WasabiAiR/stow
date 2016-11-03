@@ -1,4 +1,4 @@
-![Stow logo](stow-logo.png)
+![Stow logo](stow-aeroplane.png)
 ![Stow definition](stow-definition.png)
 [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow)
 [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
@@ -6,9 +6,11 @@
 Cloud storage abstraction package for Go. 
 
 * Version: 0.1.0
-* Contributors: [Mat Ryer](https://github.com/matryer), [David Hernandez](https://github.com/dahernan), [Ernesto Jiménez](https://github.com/ernesto-jimenez), [Corey Prak](https://github.com/Xercoy), [Piotr Rojek](https://github.com/piotrrojek), [Jason Hancock](https://github.com/jasonhancock)
 * Project status: Stable. Approaching v1 release
 * It is recommended that you vendor this package as changes are possible before v1
+
+* Contributors: [Mat Ryer](https://github.com/matryer), [David Hernandez](https://github.com/dahernan), [Ernesto Jiménez](https://github.com/ernesto-jimenez), [Corey Prak](https://github.com/Xercoy), [Piotr Rojek](https://github.com/piotrrojek), [Jason Hancock](https://github.com/jasonhancock)
+* Artwork by Mel Jensen inspired by [Renee French](http://reneefrench.blogspot.co.uk) and and is licensed under the [Creative Commons Attribution 3.0 License](https://creativecommons.org/licenses/by/3.0/)
 
 ## How it works
 
