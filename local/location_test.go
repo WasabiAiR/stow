@@ -227,7 +227,7 @@ func TestContainersPaging(t *testing.T) {
 	is.True(stow.IsCursorEnd(cursor))
 
 	// bad cursor
-	containers, cursor, err = l.Containers("container-", "made-up-cursor", 10)
+	_, _, err = l.Containers("container-", "made-up-cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
 }

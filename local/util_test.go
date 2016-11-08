@@ -51,7 +51,7 @@ func setup() (string, func() error, error) {
 
 	// make symlinks and hardlinks
 
-	// make seperate "container" for links
+	// make separate "container" for links
 	// naming it with "z-" prefix, so other tests that depend on container order do not fail
 	err = os.Mkdir(filepath.Join(dir, "z-links"), 0777)
 	if err != nil {

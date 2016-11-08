@@ -128,7 +128,7 @@ type Item interface {
 	Metadata() (map[string]interface{}, error)
 }
 
-// Config represents key/value configuraiton.
+// Config represents key/value configuration.
 type Config interface {
 	// Config gets a string configuration value and a
 	// bool indicating whether the value was present or not.

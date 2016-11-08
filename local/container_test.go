@@ -56,7 +56,7 @@ func TestItemsPaging(t *testing.T) {
 	is.True(stow.IsCursorEnd(cursor))
 
 	// bad cursor
-	items, cursor, err = container.Items("item-", "made up cursor", 10)
+	_, _, err = container.Items("item-", "made up cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
 }

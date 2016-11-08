@@ -93,7 +93,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	return item, nil
 }
 
-// RemoveItem attemps to remove a CloudStorage object located within the given
+// RemoveItem removes a CloudStorage object located within the given
 // container.
 func (c *container) RemoveItem(id string) error {
 	return c.client.ObjectDelete(c.id, id)
