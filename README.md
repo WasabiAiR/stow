@@ -14,7 +14,7 @@ Cloud storage abstraction package for Go.
 
 ## How it works
 
-Stow provides implementations for storage services, blob stores, cloud storage etc.
+Stow provides implementations for storage services, blob stores, cloud storage etc. Read the [blog post announcing the project](https://medium.com/@matryer/introducing-stow-cloud-storage-abstraction-package-for-go-20cf2928d93c).
 
 ## Implementations
 
