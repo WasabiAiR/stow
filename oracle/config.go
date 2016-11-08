@@ -76,14 +76,8 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 }
 
 func parseConfig(cfg stow.Config) (*swift.Connection, error) {
-	cfgUsername, ok := cfg.Config(ConfigUsername)
-	if !ok {
-		return nil, errors.New("stow: oracle: missing config " + ConfigUsername)
-	}
-	cfgAuthEndpoint, ok := cfg.Config(ConfigAuthEndpoint)
-	if !ok {
-		return nil, errors.New("stow: oracle: missing config " + ConfigAuthEndpoint)
-	}
+	cfgUsername, _ := cfg.Config(ConfigUsername)
+	cfgAuthEndpoint, _ := cfg.Config(ConfigAuthEndpoint)
 
 	// Auth Endpoint contains most of the information needed to make a client,
 	// find the indexes of the symbols that separate them.
