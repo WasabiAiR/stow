@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// Metadata constants describe the metadata available
+// for a local Item.
 const (
 	MetadataPath       = "path"
 	MetadataIsDir      = "is_dir"
