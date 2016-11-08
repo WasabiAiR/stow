@@ -21,14 +21,17 @@ import (
 // for more info.
 // All fields are unexported because methods exist to facilitate retrieval.
 type item struct {
-	container  *container // Container information is required by a few methods.
-	client     *s3.S3     // A client is needed to make requests.
-	properties Properties // Properties represent the characteristics of the file. Name, Etag, etc.
+	// Container information is required by a few methods.
+	container *container
+	// A client is needed to make requests.
+	client *s3.S3
+	// properties represent the characteristics of the file. Name, Etag, etc.
+	properties properties
 	infoOnce   sync.Once
 	infoErr    error
 }
 
-type Properties struct {
+type properties struct {
 	ETag         *string    `type:"string"`
 	Key          *string    `min:"1" type:"string"`
 	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`

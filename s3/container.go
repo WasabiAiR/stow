@@ -61,7 +61,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		containerItems[i] = &item{
 			container: c,
 			client:    c.client,
-			properties: Properties{
+			properties: properties{
 				ETag:         object.ETag,
 				Key:          object.Key,
 				LastModified: object.LastModified,
@@ -136,7 +136,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	newItem := &item{
 		container: c,
 		client:    c.client,
-		properties: Properties{
+		properties: properties{
 			ETag: &etag,
 			Key:  &name,
 			Size: &size,
@@ -186,7 +186,7 @@ func (c *container) getItem(id string) (*item, error) {
 	i := &item{
 		container: c,
 		client:    c.client,
-		properties: Properties{
+		properties: properties{
 			ETag:         &etag,
 			Key:          &id,
 			LastModified: response.LastModified,
