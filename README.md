@@ -152,6 +152,37 @@ if err != nil {
 }
 ```
 
+### Downloading a file
+
+Once you have found a `stow.Item` that you are interested in, you can stream its contents by first calling the `Open` method and reading from the returned `io.ReadCloser` (remembering to close the reader):
+
+```go
+r, err := item.Open()
+if err != nil {
+    return err
+}
+defer r.Close()
+
+// TODO: stream the contents by reading from r
+```
+
+### Uploading a file
+
+If you want to write a new item into a Container, you can do so using the `container.Put` method passing in an `io.Reader` for the contents along with the size:
+
+```go
+contents := "This is a new file stored in the cloud"
+r := strings.NewReader(contents)
+size := int64(len(contents))
+
+item, err := container.Put(name, r, size, nil)
+if err != nil {
+    return nil
+}
+
+// item represents the newly created/updated item
+```
+
 ### Stow URLs
 
 An `Item` can return a URL via the `URL()` method. While a valid URL, they are useful only within the context of Stow. Within a Location, you can get items using these URLs via the `Location.ItemByURL` method.
