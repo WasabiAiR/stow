@@ -76,12 +76,21 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 }
 
 func parseConfig(cfg stow.Config) (*swift.Connection, error) {
-	cfgUsername, _ := cfg.Config(ConfigUsername)
-	cfgAuthEndpoint, _ := cfg.Config(ConfigAuthEndpoint)
+	cfgUsername, ok := cfg.Config(ConfigUsername)
+	if !ok {
+		return nil, errors.New("stow: oracle: missing config " + ConfigUsername)
+	}
+	cfgAuthEndpoint, ok := cfg.Config(ConfigAuthEndpoint)
+	if !ok {
+		return nil, errors.New("stow: oracle: missing config " + ConfigAuthEndpoint)
+	}
 
 	// Auth Endpoint contains most of the information needed to make a client,
 	// find the indexes of the symbols that separate them.
 	dotIndex := strings.Index(cfgAuthEndpoint, `.`)
+	if dotIndex == -1 {
+		return nil, errors.New("stow: oracle: bad format for " + ConfigAuthEndpoint)
+	}
 	dashIndex := strings.Index(cfgAuthEndpoint[:dotIndex], `-`)
 	slashIndex := strings.Index(cfgAuthEndpoint, `//`) + 1 // Add 1 to move index to second slash
 
