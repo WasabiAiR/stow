@@ -64,6 +64,8 @@ location2 (e.g. local storage)
 * [Connecting to locations](#connecting-to-locations)
 * [Walking containers](#walking-containers)
 * [Walking items](#walking-items)
+* [Downloading a file](#downloading-afile)
+* [Uploading a file](#uploading-a-file)
 * [Stow URLs](#stow-urls)
 * [Cursors](#cursors)
 
