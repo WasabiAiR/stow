@@ -29,52 +29,6 @@ Things to know:
 - Paging for the list of containers doesn't exist yet, this is because there's a hard limit of about 100 containers for every account.
 
 - A client is required to provide a region. Manipulating buckets that reside within other regions isn't possible.
----
-
-Testing:
-
-```
-Account Name: 
-stowtest
-
-Access Key ID:
-AKIAIKXUQN43OZER6ZJQ
-
-Secret Access Key:
-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
-```
-
-This limited account can only create/delete buckets which have `stowtest` prepended in its name.
-
-AWS Test Policy:
-```
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:ListBucket",
-        "s3:CreateBucket",
-        "s3:DeleteBucket",
-        "s3:ListAllMyBuckets",
-        "s3:ListBucketMultipartUploads",
-        "s3:GetBucketLocation"
-      ],
-      "Resource": ["arn:aws:s3:::stowtest*"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject"
-      ],
-      "Resource": ["arn:aws:s3:::stowtest*"]
-    }
-  ]
-}
-```
 
 ---
 
@@ -82,7 +36,7 @@ AWS Test Policy:
 
 The init function of every implementation of `stow` must call `stow.Register`.
 
-`stow.Register` accepts a few things: 
+`stow.Register` accepts a few things:
 
 ### Kind, a string argument respresenting the name of the location.
 
