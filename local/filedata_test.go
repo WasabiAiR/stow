@@ -22,7 +22,7 @@ func TestFileData(t *testing.T) {
 	is.Equal(data["name"], "filedata_test.go")
 	is.True(data["mode"] == "644" || data["mode"] == "664")
 	is.True(data["mode_d"] == "420" || data["mode_d"] == "436")
-	is.Equal(data["perm"], "-rw-r--r--")
+	is.True(data["perm"] == "-rw-r--r--" || data["perm"] == "-rw-rw-r--")
 	is.OK(data["inode"])
 	is.False(data["is_hardlink"])
 	is.False(data["is_symlink"])
