@@ -17,6 +17,10 @@ var (
 )
 
 func TestStow(t *testing.T) {
+	if azureaccount == "" || azurekey == "" {
+		t.Skip("skipping test because missing either AZUREACCOUNT or AZUREKEY")
+	}
+
 	cfg := stow.ConfigMap{"account": azureaccount, "key": azurekey}
 	test.All(t, "azure", cfg)
 }

@@ -11,11 +11,20 @@ import (
 )
 
 func TestStow(t *testing.T) {
+	username := os.Getenv("SWIFTUSERNAME")
+	key := os.Getenv("SWIFTKEY")
+	tenantName := os.Getenv("SWIFTTENANTNAME")
+	tenantAuthUrl := os.Getenv("SWIFTTENANTAUTHURL")
+
+	if username == "" || key == "" || tenantName == "" || tenantAuthUrl == "" {
+		t.Skip("skipping test because missing one or more of SWIFTUSERNAME SWIFTKEY SWIFTTENANTNAME SWIFTTENANTAUTHURL")
+	}
+
 	cfg := stow.ConfigMap{
-		"username":        os.Getenv("SWIFTUSERNAME"),
-		"key":             os.Getenv("SWIFTKEY"),
-		"tenant_name":     os.Getenv("SWIFTTENANTNAME"),
-		"tenant_auth_url": os.Getenv("SWIFTTENANTAUTHURL"),
+		"username":        username,
+		"key":             key,
+		"tenant_name":     tenantName,
+		"tenant_auth_url": tenantAuthUrl,
 		//"tenant_id":       "b04239c7467548678b4822e9dad96030",
 	}
 	test.All(t, "swift", cfg)

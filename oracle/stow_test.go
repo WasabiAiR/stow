@@ -1,6 +1,7 @@
 package swift
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"reflect"
@@ -23,11 +24,47 @@ var cfgMetered = stow.ConfigMap{
 	"authorization_endpoint": os.Getenv("SWIFTMETEREDAUTHENDPOINT"),
 }
 
-func TestStow(t *testing.T) {
+func checkCredentials(config stow.Config) error {
+	v, ok := config.Config(ConfigUsername)
+	if !ok || v == "" {
+		return errors.New("missing account username")
+	}
+
+	v, ok = config.Config(ConfigPassword)
+	if !ok || v == "" {
+		return errors.New("missing account password")
+	}
+
+	v, ok = config.Config(ConfigAuthEndpoint)
+	if !ok || v == "" {
+		return errors.New("missing authorization endpoint")
+	}
+
+	return nil
+}
+
+func TestStowMetered(t *testing.T) {
+	err := checkCredentials(cfgMetered)
+	if err != nil {
+		t.Skip("skipping test because " + err.Error())
+	}
 	test.All(t, "oracle", cfgMetered)
 }
 
+func TestStowUnMetered(t *testing.T) {
+	err := checkCredentials(cfgUnmetered)
+	if err != nil {
+		t.Skip("skipping test because " + err.Error())
+	}
+	test.All(t, "oracle", cfgUnmetered)
+}
+
 func TestGetItemUTCLastModified(t *testing.T) {
+	err := checkCredentials(cfgMetered)
+	if err != nil {
+		t.Skip("skipping test because " + err.Error())
+	}
+
 	tr := http.DefaultTransport
 	http.DefaultTransport = &bogusLastModifiedTransport{tr}
 	defer func() {
