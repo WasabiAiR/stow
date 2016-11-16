@@ -1,4 +1,4 @@
-// Azure stow package provides abstraction on top of Microsoft Azure Storage.
+// Package azure provides abstraction on top of Microsoft Azure Storage for stow.
 // In order to use it, you need to pass a config with following schema:
 //     stow.ConfigMap{
 //          "account": "azure_account_id",
