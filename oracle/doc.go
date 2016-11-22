@@ -1,7 +1,7 @@
 /*
 Package Oracle provides an absraction of the Oracle Storage Cloud Service. In this package, an Oracle Service Instance of type Storage is represented by a Stow Container, and an Oracle Storage Object is represented by a Stow Item.
 
-Oracle Storage Cloud Service is strictly a blob storage service, therefore nested directories do not exist. 
+Oracle Storage Cloud Service is strictly a blob storage service, therefore nested directories do not exist.
 
 Usage and Credentials
 
@@ -13,7 +13,7 @@ stow.Dial requires both a string value of the particular Stow Location Kind ("or
 
 - a key of oracle.ConfigUsername with a value of the account user name
 - a key of oracle.ConfigPassword with a value of the account pasword
-- a key of oracle.AuthEndpoint with a value of the authorization endpoint 
+- a key of oracle.AuthEndpoint with a value of the authorization endpoint
 
 Location
 
@@ -44,4 +44,4 @@ Methods of oracle.Item allow the retrieval of a Storage Service Instance's:
 - Etag
 - content
 */
-package oracle
+package swift

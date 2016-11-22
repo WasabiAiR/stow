@@ -29,6 +29,10 @@ const (
 
 	// ConfigRegion represents the region/availability zone of the session.
 	ConfigRegion = "region"
+
+	// ConfigEndpoint is optional config value for changing s3 endpoint
+	// used for e.g. minio.io
+	ConfigEndpoint = "endpoint"
 )
 
 func init() {
@@ -78,14 +82,31 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 	//	token, _ := config.Config(ConfigToken)
 	region, _ := config.Config(ConfigRegion)
 
-	awsConfig := aws.NewConfig().
-		WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
-		WithRegion(region).
-		WithHTTPClient(http.DefaultClient).
-		WithMaxRetries(aws.UseServiceDefaultRetries).
-		WithLogger(aws.NewDefaultLogger()).
-		WithLogLevel(aws.LogOff).
-		WithSleepDelay(time.Sleep)
+	var awsConfig *aws.Config
+
+	endpoint, ok := config.Config(ConfigEndpoint)
+	if !ok {
+		awsConfig = aws.NewConfig().
+			WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
+			WithRegion(region).
+			WithHTTPClient(http.DefaultClient).
+			WithMaxRetries(aws.UseServiceDefaultRetries).
+			WithLogger(aws.NewDefaultLogger()).
+			WithLogLevel(aws.LogOff).
+			WithSleepDelay(time.Sleep)
+	} else {
+		awsConfig = aws.NewConfig().
+			WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, "")).
+			WithEndpoint(endpoint).
+			WithRegion(region).
+			WithHTTPClient(http.DefaultClient).
+			WithMaxRetries(aws.UseServiceDefaultRetries).
+			WithLogger(aws.NewDefaultLogger()).
+			WithLogLevel(aws.LogOff).
+			WithSleepDelay(time.Sleep).
+			WithDisableSSL(true).
+			WithS3ForcePathStyle(true)
+	}
 
 	sess := session.New(awsConfig)
 	if sess == nil {
