@@ -103,7 +103,9 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 			WithMaxRetries(aws.UseServiceDefaultRetries).
 			WithLogger(aws.NewDefaultLogger()).
 			WithLogLevel(aws.LogOff).
-			WithSleepDelay(time.Sleep)
+			WithSleepDelay(time.Sleep).
+			WithDisableSSL(true).
+			WithS3ForcePathStyle(true)
 	}
 
 	sess := session.New(awsConfig)
