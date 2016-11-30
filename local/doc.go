@@ -1,5 +1,5 @@
 /*
-The stow/local package provides an abstraction of a general filesystem. A Stow Container is a directory, and a Stow Item is a file.
+Package local provides an abstraction of a general filesystem. A Stow Container is a directory, and a Stow Item is a file.
 
 Credentials
 
