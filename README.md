@@ -179,7 +179,7 @@ size := int64(len(contents))
 
 item, err := container.Put(name, r, size, nil)
 if err != nil {
-    return nil
+    return err
 }
 
 // item represents the newly created/updated item
