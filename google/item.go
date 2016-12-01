@@ -70,7 +70,7 @@ func (i *Item) ETag() (string, error) {
 }
 
 // Object returns the Google Storage Object
-func (i *Item) Object() *storage.Object {
+func (i *Item) StorageObject() *storage.Object {
 	return i.object
 }
 
