@@ -32,7 +32,7 @@ var (
 )
 
 func main() {
-	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version("0.0.1").Author("Piotr Rojek")
+	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version("0.0.1").Author("GrayMeta Inc.")
 	kingpin.CommandLine.Help = "CLI for cloud storage"
 	cmd := kingpin.Parse()
 
