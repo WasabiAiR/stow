@@ -38,6 +38,11 @@ var (
 	downloadOutput    = download.Flag("output", "Output file to write to. If none provided, the file will be written to stdin.").String()
 	downloadContainer = download.Flag("container", "Container to get items from.").Required().String()
 	downloadItem      = download.Flag("item", "Item to download.").Required().String()
+
+	upload          = kingpin.Command("upload", "Upload an item")
+	uploadInput     = upload.Flag("input", "File to upload").String()
+	uploadContainer = upload.Flag("container", "Container to which upload the file.").Required().String()
+	uploadName      = upload.Flag("name", "Name of an item to upload").String()
 )
 
 func main() {
@@ -58,6 +63,8 @@ func main() {
 		listItemsFunc(l)
 	case "download":
 		downloadFunc(l)
+	case "upload":
+		uploadFunc(l)
 	}
 }
 
@@ -187,4 +194,37 @@ func downloadFunc(l stow.Location) {
 	defer f.Close()
 
 	io.Copy(f, rc)
+}
+
+func uploadFunc(l stow.Location) {
+	var name string
+
+	c, err := l.Container(*uploadContainer)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	f, err := os.Open(*uploadInput)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	info, err := f.Stat()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	if *uploadName == "" {
+		name = info.Name()
+	} else {
+		name = *uploadName
+	}
+
+	_, err = c.Put(name, f, info.Size(), nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 }
