@@ -27,12 +27,11 @@ var (
 	listContainerPrefix = listContainer.Flag("prefix", "Prefix used for listing containers.").String()
 	listContainerCursor = listContainer.Flag("cursor", "Cursor to next page of results.").String()
 	listContainerCount  = listContainer.Flag("count", "Count of containers returned.").Default("25").Int()
-
-	listItems          = list.Command("items", "Lists items in container.")
-	listItemsContainer = listItems.Flag("container", "Container to get items from.").Required().String()
-	listItemsPrefix    = listItems.Flag("prefix", "Prefix used for listing items.").String()
-	listItemsCursor    = listItems.Flag("cursor", "Cursor to next page of results.").String()
-	listItemsCount     = listItems.Flag("count", "Count of items returned.").Default("25").Int()
+	listItems           = list.Command("items", "Lists items in container.")
+	listItemsContainer  = listItems.Flag("container", "Container to get items from.").Required().String()
+	listItemsPrefix     = listItems.Flag("prefix", "Prefix used for listing items.").String()
+	listItemsCursor     = listItems.Flag("cursor", "Cursor to next page of results.").String()
+	listItemsCount      = listItems.Flag("count", "Count of items returned.").Default("25").Int()
 
 	download          = kingpin.Command("download", "Download an item")
 	downloadOutput    = download.Flag("output", "Output file to write to. If none provided, the file will be written to stdin.").String()
@@ -43,6 +42,10 @@ var (
 	uploadInput     = upload.Flag("input", "File to upload").String()
 	uploadContainer = upload.Flag("container", "Container to which upload the file.").Required().String()
 	uploadName      = upload.Flag("name", "Name of an item to upload").String()
+
+	item          = kingpin.Command("item", "Get details of an item")
+	itemContainer = item.Flag("container", "Container in which is the item.").Required().String()
+	itemID        = item.Arg("item-id", "Item ID.").Required().String()
 )
 
 func main() {
@@ -65,6 +68,8 @@ func main() {
 		downloadFunc(l)
 	case "upload":
 		uploadFunc(l)
+	case "item":
+		itemDetailsFunc(l)
 	}
 }
 
@@ -227,4 +232,24 @@ func uploadFunc(l stow.Location) {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
+}
+
+func itemDetailsFunc(l stow.Location) {
+	c, err := l.Container(*itemContainer)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	item, err := c.Item(*itemID)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	lastmod, _ := item.LastMod()
+	size, _ := item.Size()
+	fmt.Println("Item:\t\t", item.Name())
+	fmt.Println("Item ID:\t", item.ID())
+	fmt.Println("Last modified:\t", lastmod)
+	fmt.Println("Size:\t\t", size)
+	fmt.Println("URL:\t\t", item.URL())
 }
