@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -32,6 +33,11 @@ var (
 	listItemsPrefix    = listItems.Flag("prefix", "Prefix used for listing items.").String()
 	listItemsCursor    = listItems.Flag("cursor", "Cursor to next page of results.").String()
 	listItemsCount     = listItems.Flag("count", "Count of items returned.").Default("25").Int()
+
+	download          = kingpin.Command("download", "Download an item")
+	downloadOutput    = download.Flag("output", "Output file to write to. If none provided, the file will be written to stdin.").String()
+	downloadContainer = download.Flag("container", "Container to get items from.").Required().String()
+	downloadItem      = download.Flag("item", "Item to download.").Required().String()
 )
 
 func main() {
@@ -50,6 +56,8 @@ func main() {
 		listContainersFunc(l)
 	case "list items":
 		listItemsFunc(l)
+	case "download":
+		downloadFunc(l)
 	}
 }
 
@@ -141,9 +149,42 @@ func listItemsFunc(l stow.Location) {
 	is, cursor, err := c.Items(prefix, cursor, *listItemsCount)
 
 	for i, item := range is {
-		fmt.Printf("%d: %s (ID: %s)\n", i, item.Name(), item.ID())
+		fmt.Printf("%d: %s (ID: %s)\n", i+1, item.Name(), item.ID())
 	}
 	if cursor != "" {
 		fmt.Println("\n\tNext cursor:", cursor)
 	}
+}
+
+func downloadFunc(l stow.Location) {
+	c, err := l.Container(*downloadContainer)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	i, err := c.Item(*downloadItem)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	rc, err := i.Open()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	defer rc.Close()
+
+	if *downloadOutput == "" {
+		io.Copy(os.Stdin, rc)
+		os.Exit(0)
+	}
+
+	f, err := os.Create(*downloadOutput)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	io.Copy(f, rc)
 }
