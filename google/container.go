@@ -50,7 +50,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 		return nil, err
 	}
 
-	i := &item{
+	i := &Item{
 		name:         id,
 		container:    c,
 		client:       c.client,
@@ -60,6 +60,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 		lastModified: t,
 		url:          u,
 		metadata:     mdParsed,
+		object:       res,
 	}
 
 	return i, nil
@@ -101,7 +102,7 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			return nil, "", err
 		}
 
-		containerItems[i] = &item{
+		containerItems[i] = &Item{
 			name:         o.Name,
 			container:    c,
 			client:       c.client,
@@ -155,7 +156,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, err
 	}
 
-	newItem := &item{
+	newItem := &Item{
 		name:         name,
 		container:    c,
 		client:       c.client,
