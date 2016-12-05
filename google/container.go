@@ -112,6 +112,7 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			lastModified: t,
 			url:          u,
 			metadata:     mdParsed,
+			object:       o,
 		}
 	}
 
@@ -166,6 +167,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		lastModified: t,
 		url:          u,
 		metadata:     mdParsed,
+		object:       res,
 	}
 	return newItem, nil
 }
