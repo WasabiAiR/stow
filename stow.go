@@ -144,15 +144,11 @@ type Config interface {
 func Register(kind string, makefn func(Config) (Location, error), kindmatchfn func(*url.URL) bool) {
 	lock.Lock()
 	defer lock.Unlock()
-	locations[kind] = makefn
-
 	// if already registered, leave
-	for _, k := range kinds {
-		if k == kind {
-			return
-		}
+	if _, ok := locations[kind]; ok {
+		return
 	}
-
+	locations[kind] = makefn
 	kinds = append(kinds, kind)
 	kindmatches = append(kindmatches, func(u *url.URL) string {
 		if kindmatchfn(u) {
