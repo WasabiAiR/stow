@@ -145,6 +145,14 @@ func Register(kind string, makefn func(Config) (Location, error), kindmatchfn fu
 	lock.Lock()
 	defer lock.Unlock()
 	locations[kind] = makefn
+
+	// if already registered, leave
+	for _, k := range kinds {
+		if k == kind {
+			return
+		}
+	}
+
 	kinds = append(kinds, kind)
 	kindmatches = append(kindmatches, func(u *url.URL) string {
 		if kindmatchfn(u) {
