@@ -37,3 +37,11 @@ func TestErrNotSupported(t *testing.T) {
 	err = stow.NotSupported("feature")
 	is.True(stow.IsNotSupported(err))
 }
+
+func TestDuplicateKinds(t *testing.T) {
+	is := is.New(t)
+	stow.Register("example", nil, nil)
+	is.Equal(stow.Kinds(), []string{"test", "example"})
+	stow.Register("example", nil, nil)
+	is.Equal(stow.Kinds(), []string{"test", "example"})
+}
