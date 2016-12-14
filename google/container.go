@@ -9,7 +9,7 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
-type container struct {
+type Container struct {
 	// Name is needed to retrieve items.
 	name string
 
@@ -18,18 +18,22 @@ type container struct {
 }
 
 // ID returns a string value which represents the name of the container.
-func (c *container) ID() string {
+func (c *Container) ID() string {
 	return c.name
 }
 
 // Name returns a string value which represents the name of the container.
-func (c *container) Name() string {
+func (c *Container) Name() string {
 	return c.name
+}
+
+func (c *Container) Bucket() (*storage.Bucket, error) {
+	return c.client.Buckets.Get(c.name).Do()
 }
 
 // Item returns a stow.Item instance of a container based on the
 // name of the container
-func (c *container) Item(id string) (stow.Item, error) {
+func (c *Container) Item(id string) (stow.Item, error) {
 	res, err := c.client.Objects.Get(c.name, id).Do()
 	if err != nil {
 		return nil, stow.ErrNotFound
@@ -68,7 +72,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 // Items retrieves a list of items that are prepended with
 // the prefix argument. The 'cursor' variable facilitates pagination.
-func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item, string, error) {
+func (c *Container) Items(prefix string, cursor string, count int) ([]stow.Item, string, error) {
 	// List all objects in a bucket using pagination
 	call := c.client.Objects.List(c.name).MaxResults(int64(count))
 
@@ -119,14 +123,14 @@ func (c *container) Items(prefix string, cursor string, count int) ([]stow.Item,
 	return containerItems, res.NextPageToken, nil
 }
 
-func (c *container) RemoveItem(id string) error {
+func (c *Container) RemoveItem(id string) error {
 	return c.client.Objects.Delete(c.name, id).Do()
 }
 
 // Put sends a request to upload content to the container. The arguments
 // received are the name of the item, a reader representing the
 // content, and the size of the file.
-func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+func (c *Container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
 	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
 		return nil, err

@@ -11,7 +11,7 @@ import (
 )
 
 type Item struct {
-	container    *container       // Container information is required by a few methods.
+	container    *Container       // Container information is required by a few methods.
 	client       *storage.Service // A client is needed to make requests.
 	name         string
 	hash         string
