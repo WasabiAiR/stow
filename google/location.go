@@ -9,20 +9,24 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
-// A location contains a client + the configurations used to create the client.
-type location struct {
+// A Location contains a client + the configurations used to create the client.
+type Location struct {
 	config stow.Config
 	client *storage.Service
 }
 
+func (l *Location) Service() *storage.Service {
+	return l.client
+}
+
 // Close simply satisfies the Location interface. There's nothing that
 // needs to be done in order to satisfy the interface.
-func (l *location) Close() error {
+func (l *Location) Close() error {
 	return nil // nothing to close
 }
 
 // CreateContainer creates a new container, in this case a bucket.
-func (l *location) CreateContainer(containerName string) (stow.Container, error) {
+func (l *Location) CreateContainer(containerName string) (stow.Container, error) {
 
 	projId, _ := l.config.Config(ConfigProjectId)
 	// Create a bucket.
@@ -32,7 +36,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 		return nil, err
 	}
 
-	newContainer := &container{
+	newContainer := &Container{
 		name:   containerName,
 		client: l.client,
 	}
@@ -41,7 +45,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 }
 
 // Containers returns a slice of the Container interface, a cursor, and an error.
-func (l *location) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
+func (l *Location) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
 
 	projId, _ := l.config.Config(ConfigProjectId)
 
@@ -63,7 +67,7 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 	containers := make([]stow.Container, len(res.Items))
 
 	for i, o := range res.Items {
-		containers[i] = &container{
+		containers[i] = &Container{
 			name:   o.Name,
 			client: l.client,
 		}
@@ -74,14 +78,14 @@ func (l *location) Containers(prefix string, cursor string, count int) ([]stow.C
 
 // Container retrieves a stow.Container based on its name which must be
 // exact.
-func (l *location) Container(id string) (stow.Container, error) {
+func (l *Location) Container(id string) (stow.Container, error) {
 
 	_, err := l.client.Buckets.Get(id).Do()
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
 
-	c := &container{
+	c := &Container{
 		name:   id,
 		client: l.client,
 	}
@@ -90,7 +94,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 }
 
 // RemoveContainer removes a container simply by name.
-func (l *location) RemoveContainer(id string) error {
+func (l *Location) RemoveContainer(id string) error {
 
 	if err := l.client.Buckets.Delete(id).Do(); err != nil {
 		return err
@@ -101,7 +105,7 @@ func (l *location) RemoveContainer(id string) error {
 
 // ItemByURL retrieves a stow.Item by parsing the URL, in this
 // case an item is an object.
-func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
+func (l *Location) ItemByURL(url *url.URL) (stow.Item, error) {
 
 	if url.Scheme != Kind {
 		return nil, errors.New("not valid google storage URL")

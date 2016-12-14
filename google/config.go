@@ -39,7 +39,7 @@ func init() {
 		}
 
 		// Create a location with given config and client
-		loc := &location{
+		loc := &Location{
 			config: config,
 			client: client,
 		}
