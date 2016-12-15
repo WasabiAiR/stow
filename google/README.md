@@ -34,7 +34,7 @@ if gsBucket, ok := stowBucket.(*stowgs.Bucket); ok {
   if gsLoc, ok := stowLoc.(*stowgs.Location); ok {
 
     googleService := gsLoc.Service()
-    googleBucket := gsBucket.Bucket()
+    googleBucket, err := gsBucket.Bucket()
 
     // < Send platform-specific commands here >
 
