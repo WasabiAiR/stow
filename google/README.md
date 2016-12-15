@@ -6,6 +6,42 @@ Container = Bucket
 
 Item = File
 
+## How to access underlying service types
+
+Use a type conversion to extract the underlying `Location`, `Container`, or `Item` implementations. Then use the Google-specific getters to access the internal Google Cloud Storage `Service`, `Bucket`, and `Object` values.
+
+```go
+import (
+  "log"
+  "github.com/graymeta/stow"
+  stowgs "github.com/graymeta/stow/google"
+)
+
+stowLoc, err := stow.Dial(stowgs.Kind, stow.ConfigMap{
+	stowgs.ConfigJSON:      "<json config>",
+	stowgs.ConfigProjectId: "<project id>",
+})
+if err != nil {
+  log.Fatal(err)
+}
+
+stowBucket, err = stowLoc.Container("mybucket")
+if err != nil {
+  log.Fatal(err)
+}
+
+if gsBucket, ok := stowBucket.(*stowgs.Bucket); ok {
+  if gsLoc, ok := stowLoc.(*stowgs.Location); ok {
+
+    googleService := gsLoc.Service()
+    googleBucket := gsBucket.Bucket()
+
+    // < Send platform-specific commands here >
+
+  }
+}
+```
+
 ---
 
 Configuration... You need to create a project in google, and then create a service account in google tied to that project. You will need to download a `.json` file with the configuration for the service account. To run the test suite, the service account will need edit privileges inside the project.

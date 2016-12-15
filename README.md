@@ -3,7 +3,7 @@
 [![GoDoc](https://godoc.org/github.com/graymeta/stow?status.svg)](https://godoc.org/github.com/graymeta/stow)
 [![Go Report Card](https://goreportcard.com/badge/github.com/graymeta/stow)](https://goreportcard.com/report/github.com/graymeta/stow)
 
-Cloud storage abstraction package for Go. 
+Cloud storage abstraction package for Go.
 
 * Version: 0.1.0
 * Project status: Stable. Approaching v1 release
@@ -27,7 +27,7 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 
 ## Concepts
 
-The concepts of Stow are modelled around the most popular object storage services, and are made up of three main objects:
+The concepts of Stow are modeled around the most popular object storage services, and are made up of three main objects:
 
 * `Location` - a place where many `Container` objects are stored
 * `Container` - a named group of `Item` objects
@@ -84,6 +84,7 @@ import (
 The underscore indicates that you do not intend to use the package in your code. Importing it is enough, as the implementation packages register themselves with Stow during initialization.
 
 * For more information about using Stow, see the [Best practices documentation](BestPractices.md).
+* Some implementation packages provide ways to access the underlying connection details for use-cases where more control over a specific service is needed. See the implementation package documentation for details.
 
 ### Connecting to locations
 
