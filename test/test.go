@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -280,6 +281,12 @@ func readItemContents(is is.I, item stow.Item) string {
 	r, err := item.Open()
 	is.NoErr(err)
 	defer r.Close()
+	if s, ok := r.(io.Seeker); ok {
+		_, err = s.Seek(0, io.SeekEnd)
+		is.NoErr(err)
+		_, err = s.Seek(0, io.SeekStart)
+		is.NoErr(err)
+	}
 	b, err := ioutil.ReadAll(r)
 	is.NoErr(err)
 	return string(b)

@@ -56,7 +56,35 @@ func (i *item) Size() (int64, error) {
 // of the CloudStorage object.
 func (i *item) Open() (io.ReadCloser, error) {
 	r, _, err := i.client.ObjectOpen(i.container.id, i.id, false, nil)
-	return r, err
+	var res io.ReadCloser = r
+	// FIXME: this is a workaround to issue https://github.com/graymeta/stow/issues/120
+	if s, ok := res.(readSeekCloser); ok {
+		res = &fixReadSeekCloser{readSeekCloser: s, item: i}
+	}
+	return res, err
+}
+
+type readSeekCloser interface {
+	io.ReadSeeker
+	io.Closer
+}
+
+type fixReadSeekCloser struct {
+	readSeekCloser
+	item *item
+	read bool
+}
+
+func (f *fixReadSeekCloser) Read(p []byte) (int, error) {
+	f.read = true
+	return f.readSeekCloser.Read(p)
+}
+
+func (f *fixReadSeekCloser) Seek(offset int64, whence int) (int64, error) {
+	if offset == 0 && whence == io.SeekEnd && !f.read {
+		return f.item.size, nil
+	}
+	return f.readSeekCloser.Seek(offset, whence)
 }
 
 // ETag returns a string value representing the CloudStorage Object
