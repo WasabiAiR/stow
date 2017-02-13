@@ -5,17 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"runtime"
-
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
 
 func TestStow(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.SkipNow()
-	}
 	is := is.New(t)
 
 	dir, err := ioutil.TempDir("testdata", "stow")
