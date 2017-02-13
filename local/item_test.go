@@ -2,6 +2,7 @@ package local_test
 
 import (
 	"io/ioutil"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -41,6 +42,9 @@ func TestItemReader(t *testing.T) {
 }
 
 func TestHardlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.SkipNow()
+	}
 	is := is.New(t)
 	testDir, teardown, err := setup()
 	is.NoErr(err)
