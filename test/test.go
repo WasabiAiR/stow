@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -28,30 +29,43 @@ import (
 // Locations should be empty.
 func All(t *testing.T, kind string, config stow.Config) {
 	is := is.New(t)
+	isWindows := false
+
+	if runtime.GOOS == "windows" {
+		isWindows = true
+	}
 
 	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
 	is.OK(location)
 
-	startFDs, fdsStart := totalNetFDs(t)
+	// testing for file descriptors won't work on Windows
+	var startFDs int
+	var fdsStart []byte
+	if !isWindows {
+		startFDs, fdsStart = totalNetFDs(t)
+	}
+
 	defer func() {
 		err := location.Close()
 		is.NoErr(err)
 
-		// Close Idle HTTP connectors before counting TCP File Descriptors
-		if tr, ok := http.DefaultTransport.(interface {
-			CloseIdleConnections()
-		}); ok {
-			tr.CloseIdleConnections()
-		}
-		endFDs, fds := totalNetFDs(t)
-		diffFDs := endFDs - startFDs
-		if diffFDs > 0 {
-			t.Log("File Descriptors test start")
-			t.Log(string(fdsStart))
-			t.Log("File Descriptors test end")
-			t.Log(string(fds))
-			t.Fatalf("Leaked %d TCP file descriptor", diffFDs)
+		if !isWindows {
+			// Close Idle HTTP connectors before counting TCP File Descriptors
+			if tr, ok := http.DefaultTransport.(interface {
+				CloseIdleConnections()
+			}); ok {
+				tr.CloseIdleConnections()
+			}
+			endFDs, fds := totalNetFDs(t)
+			diffFDs := endFDs - startFDs
+			if diffFDs > 0 {
+				t.Log("File Descriptors test start")
+				t.Log(string(fdsStart))
+				t.Log("File Descriptors test end")
+				t.Log(string(fds))
+				t.Fatalf("Leaked %d TCP file descriptor", diffFDs)
+			}
 		}
 	}()
 
