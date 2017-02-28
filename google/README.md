@@ -42,6 +42,15 @@ if gsBucket, ok := stowBucket.(*stowgs.Bucket); ok {
 }
 ```
 
+By default, Stow uses `https://www.googleapis.com/auth/devstorage.read_write` scope. Different scopes can be used by passing a comma separated list of scopes, like below:
+```go
+stowLoc, err := stow.Dial(stowgs.Kind, stow.ConfigMap{
+	stowgs.ConfigJSON:      "<json config>",
+	stowgs.ConfigProjectId: "<project id>",
+	stowgs.ConfigScopes:    "<scope_1>,<scope_2>",
+})
+```
+
 ---
 
 Configuration... You need to create a project in google, and then create a service account in google tied to that project. You will need to download a `.json` file with the configuration for the service account. To run the test suite, the service account will need edit privileges inside the project.
