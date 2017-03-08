@@ -117,6 +117,10 @@ type Item interface {
 	// Open opens the Item for reading.
 	// Calling code must close the io.ReadCloser.
 	Open() (io.ReadCloser, error)
+	// Partial returns a reader that yields the contents of an Item at the
+	// given offset. If length is nonzero, only a portion of the Item is
+	// returned. Calling code must close the io.ReadCloser.
+	Partial(length, offset int64) (io.ReadCloser, error)
 	// ETag is a string that is different when the Item is
 	// different, and the same when the item is the same.
 	// Usually this is the last modified datetime.
