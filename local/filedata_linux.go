@@ -43,8 +43,8 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 	}
 
 	if stat := info.Sys().(*syscall.Stat_t); stat != nil {
-		m["atime"] = time.Unix(stat.Atim.Sec, stat.Atim.Nsec).Format(time.RFC3339Nano)
-		m["mtime"] = time.Unix(stat.Mtim.Sec, stat.Mtim.Nsec).Format(time.RFC3339Nano)
+		m["atime"] = time.Unix(int64(stat.Atim.Sec), int64(stat.Atim.Nsec)).Format(time.RFC3339Nano)
+		m["mtime"] = time.Unix(int64(stat.Mtim.Sec), int64(stat.Mtim.Nsec)).Format(time.RFC3339Nano)
 		m["uid"] = stat.Uid
 		m["gid"] = stat.Gid
 	}
@@ -73,6 +73,6 @@ func getInodeinfo(fi os.FileInfo) (*inodeinfo, error) {
 	}
 	return &inodeinfo{
 		Ino:   statT.Ino,
-		NLink: statT.Nlink,
+		NLink: uint64(statT.Nlink),
 	}, nil
 }
