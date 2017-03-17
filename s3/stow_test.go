@@ -1,9 +1,11 @@
+// build +disabled
 package s3
 
 import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -82,4 +84,15 @@ func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 
 	_, err := prepMetadata(m)
 	is.Err(err)
+}
+
+func TestInvalidAuthtype(t *testing.T) {
+	is := is.New(t)
+
+	config := stow.ConfigMap{
+		"auth_type": "foo",
+	}
+	_, err := stow.Dial("s3", config)
+	is.Err(err)
+	is.True(strings.Contains(err.Error(), "invalid auth_type"))
 }
