@@ -3,11 +3,13 @@ package s3
 import (
 	"bytes"
 	"io"
+	"os"
 	"io/ioutil"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 )
@@ -140,6 +142,40 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 			ETag: &etag,
 			Key:  &name,
 			Size: &size,
+			//LastModified *time.Time
+			//Owner        *s3.Owner
+			//StorageClass *string
+		},
+	}
+
+	return newItem, nil
+}
+
+func (c *container) PutMultipart(name string, file *os.File, metadata map[string]interface{}) (stow.Item, error) {
+	uploader := s3manager.NewUploaderWithClient(c.client)
+
+	// Convert map[string]interface{} to map[string]*string
+	mdPrepped, err := prepMetadata(metadata)
+	
+    // Perform an upload.
+    result, err := uploader.Upload(&s3manager.UploadInput{
+        Bucket:   aws.String(c.name),
+        Key:      aws.String(name),
+        Body:     file,
+        Metadata: mdPrepped,
+    })
+
+    if err != nil {
+		return nil, errors.Wrap(err, "RemoveItem, deleting object")
+	}
+
+	newItem := &item{
+		container: c,
+		client:    c.client,
+		properties: properties{
+			ETag: &result.UploadID,
+			Key:  &name,
+			//Size: &size,
 			//LastModified *time.Time
 			//Owner        *s3.Owner
 			//StorageClass *string
