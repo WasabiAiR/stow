@@ -36,6 +36,10 @@ const (
 	// ConfigEndpoint is optional config value for changing s3 endpoint
 	// used for e.g. minio.io
 	ConfigEndpoint = "endpoint"
+
+	// ConfigDisableSSL is optional config value for disabling SSL support on custom endpoints
+	// Its default value is "false", to disable SSL set it to "true".
+	ConfigDisableSSL = "disable_ssl"
 )
 
 func init() {
@@ -117,8 +121,12 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 	endpoint, ok := config.Config(ConfigEndpoint)
 	if ok {
 		awsConfig.WithEndpoint(endpoint).
-			WithDisableSSL(true).
 			WithS3ForcePathStyle(true)
+	}
+
+	disableSSL, ok := config.Config(ConfigDisableSSL)
+	if ok && disableSSL == "true" {
+		awsConfig.WithDisableSSL(true)
 	}
 
 	sess := session.New(awsConfig)
