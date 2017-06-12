@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/graymeta/stow"
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/option"
 )
 
 // Kind represents the name of the location/storage type.
@@ -57,20 +57,21 @@ func init() {
 }
 
 // Attempts to create a session based on the information given.
-func newGoogleStorageClient(config stow.Config) (*storage.Service, error) {
+func newGoogleStorageClient(config stow.Config) (*storage.Client, error) {
 	json, _ := config.Config(ConfigJSON)
 
-	scopes := []string{storage.DevstorageReadWriteScope}
+	scopes := []string{storage.ScopeReadWrite}
 	if s, ok := config.Config(ConfigScopes); ok && s != "" {
 		scopes = strings.Split(s, ",")
 	}
 
-	jwtConf, err := google.JWTConfigFromJSON([]byte(json), scopes...)
-
-	service, err := storage.New(jwtConf.Client(context.Background()))
-	if err != nil {
-		return nil, err
+	var opts []option.ClientOption
+	if json != "" {
+		opts = append(opts, option.WithServiceAccountFile(json))
+	}
+	if len(scopes) > 0 {
+		opts = append(opts, option.WithScopes(scopes...))
 	}
 
-	return service, nil
+	return storage.NewClient(context.Background(), opts...)
 }

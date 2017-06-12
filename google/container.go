@@ -1,20 +1,23 @@
 package google
 
 import (
+	"context"
 	"io"
-	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/iterator"
 )
 
 type Container struct {
 	// Name is needed to retrieve items.
 	name string
 
+	//bucket *storage.BucketHandle
+
 	// Client is responsible for performing the requests.
-	client *storage.Service
+	client *storage.Client
 }
 
 // ID returns a string value which represents the name of the container.
@@ -27,104 +30,74 @@ func (c *Container) Name() string {
 	return c.name
 }
 
-func (c *Container) Bucket() (*storage.Bucket, error) {
-	return c.client.Buckets.Get(c.name).Do()
+func (c *Container) Bucket() *storage.BucketHandle {
+	return c.client.Bucket(c.name)
+}
+
+func (c *Container) objectAttrToItem(res *storage.ObjectAttrs) *Item {
+	u, err := prepUrl(res.MediaLink)
+	if err != nil {
+		return nil
+	}
+
+	mdParsed, err := parseMetadata(res.Metadata)
+	if err != nil {
+		return nil
+	}
+
+	return &Item{
+		name:         res.Name,
+		container:    c,
+		client:       c.client,
+		size:         res.Size,
+		etag:         "",
+		hash:         string(res.MD5),
+		lastModified: res.Updated,
+		url:          u,
+		metadata:     mdParsed,
+	}
 }
 
 // Item returns a stow.Item instance of a container based on the
 // name of the container
 func (c *Container) Item(id string) (stow.Item, error) {
-	res, err := c.client.Objects.Get(c.name, id).Do()
+	obj := c.Bucket().Object(id)
+	res, err := obj.Attrs(context.TODO())
 	if err != nil {
 		return nil, stow.ErrNotFound
 	}
 
-	t, err := time.Parse(time.RFC3339, res.Updated)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := prepUrl(res.MediaLink)
-	if err != nil {
-		return nil, err
-	}
-
-	mdParsed, err := parseMetadata(res.Metadata)
-	if err != nil {
-		return nil, err
-	}
-
-	i := &Item{
-		name:         id,
-		container:    c,
-		client:       c.client,
-		size:         int64(res.Size),
-		etag:         res.Etag,
-		hash:         res.Md5Hash,
-		lastModified: t,
-		url:          u,
-		metadata:     mdParsed,
-		object:       res,
-	}
-
-	return i, nil
+	itm := c.objectAttrToItem(res)
+	itm.object = obj
+	return itm, nil
 }
 
 // Items retrieves a list of items that are prepended with
 // the prefix argument. The 'cursor' variable facilitates pagination.
 func (c *Container) Items(prefix string, cursor string, count int) ([]stow.Item, string, error) {
 	// List all objects in a bucket using pagination
-	call := c.client.Objects.List(c.name).MaxResults(int64(count))
-
-	if prefix != "" {
-		call.Prefix(prefix)
+	q := storage.Query{
+		Prefix: prefix,
 	}
 
-	if cursor != "" {
-		call = call.PageToken(cursor)
-	}
+	pager := iterator.NewPager(c.Bucket().Objects(context.Background(), &q), count, cursor)
 
-	res, err := call.Do()
+	var attrs []*storage.ObjectAttrs
+	nextPageToken, err := pager.NextPage(&attrs)
 	if err != nil {
 		return nil, "", err
 	}
-	containerItems := make([]stow.Item, len(res.Items))
+	containerItems := make([]stow.Item, len(attrs))
 
-	for i, o := range res.Items {
-		t, err := time.Parse(time.RFC3339, o.Updated)
-		if err != nil {
-			return nil, "", err
-		}
-
-		u, err := prepUrl(o.MediaLink)
-		if err != nil {
-			return nil, "", err
-		}
-
-		mdParsed, err := parseMetadata(o.Metadata)
-		if err != nil {
-			return nil, "", err
-		}
-
-		containerItems[i] = &Item{
-			name:         o.Name,
-			container:    c,
-			client:       c.client,
-			size:         int64(o.Size),
-			etag:         o.Etag,
-			hash:         o.Md5Hash,
-			lastModified: t,
-			url:          u,
-			metadata:     mdParsed,
-			object:       o,
-		}
+	for i, o := range attrs {
+		containerItems[i] = c.objectAttrToItem(o)
 	}
 
-	return containerItems, res.NextPageToken, nil
+	return containerItems, nextPageToken, nil
 }
 
 func (c *Container) RemoveItem(id string) error {
-	return c.client.Objects.Delete(c.name, id).Do()
+	return c.Bucket().Object(id).Delete(context.Background())
 }
 
 // Put sends a request to upload content to the container. The arguments
@@ -136,44 +109,22 @@ func (c *Container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, err
 	}
 
-	object := &storage.Object{
-		Name:     name,
-		Metadata: mdPrepped,
-	}
+	obj := c.Bucket().Object(name)
+	writer := obj.NewWriter(context.Background())
 
-	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
+	writer.Name = name
+	writer.Metadata = mdPrepped
+
+	_, err = io.Copy(writer, r)
+	if err != nil {
+		return nil, err
+	}
+	err = writer.Close()
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := time.Parse(time.RFC3339, res.Updated)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := prepUrl(res.MediaLink)
-	if err != nil {
-		return nil, err
-	}
-
-	mdParsed, err := parseMetadata(res.Metadata)
-	if err != nil {
-		return nil, err
-	}
-
-	newItem := &Item{
-		name:         name,
-		container:    c,
-		client:       c.client,
-		size:         size,
-		etag:         res.Etag,
-		hash:         res.Md5Hash,
-		lastModified: t,
-		url:          u,
-		metadata:     mdParsed,
-		object:       res,
-	}
-	return newItem, nil
+	return c.Item(name)
 }
 
 func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
