@@ -67,11 +67,6 @@ func init() {
 			}
 		}
 
-		_, ok = config.Config(ConfigRegion)
-		if !ok {
-			return nil, errors.New("missing Region")
-		}
-
 		// Create a new client (s3 session)
 		client, err := newS3Client(config)
 		if err != nil {
@@ -100,19 +95,21 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 	accessKeyID, _ := config.Config(ConfigAccessKeyID)
 	secretKey, _ := config.Config(ConfigSecretKey)
 	//	token, _ := config.Config(ConfigToken)
-	region, _ := config.Config(ConfigRegion)
 
 	if authType == "" {
 		authType = "accesskey"
 	}
 
 	awsConfig := aws.NewConfig().
-		WithRegion(region).
 		WithHTTPClient(http.DefaultClient).
 		WithMaxRetries(aws.UseServiceDefaultRetries).
 		WithLogger(aws.NewDefaultLogger()).
 		WithLogLevel(aws.LogOff).
 		WithSleepDelay(time.Sleep)
+
+	if region, ok := config.Config(ConfigRegion); ok {
+		awsConfig.WithRegion(region)
+	}
 
 	if authType == "accesskey" {
 		awsConfig.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, ""))
