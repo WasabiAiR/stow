@@ -1,6 +1,8 @@
 package swift
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"path"
@@ -52,6 +54,26 @@ func (i *item) Size() (int64, error) {
 
 func (i *item) Open() (io.ReadCloser, error) {
 	r, _, err := i.client.ObjectOpen(i.container.id, i.id, false, nil)
+	return r, err
+}
+
+func (i *item) Partial(length, offset int64) (io.ReadCloser, error) {
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+	if length < 0 {
+		return nil, fmt.Errorf("invalid length %d", length)
+	}
+
+	var rng string
+	if length > 0 {
+		rng = fmt.Sprintf("bytes=%d-%d", offset, offset+length)
+	} else {
+		rng = fmt.Sprintf("bytes=%d-", offset)
+	}
+	r, _, err := i.client.ObjectOpen(i.container.id, i.id, false, swift.Headers{
+		"Range": rng,
+	})
 	return r, err
 }
 
