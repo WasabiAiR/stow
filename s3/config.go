@@ -107,8 +107,11 @@ func newS3Client(config stow.Config) (*s3.S3, error) {
 		WithLogLevel(aws.LogOff).
 		WithSleepDelay(time.Sleep)
 
-	if region, ok := config.Config(ConfigRegion); ok {
+	region, ok := config.Config(ConfigRegion)
+	if ok {
 		awsConfig.WithRegion(region)
+	} else {
+		awsConfig.WithRegion("us-east-1")
 	}
 
 	if authType == "accesskey" {
