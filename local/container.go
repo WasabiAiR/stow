@@ -2,11 +2,14 @@ package local
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/graymeta/stow"
 )
@@ -75,10 +78,23 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	return item, nil
 }
 
-func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
-	files, err := flatdirs(c.path)
+func (c *container) Browse(prefix, delimiter, cursor string, count int) (*stow.ItemPage, error) {
+	var files []os.FileInfo
+	var err error
+	r, sz := utf8.DecodeRuneInString(delimiter)
+	if r == utf8.RuneError {
+		if sz == 0 {
+			files, err = flatdirs(c.path)
+		} else {
+			return nil, fmt.Errorf("Bad delimiter %v", delimiter)
+		}
+	} else if sz == len(delimiter) && r == os.PathSeparator {
+		files, err = ioutil.ReadDir(c.path)
+	} else {
+		return nil, errors.New("Unknown delimeter " + delimiter)
+	}
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	if cursor != stow.CursorStart {
 		// seek to the cursor
@@ -91,7 +107,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 			}
 		}
 		if !ok {
-			return nil, "", stow.ErrBadCursor
+			return nil, stow.ErrBadCursor
 		}
 	}
 	if len(files) > count {
@@ -100,6 +116,19 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	} else if len(files) <= count {
 		cursor = "" // end
 	}
+
+	var prefixes []string
+	for _, f := range files {
+		if !f.IsDir() {
+			continue
+		}
+		path, err := filepath.Abs(filepath.Join(c.path, f.Name()))
+		if err != nil {
+			return nil, err
+		}
+		prefixes = append(prefixes, path)
+	}
+
 	var items []stow.Item
 	for _, f := range files {
 		if f.IsDir() {
@@ -107,7 +136,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		}
 		path, err := filepath.Abs(filepath.Join(c.path, f.Name()))
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		if !strings.HasPrefix(f.Name(), prefix) {
 			continue
@@ -117,7 +146,15 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		}
 		items = append(items, item)
 	}
-	return items, cursor, nil
+	return &stow.ItemPage{Prefixes: prefixes, Items: items, Cursor: cursor}, nil
+}
+
+func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
+	page, err := c.Browse(prefix, "", cursor, count)
+	if err != nil {
+		return nil, "", err
+	}
+	return page.Items, cursor, err
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
