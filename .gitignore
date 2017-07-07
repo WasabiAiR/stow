@@ -26,3 +26,4 @@ _testmain.go
 tests.out
 tests.xml
 .idea
+.envrc

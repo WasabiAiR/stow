@@ -56,11 +56,11 @@ func (c *container) Item(id string) (stow.Item, error) {
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
-
+	maxKeys := int64(count)
 	params := &s3.ListObjectsInput{
 		Bucket:  aws.String(c.name),
 		Marker:  &cursor,
-		MaxKeys: &int64(count),
+		MaxKeys: &maxKeys,
 		Prefix:  &prefix,
 	}
 
@@ -73,7 +73,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 
 	for i, v := range res.Contents {
 		items[i] = &item{
-			id:           &v.Key,
+			id:           *v.Key,
 			container:    c,
 			client:       c.client,
 			eTag:         cleanETag(*v.ETag),
@@ -83,10 +83,8 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	}
 
 	cursor = ""
-	if *res.IsTruncated != nil {
-		if *res.IsTruncated {
-			cursor = items[len(items)-1].Name()
-		}
+	if *res.IsTruncated {
+		cursor = items[len(items)-1].Name()
 	}
 
 	return items, cursor, nil
@@ -138,6 +136,10 @@ func cleanETag(etag string) string {
 	etag = strings.TrimLeft(etag, `W/`)
 	etag = strings.Trim(etag, `"`)
 	etag = strings.Trim(etag, `\"`)
+	etag = strings.TrimLeft(etag, `W/`)
+	etag = strings.Trim(etag, `"`)
+	etag = strings.Trim(etag, `\"`)
+	return etag
 }
 
 func parseMd(md map[string]*string) map[string]interface{} {

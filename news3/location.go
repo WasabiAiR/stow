@@ -53,10 +53,26 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 			continue
 		}
 
+		loc, err := l.client.GetBucketLocation(&s3.GetBucketLocationInput{
+			Bucket: b.Name,
+		})
+		if err != nil {
+			aerr, ok := err.(awserr.Error)
+			if ok && aerr.Code() == s3.ErrCodeNoSuchBucket {
+				return containers, "", errors.Wrap(err, "cannot retrieve regions for all buckets")
+			}
+			return containers, "", errors.Wrap(err, "cannot retrieve regions for all buckets")
+		}
+		region := l.cfg.region
+		if loc.LocationConstraint != nil {
+			region = *loc.LocationConstraint
+		}
+
 		c := &container{
 			name:   *b.Name,
 			cfg:    l.cfg,
 			client: l.client,
+			region: region,
 		}
 
 		containers = append(containers, c)
@@ -68,7 +84,7 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 
 func (l *location) Container(id string) (stow.Container, error) {
 
-	_, err := l.client.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(id)})
+	loc, err := l.client.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(id)})
 	if err != nil {
 		aerr, ok := err.(awserr.Error)
 		if ok && aerr.Code() == s3.ErrCodeNoSuchBucket {
@@ -77,10 +93,16 @@ func (l *location) Container(id string) (stow.Container, error) {
 		return nil, errors.Wrap(err, "getting container")
 	}
 
+	region := l.cfg.region
+	if loc.LocationConstraint != nil {
+		region = *loc.LocationConstraint
+	}
+
 	c := &container{
 		name:   id,
 		cfg:    l.cfg,
 		client: l.client,
+		region: region,
 	}
 
 	return c, nil
@@ -97,5 +119,29 @@ func (l *location) RemoveContainer(id string) error {
 }
 
 func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
-	panic("not implemented")
+	path := url.Path
+	path = strings.TrimLeft(path, "https://s3-")
+
+	region := path[0:strings.Index(path, ".")]
+
+	path = strings.TrimLeft(path, region+".amazonaws.com/")
+
+	sliced := strings.Split(path, "/")
+
+	if len(sliced) != 2 {
+		return nil, errors.New("couldn't get an item from URL")
+	}
+	bucket, object := sliced[0], sliced[1]
+
+	c, err := l.Container(bucket)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting a container")
+	}
+
+	item, err := c.Item(object)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting an item")
+	}
+
+	return item, err
 }
