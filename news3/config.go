@@ -94,13 +94,15 @@ func init() {
 		c := s3.New(sess)
 
 		loc := &location{
-			authType:    authType,
-			accessKeyID: accessKeyID,
-			secretKey:   secretKey,
-			region:      region,
-			endpoint:    endpoint,
-			disableSSL:  disSSL,
-			client:      c,
+			client: c,
+			cfg: cfg{
+				authType:    authType,
+				accessKeyID: accessKeyID,
+				secretKey:   secretKey,
+				region:      region,
+				endpoint:    endpoint,
+				disableSSL:  disSSL,
+			},
 		}
 
 		return loc, nil
@@ -111,4 +113,13 @@ func init() {
 	}
 
 	stow.Register(Kind, makefn, kindfn)
+}
+
+type cfg struct {
+	authType    string
+	accessKeyID string
+	secretKey   string
+	region      string
+	endpoint    string
+	disableSSL  bool
 }
