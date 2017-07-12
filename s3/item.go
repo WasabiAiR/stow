@@ -59,7 +59,7 @@ func (i *item) Size() (int64, error) {
 // URL returns a formatted string which follows the predefined format
 // that every S3 asset is given.
 func (i *item) URL() *url.URL {
-	genericURL := []string{"https://s3-", i.container.Region(), ".amazonaws.com/",
+	genericURL := []string{"https://s3.dualstack.", i.container.Region(), ".amazonaws.com/",
 		i.container.Name(), "/", i.Name()}
 
 	return &url.URL{
