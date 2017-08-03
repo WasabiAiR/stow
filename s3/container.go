@@ -14,9 +14,10 @@ import (
 
 // Amazon S3 bucket contains a creationdate and a name.
 type container struct {
-	name   string // Name is needed to retrieve items.
-	client *s3.S3 // Client is responsible for performing the requests.
-	region string // Describes the AWS Availability Zone of the S3 Bucket.
+	name           string // Name is needed to retrieve items.
+	client         *s3.S3 // Client is responsible for performing the requests.
+	region         string // Describes the AWS Availability Zone of the S3 Bucket.
+	customEndpoint string
 }
 
 // ID returns a string value which represents the name of the container.
@@ -163,11 +164,11 @@ func (c *container) Region() string {
 // for this if so.
 func (c *container) getItem(id string) (*item, error) {
 	params := &s3.GetObjectInput{
-		Bucket: aws.String(c.Name()),
+		Bucket: aws.String(c.name),
 		Key:    aws.String(id),
 	}
 
-	response, err := c.client.GetObject(params)
+	res, err := c.client.GetObject(params)
 	if err != nil {
 		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
 		if strings.Contains(err.Error(), "NoSuchKey") {
@@ -175,10 +176,10 @@ func (c *container) getItem(id string) (*item, error) {
 		}
 		return nil, errors.Wrap(err, "getItem, getting the object")
 	}
-	defer response.Body.Close()
+	defer res.Body.Close()
 
-	etag := cleanEtag(*response.ETag) // etag string value contains quotations. Remove them.
-	md, err := parseMetadata(response.Metadata)
+	etag := cleanEtag(*res.ETag) // etag string value contains quotations. Remove them.
+	md, err := parseMetadata(res.Metadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
 	}
@@ -189,10 +190,10 @@ func (c *container) getItem(id string) (*item, error) {
 		properties: properties{
 			ETag:         &etag,
 			Key:          &id,
-			LastModified: response.LastModified,
+			LastModified: res.LastModified,
 			Owner:        nil, // not returned in the response.
-			Size:         response.ContentLength,
-			StorageClass: response.StorageClass,
+			Size:         res.ContentLength,
+			StorageClass: res.StorageClass,
 			Metadata:     md,
 		},
 	}
