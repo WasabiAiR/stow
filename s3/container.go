@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"net/http"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
@@ -114,10 +116,15 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, errors.Wrap(err, "unable to create or update item, preparing metadata")
 	}
 
+	// Get Content Type as string
+	// https://golang.org/pkg/net/http/#DetectContentType
+	contentType := http.DetectContentType(content)
+
 	params := &s3.PutObjectInput{
 		Bucket:        aws.String(c.name), // Required
 		Key:           aws.String(name),   // Required
 		ContentLength: aws.Int64(size),
+		ContentType:   &contentType,
 		Body:          bytes.NewReader(content),
 		Metadata:      mdPrepped, // map[string]*string
 	}
