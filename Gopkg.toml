@@ -23,7 +23,11 @@
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"
-  version = "7.0.1-beta"
+  version = "10.2.1-beta"
+
+[[constraint]]
+  name = "github.com/Azure/go-autorest"
+  version = "~8.1.1"
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"
@@ -42,7 +46,7 @@
   version = "0.8.0"
 
 [[constraint]]
-  branch = "master"
+  branch = "release-branch.go1.8"
   name = "golang.org/x/net"
 
 [[constraint]]

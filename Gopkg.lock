@@ -10,8 +10,14 @@
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "0984e0641ae43b89283223034574d6465be93bf4"
-  version = "v7.0.1-beta"
+  revision = "2d49bb8f2cee530cc16f1f1a9f0aae763dee257d"
+  version = "v10.2.1-beta"
+
+[[projects]]
+  name = "github.com/Azure/go-autorest"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
+  revision = "77a52603f06947221c672f10275abc9bf2c7d557"
+  version = "v8.3.0"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
@@ -24,6 +30,12 @@
   name = "github.com/cheekybits/is"
   packages = ["."]
   revision = "68e9c0620927fb5427fda3708222d0edee89eae9"
+
+[[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "d2709f9f1f31ebcda9651b03077758c1f3a0018c"
+  version = "v3.0.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -56,10 +68,16 @@
   version = "v0.8.0"
 
 [[projects]]
-  branch = "master"
+  name = "github.com/satori/uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
+
+[[projects]]
+  branch = "release-branch.go1.8"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "1c05540f6879653db88113bc4a2b70aec4bd491f"
+  revision = "186fd3fc8194a5e9980a82230d69c1ff7134229f"
 
 [[projects]]
   branch = "master"
@@ -82,6 +100,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2c07c04803b9b625082690ece22f7caaaea56c04ecfa2848e5c14633fbe6010e"
+  inputs-digest = "9669b6203ee98d781a69726537e19d7fbfb1bdf3441ba58111d3208fff0c225f"
   solver-name = "gps-cdcl"
   solver-version = 1
