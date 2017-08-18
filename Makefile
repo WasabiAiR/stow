@@ -14,21 +14,15 @@ runcontainer:
 
 deps:
 	go get github.com/tebeka/go2xunit
-	go get github.com/Azure/azure-sdk-for-go/storage
-	go get github.com/aws/aws-sdk-go
-	go get github.com/ncw/swift
-	go get github.com/cheekybits/is
-	go get golang.org/x/net/context
-	go get golang.org/x/oauth2/google
-	go get github.com/pkg/errors
-	go get google.golang.org/api/storage/...
+	go get -u github.com/golang/dep/cmd/dep
+	dep ensure
 
 test: clean deps vet
-	go test -v ./... | tee tests.out
+	go test -v $(go list ./... | grep -v /vendor/) | tee tests.out
 	go2xunit -fail -input tests.out -output tests.xml
 
 vet:
-	go vet ./...
+	go vet $(go list ./... | grep -v /vendor/)
 
 clean:
 	rm -f tests.out test.xml
