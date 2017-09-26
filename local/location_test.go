@@ -28,13 +28,11 @@ func TestContainers(t *testing.T) {
 	is.OK(items)
 
 	is.Equal(len(items), 5)
-	isDir(is, items[0].ID())
-	is.Equal(items[0].Name(), "All")
-	isDir(is, items[1].ID())
+	isDir(is, filepath.Join(testDir, items[1].ID()))
 	is.Equal(items[1].Name(), "one")
-	isDir(is, items[2].ID())
+	isDir(is, filepath.Join(testDir, items[2].ID()))
 	is.Equal(items[2].Name(), "three")
-	isDir(is, items[3].ID())
+	isDir(is, filepath.Join(testDir, items[3].ID()))
 	is.Equal(items[3].Name(), "two")
 }
 
@@ -83,9 +81,9 @@ func TestContainersPrefix(t *testing.T) {
 	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 2)
-	isDir(is, containers[0].ID())
+	isDir(is, filepath.Join(testDir, containers[0].ID()))
 	is.Equal(containers[0].Name(), "three")
-	isDir(is, containers[1].ID())
+	isDir(is, filepath.Join(testDir, containers[1].ID()))
 	is.Equal(containers[1].Name(), "two")
 
 	cthree, err := l.Container(containers[0].ID())
@@ -111,7 +109,7 @@ func TestContainer(t *testing.T) {
 	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 2)
-	isDir(is, containers[0].ID())
+	isDir(is, filepath.Join(testDir, containers[0].ID()))
 
 	cthree, err := l.Container(containers[0].ID())
 	is.NoErr(err)
@@ -134,7 +132,7 @@ func TestCreateContainer(t *testing.T) {
 	c, err := l.CreateContainer("new_test_container")
 	is.NoErr(err)
 	is.OK(c)
-	is.Equal(c.ID(), filepath.Join(testDir, "new_test_container"))
+	is.Equal(c.ID(),  "new_test_container")
 	is.Equal(c.Name(), "new_test_container")
 
 	containers, cursor, err := l.Containers("new", stow.CursorStart, 10)
@@ -143,7 +141,7 @@ func TestCreateContainer(t *testing.T) {
 	is.Equal(cursor, "")
 
 	is.Equal(len(containers), 1)
-	isDir(is, containers[0].ID())
+	isDir(is, filepath.Join(testDir, containers[0].ID()))
 	is.Equal(containers[0].Name(), "new_test_container")
 }
 
@@ -230,4 +228,8 @@ func TestContainersPaging(t *testing.T) {
 	_, _, err = l.Containers("container-", "made-up-cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
+	// get one specify container
+	container, err := l.Container("container-02")
+	is.NoErr(err)
+	is.OK(container)
 }

@@ -168,7 +168,7 @@ func TestItems(t *testing.T) {
 	is.Equal(cursor, "")
 
 	is.Equal(len(items), 3)
-	is.Equal(items[0].ID(), filepath.Join(containers[0].ID(), "item1"))
+	is.Equal(items[0].ID(), "item1")
 	is.Equal(items[0].Name(), "item1")
 }
 

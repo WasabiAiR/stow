@@ -59,4 +59,8 @@ func TestItemsPaging(t *testing.T) {
 	_, _, err = container.Items("item-", "made up cursor", 10)
 	is.Equal(err, stow.ErrBadCursor)
 
+	// get one item from container
+	item, err := container.Item("item-01")
+	is.NoErr(err)
+	is.OK(item)
 }

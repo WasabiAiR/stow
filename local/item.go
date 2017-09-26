@@ -27,7 +27,8 @@ const (
 )
 
 type item struct {
-	path     string
+	path     string // absolute path to file
+	name     string // file name
 	infoOnce sync.Once // protects info
 	info     os.FileInfo
 	infoErr  error
@@ -35,7 +36,7 @@ type item struct {
 }
 
 func (i *item) ID() string {
-	return i.path
+	return i.name
 }
 
 func (i *item) Name() string {

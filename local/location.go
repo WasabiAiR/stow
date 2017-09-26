@@ -1,12 +1,13 @@
 package local
 
 import (
-	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/graymeta/stow"
+	"github.com/pkg/errors"
 )
 
 type location struct {
@@ -19,8 +20,36 @@ func (l *location) Close() error {
 }
 
 func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
-	i := &item{}
-	i.path = u.Path
+	rootPath, ok := l.config.Config(ConfigKeyPath)
+	if !ok {
+		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
+	}
+
+	cleanRootPath := filepath.Clean(rootPath)
+	rootPathLen := len(cleanRootPath)
+	if len(u.Path) < rootPathLen {
+		return nil, errors.New("Url is too short")
+	}
+
+	rootIndex := strings.Index(u.Path, cleanRootPath)
+	path := u.Path[rootIndex + rootPathLen + 1:]
+
+	urlParts := strings.Split(path, "/")
+	if len(urlParts) < 2 {
+		return nil, errors.New("parsing ItemByURL URL")
+	}
+	containerName := urlParts[0]
+	itemName := strings.Join(urlParts[1:], "/")
+
+	c, err := l.Container(containerName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "ItemByURL, getting container by the name %s", containerName)
+	}
+
+	i, err := c.Item(itemName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "ItemByURL, getting item by object name %s", itemName)
+	}
 	return i, nil
 }
 
@@ -104,7 +133,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 	if !ok {
 		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
 	}
-	containers, err := l.filesToContainers(path, id)
+	containers, err := l.filesToContainers(path, filepath.Join(path, id))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, stow.ErrNotFound

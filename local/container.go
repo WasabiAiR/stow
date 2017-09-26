@@ -17,7 +17,7 @@ type container struct {
 }
 
 func (c *container) ID() string {
-	return c.path
+	return c.name
 }
 
 func (c *container) Name() string {
@@ -35,6 +35,7 @@ func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
 	path := filepath.Join(c.path, name)
 	item := &item{
 		path: path,
+		name: name,
 	}
 	f, err := os.Create(path)
 	if err != nil {
@@ -44,7 +45,7 @@ func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
 }
 
 func (c *container) RemoveItem(id string) error {
-	return os.Remove(id)
+	return os.Remove(filepath.Join(c.path, id))
 }
 
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
@@ -55,6 +56,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	path := filepath.Join(c.path, name)
 	item := &item{
 		path: path,
+		name: name,
 	}
 	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
@@ -114,6 +116,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		}
 		item := &item{
 			path: path,
+			name: f.Name(),
 		}
 		items = append(items, item)
 	}
@@ -121,7 +124,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
-	path := id
+	path := filepath.Join(c.path, id)
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, stow.ErrNotFound
@@ -132,6 +135,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 	item := &item{
 		path: path,
+		name: id,
 	}
 	return item, nil
 }
