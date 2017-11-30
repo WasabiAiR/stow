@@ -2,14 +2,16 @@ package google
 
 import (
 	"errors"
-	"github.com/graymeta/stow"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	storage "google.golang.org/api/storage/v1"
-	"net/http"
-	"net/url"
-	"strings"
+
+	"github.com/graymeta/stow"
 )
 
 // Kind represents the name of the location/storage type.
@@ -60,7 +62,7 @@ func init() {
 // Attempts to create a session based on the information given.
 func newGoogleStorageClient(config stow.Config) (*storage.Service, error) {
 	json, _ := config.Config(ConfigJSON)
-	var httpClint *http.Client
+	var httpClient *http.Client
 	scopes := []string{storage.DevstorageReadWriteScope}
 	if s, ok := config.Config(ConfigScopes); ok && s != "" {
 		scopes = strings.Split(s, ",")
@@ -70,16 +72,16 @@ func newGoogleStorageClient(config stow.Config) (*storage.Service, error) {
 		if err != nil {
 			return nil, err
 		}
-		httpClint = jwtConf.Client(context.Background())
+		httpClient = jwtConf.Client(context.Background())
 
 	} else {
 		creds, err := google.FindDefaultCredentials(context.Background(), strings.Join(scopes, ","))
 		if err != nil {
 			return nil, err
 		}
-		httpClint = oauth2.NewClient(context.Background(), creds.TokenSource)
+		httpClient = oauth2.NewClient(context.Background(), creds.TokenSource)
 	}
-	service, err := storage.New(httpClint)
+	service, err := storage.New(httpClient)
 	if err != nil {
 		return nil, err
 	}
