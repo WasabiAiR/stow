@@ -35,6 +35,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 		isWindows = true
 	}
 
+	err := stow.Validate(kind, config)
+	is.NoErr(err)
+
 	location, err := stow.Dial(kind, config)
 	is.NoErr(err)
 	is.OK(location)

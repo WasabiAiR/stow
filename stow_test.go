@@ -20,7 +20,7 @@ func TestKindByURL(t *testing.T) {
 
 func TestKinds(t *testing.T) {
 	is := is.New(t)
-	stow.Register("example", nil, nil)
+	stow.Register("example", nil, nil, nil)
 	is.Equal(stow.Kinds(), []string{"test", "example"})
 }
 
@@ -40,8 +40,8 @@ func TestErrNotSupported(t *testing.T) {
 
 func TestDuplicateKinds(t *testing.T) {
 	is := is.New(t)
-	stow.Register("example", nil, nil)
+	stow.Register("example", nil, nil, nil)
 	is.Equal(stow.Kinds(), []string{"test", "example"})
-	stow.Register("example", nil, nil)
+	stow.Register("example", nil, nil, nil)
 	is.Equal(stow.Kinds(), []string{"test", "example"})
 }

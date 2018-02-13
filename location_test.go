@@ -7,6 +7,9 @@ import (
 )
 
 func init() {
+	validatefn := func(config stow.Config) error {
+		return nil
+	}
 	makefn := func(config stow.Config) (stow.Location, error) {
 		return &testLocation{
 			config: config,
@@ -15,7 +18,7 @@ func init() {
 	kindfn := func(u *url.URL) bool {
 		return u.Scheme == testKind
 	}
-	stow.Register(testKind, makefn, kindfn)
+	stow.Register(testKind, makefn, kindfn, validatefn)
 }
 
 const testKind = "test"
