@@ -43,7 +43,29 @@ const (
 )
 
 func init() {
+	validatefn := func(config stow.Config) error {
+		authType, ok := config.Config(ConfigAuthType)
+		if !ok || authType == "" {
+			authType = "accesskey"
+		}
 
+		if !(authType == "accesskey" || authType == "iam") {
+			return errors.New("invalid auth_type")
+		}
+
+		if authType == "accesskey" {
+			_, ok := config.Config(ConfigAccessKeyID)
+			if !ok {
+				return errors.New("missing Access Key ID")
+			}
+
+			_, ok = config.Config(ConfigSecretKey)
+			if !ok {
+				return errors.New("missing Secret Key")
+			}
+		}
+		return nil
+	}
 	makefn := func(config stow.Config) (stow.Location, error) {
 
 		authType, ok := config.Config(ConfigAuthType)
@@ -87,7 +109,7 @@ func init() {
 		return u.Scheme == Kind
 	}
 
-	stow.Register(Kind, makefn, kindfn)
+	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
 // Attempts to create a session based on the information given.

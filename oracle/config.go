@@ -26,6 +26,23 @@ const (
 const Kind = "oracle"
 
 func init() {
+	validatefn := func(config stow.Config) error {
+		_, ok := config.Config(ConfigUsername)
+		if !ok {
+			return errors.New("missing account username")
+		}
+
+		_, ok = config.Config(ConfigPassword)
+		if !ok {
+			return errors.New("missing account password")
+		}
+
+		_, ok = config.Config(ConfigAuthEndpoint)
+		if !ok {
+			return errors.New("missing authorization endpoint")
+		}
+		return nil
+	}
 	makefn := func(config stow.Config) (stow.Location, error) {
 		_, ok := config.Config(ConfigUsername)
 		if !ok {
@@ -59,7 +76,7 @@ func init() {
 		return u.Scheme == Kind
 	}
 
-	stow.Register(Kind, makefn, kindfn)
+	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
 func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
