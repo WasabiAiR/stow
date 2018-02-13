@@ -136,6 +136,8 @@ type Config interface {
 	// Config gets a string configuration value and a
 	// bool indicating whether the value was present or not.
 	Config(name string) (string, bool)
+	// Set sets the configuration name to specified value
+	Set(name, value string)
 }
 
 // Register adds a Location implementation, with two helper functions.
@@ -213,6 +215,11 @@ type ConfigMap map[string]string
 func (c ConfigMap) Config(name string) (string, bool) {
 	val, ok := c[name]
 	return val, ok
+}
+
+// Config sets name configuration to value
+func (c ConfigMap) Set(name, value string) {
+	c[name] = value
 }
 
 // errUnknownKind indicates that a kind is unknown.
