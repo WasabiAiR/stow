@@ -55,7 +55,7 @@ func init() {
 		return l, nil
 	}
 	kindfn := func(u *url.URL) bool {
-		return u.Scheme == "azure"
+		return u.Scheme == Kind
 	}
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
