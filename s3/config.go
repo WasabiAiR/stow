@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"time"
@@ -50,6 +51,11 @@ const (
 	// Its default value is "false", to enable set to "true".
 	// This feature is useful for s3-compatible blob stores -- ie minio.
 	ConfigV2Signing = "v2_signing"
+
+	// ConfigInsecureSkipSSLVerify is optional config value for skipping SSL certificate and hostname
+	// validation
+	// Its default value is "false", to disable SSL verfication set it to "true".
+	ConfigInsecureSkipSSLVerify = "insecure_skip_ssl_verify"
 )
 
 func init() {
@@ -133,8 +139,18 @@ func newS3Client(config stow.Config, region string) (client *s3.S3, endpoint str
 		authType = authTypeAccessKey
 	}
 
+	httpClient := http.DefaultClient
+	skipSSLVerify, ok := config.Config(ConfigInsecureSkipSSLVerify)
+	if ok && skipSSLVerify == "true" {
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+
 	awsConfig := aws.NewConfig().
-		WithHTTPClient(http.DefaultClient).
+		WithHTTPClient(httpClient).
 		WithMaxRetries(aws.UseServiceDefaultRetries).
 		WithLogger(aws.NewDefaultLogger()).
 		WithLogLevel(aws.LogOff).
