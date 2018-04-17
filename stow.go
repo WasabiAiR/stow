@@ -131,6 +131,12 @@ type Item interface {
 	Metadata() (map[string]interface{}, error)
 }
 
+// Taggable represents a taggable Item
+type Taggable interface {
+	// Tags returns a list of tags that belong to a given Item
+	Tags() (map[string]interface{}, error)
+}
+
 // Config represents key/value configuration.
 type Config interface {
 	// Config gets a string configuration value and a
@@ -217,7 +223,7 @@ func (c ConfigMap) Config(name string) (string, bool) {
 	return val, ok
 }
 
-// Config sets name configuration to value
+// Set sets name configuration to value
 func (c ConfigMap) Set(name, value string) {
 	c[name] = value
 }
