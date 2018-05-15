@@ -38,17 +38,17 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 // Items sends a request to retrieve a list of items that are prepended with
 // the prefix argument. The 'cursor' variable facilitates pagination.
-func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
+func (c *container) Items(prefix, startAfter string, count int) ([]stow.Item, string, error) {
 	itemLimit := int64(count)
 
-	params := &s3.ListObjectsInput{
-		Bucket:  aws.String(c.Name()),
-		Marker:  &cursor,
-		MaxKeys: &itemLimit,
-		Prefix:  &prefix,
+	params := &s3.ListObjectsV2Input{
+		Bucket:     aws.String(c.Name()),
+		StartAfter: &startAfter,
+		MaxKeys:    &itemLimit,
+		Prefix:     &prefix,
 	}
 
-	response, err := c.client.ListObjects(params)
+	response, err := c.client.ListObjectsV2(params)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Items, listing objects")
 	}
@@ -77,12 +77,12 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	// If not, provide the file name of the last item as the next marker. S3 lists
 	// its items (S3 Objects) in alphabetical order, so it will receive the item name
 	// and correctly return the next list of items in subsequent requests.
-	marker := ""
+	startAfter := ""
 	if *response.IsTruncated {
-		marker = containerItems[len(containerItems)-1].Name()
+		startAfter = containerItems[len(containerItems)-2].Name()
 	}
 
-	return containerItems, marker, nil
+	return containerItems, startAfter, nil
 }
 
 func (c *container) RemoveItem(id string) error {
