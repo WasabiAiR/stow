@@ -12,11 +12,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Amazon S3 bucket contains a creationdate and a name.
+// Amazon S3 bucket contains a creation date and a name.
 type container struct {
-	name           string // Name is needed to retrieve items.
-	client         *s3.S3 // Client is responsible for performing the requests.
-	region         string // Describes the AWS Availability Zone of the S3 Bucket.
+	// name is needed to retrieve items.
+	name string
+	// client is responsible for performing the requests.
+	client *s3.S3
+	// region describes the AWS Availability Zone of the S3 Bucket.
+	region         string
 	customEndpoint string
 }
 
