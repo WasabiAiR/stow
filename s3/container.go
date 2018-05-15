@@ -77,12 +77,10 @@ func (c *container) Items(prefix, startAfter string, count int) ([]stow.Item, st
 	}
 
 	// Create a marker and determine if the list of items to retrieve is complete.
-	// If not, provide the file name of the last item as the next marker. S3 lists
-	// its items (S3 Objects) in alphabetical order, so it will receive the item name
-	// and correctly return the next list of items in subsequent requests.
+	// If not, the last file is the input to the value of after which item to start
 	startAfter := ""
 	if *response.IsTruncated {
-		startAfter = containerItems[len(containerItems)-2].Name()
+		startAfter = containerItems[len(containerItems)-1].Name()
 	}
 
 	return containerItems, startAfter, nil
