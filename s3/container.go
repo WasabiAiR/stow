@@ -1,10 +1,10 @@
 package s3
 
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -104,10 +104,7 @@ func (c *container) RemoveItem(id string) error {
 // content, and the size of the file. Many more attributes can be given to the
 // file, including metadata. Keeping it simple for now.
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update item, reading content")
-	}
+	uploader := s3manager.NewUploaderWithClient(c.client)
 
 	// Convert map[string]interface{} to map[string]*string
 	mdPrepped, err := prepMetadata(metadata)
@@ -115,33 +112,29 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, errors.Wrap(err, "unable to create or update item, preparing metadata")
 	}
 
-	params := &s3.PutObjectInput{
-		Bucket:        aws.String(c.name), // Required
-		Key:           aws.String(name),   // Required
-		ContentLength: aws.Int64(size),
-		Body:          bytes.NewReader(content),
-		Metadata:      mdPrepped, // map[string]*string
+	params := &s3manager.UploadInput{
+		Bucket:   aws.String(c.name), // Required
+		Key:      aws.String(name),   // Required
+		Body:     r,
+		Metadata: mdPrepped, // map[string]*string
 	}
 
-	// Only Etag is returned.
-	response, err := c.client.PutObject(params)
+	_, err = uploader.Upload(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "RemoveItem, deleting object")
+		return nil, errors.Wrap(err, "Upload")
 	}
-	etag := cleanEtag(*response.ETag)
 
-	// Some fields are empty because this information isn't included in the response.
+	// s3manager.Uploader doesn't reaturn useful info about the created
+	// object.
 	// May have to involve sending a request if we want more specific information.
 	// Keeping it simple for now.
-	// s3.Object info: https://github.com/aws/aws-sdk-go/blob/master/service/s3/api.go#L7092-L7107
-	// Response: https://github.com/aws/aws-sdk-go/blob/master/service/s3/api.go#L8193-L8227
 	newItem := &item{
 		container: c,
 		client:    c.client,
 		properties: properties{
-			ETag: &etag,
-			Key:  &name,
-			Size: &size,
+			//ETag: &etag,
+			Key: &name,
+			//			Size: &size,
 			//LastModified *time.Time
 			//Owner        *s3.Owner
 			//StorageClass *string

@@ -92,7 +92,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 
 	// add three items to c1 + add metadata to one item, assert if the implementation allows.
 	// Tests metadata retrieval on PUTs.
-	item1, skip1 := putItem(is, c1, "a_first/the item", "item one", md1)
+	item1Content := "item one"
+	item1, skip1 := putItem(is, c1, "a_first/the item", item1Content, md1)
 	is.OK(item1)
 	if !skip1 {
 		is.NoErr(checkMetadata(t, is, item1, md1))
@@ -181,8 +182,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(item1copy)
 	is.Equal(item1copy.ID(), item1.ID())
 	is.Equal(item1copy.Name(), item1.Name())
-	is.Equal(size(is, item1copy), size(is, item1))
-	is.Equal(readItemContents(is, item1copy), "item one")
+	is.Equal(size(is, item1copy), len(item1Content))
+	is.Equal(readItemContents(is, item1copy), item1Content)
 	is.OK(etag(t, is, item1copy))
 	if !skip1 {
 		is.NoErr(checkMetadata(t, is, item1copy, md1))
