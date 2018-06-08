@@ -78,7 +78,7 @@ func (c *container) Items(prefix, startAfter string, count int) ([]stow.Item, st
 
 	// Create a marker and determine if the list of items to retrieve is complete.
 	// If not, the last file is the input to the value of after which item to start
-	startAfter := ""
+	startAfter = ""
 	if *response.IsTruncated {
 		startAfter = containerItems[len(containerItems)-1].Name()
 	}
