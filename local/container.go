@@ -32,9 +32,10 @@ func (c *container) URL() *url.URL {
 }
 
 func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {
-	path := filepath.Join(c.path, name)
+	path := filepath.Join(c.path, filepath.FromSlash(name))
 	item := &item{
-		path: path,
+		path:          path,
+		contPrefixLen: len(c.path) + 1,
 	}
 	f, err := os.Create(path)
 	if err != nil {
@@ -52,9 +53,10 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, stow.NotSupported("metadata")
 	}
 
-	path := filepath.Join(c.path, name)
+	path := filepath.Join(c.path, filepath.FromSlash(name))
 	item := &item{
-		path: path,
+		path:          path,
+		contPrefixLen: len(c.path) + 1,
 	}
 	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
@@ -76,6 +78,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
+	prefix = filepath.FromSlash(prefix)
 	files, err := flatdirs(c.path)
 	if err != nil {
 		return nil, "", err
@@ -113,7 +116,8 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 			continue
 		}
 		item := &item{
-			path: path,
+			path:          path,
+			contPrefixLen: len(c.path) + 1,
 		}
 		items = append(items, item)
 	}
@@ -122,6 +126,9 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 
 func (c *container) Item(id string) (stow.Item, error) {
 	path := id
+	if !filepath.IsAbs(id) {
+		path = filepath.Join(c.path, filepath.FromSlash(id))
+	}
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, stow.ErrNotFound
@@ -129,9 +136,13 @@ func (c *container) Item(id string) (stow.Item, error) {
 	if info.IsDir() {
 		return nil, errors.New("unexpected directory")
 	}
-
+	_, err = filepath.Rel(c.path, path)
+	if err != nil {
+		return nil, err
+	}
 	item := &item{
-		path: path,
+		path:          path,
+		contPrefixLen: len(c.path) + 1,
 	}
 	return item, nil
 }

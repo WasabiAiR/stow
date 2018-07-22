@@ -19,9 +19,11 @@ func (l *location) Close() error {
 }
 
 func (l *location) ItemByURL(u *url.URL) (stow.Item, error) {
-	i := &item{}
-	i.path = u.Path
-	return i, nil
+	dir, _ := filepath.Split(u.Path)
+	return &item{
+		path:          u.Path,
+		contPrefixLen: len(dir),
+	}, nil
 }
 
 func (l *location) RemoveContainer(id string) error {
@@ -104,7 +106,14 @@ func (l *location) Container(id string) (stow.Container, error) {
 	if !ok {
 		return nil, errors.New("missing " + ConfigKeyPath + " configuration")
 	}
-	containers, err := l.filesToContainers(path, id)
+	var fullPath string
+	if filepath.IsAbs(id) {
+		fullPath = id
+	} else {
+		fullPath = filepath.Join(path, id)
+	}
+
+	containers, err := l.filesToContainers(path, fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, stow.ErrNotFound
