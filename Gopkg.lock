@@ -81,16 +81,6 @@
   revision = "ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e"
 
 [[projects]]
-  name = "github.com/graymeta/stow"
-  packages = [
-    ".",
-    "local",
-    "test"
-  ]
-  revision = "40ddb0743e48a0b979b7dc57ff214a686b0e1ef2"
-  version = "v0.1.0"
-
-[[projects]]
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9"
