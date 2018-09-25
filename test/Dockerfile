@@ -6,6 +6,7 @@ RUN yum -y install \
     make \
     mercurial \
     wget \
+    which \
     && yum clean all
 
 ENV goversion 1.9.2
