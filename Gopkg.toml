@@ -25,9 +25,9 @@
   name = "github.com/Azure/azure-sdk-for-go"
   version = "10.2.1-beta"
 
-[[constraint]]
+[[override]]
   name = "github.com/Azure/go-autorest"
-  version = "~8.1.1"
+  version = "~8.3.0"
 
 [[constraint]]
   name = "github.com/aws/aws-sdk-go"
