@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -173,7 +174,7 @@ func (c *container) getItem(id string) (*item, error) {
 	res, err := c.client.HeadObject(params)
 	if err != nil {
 		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
-		if strings.Contains(err.Error(), "NoSuchKey") {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
 			return nil, stow.ErrNotFound
 		}
 		return nil, errors.Wrap(err, "getItem, getting the object")
