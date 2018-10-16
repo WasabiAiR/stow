@@ -128,7 +128,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	// Only Etag is returned.
 	response, err := c.client.PutObject(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "RemoveItem, deleting object")
+		return nil, errors.Wrap(err, "PutObject, putting object")
 	}
 	etag := cleanEtag(*response.ETag)
 
