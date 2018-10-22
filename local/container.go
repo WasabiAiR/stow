@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -76,7 +77,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
-	files, err := flatdirs(c.path)
+	files, err := flatdirs(c.path, prefix)
 	if err != nil {
 		return nil, "", err
 	}
@@ -138,16 +139,20 @@ func (c *container) Item(id string) (stow.Item, error) {
 
 // flatdirs walks the entire tree returning a list of
 // os.FileInfo for all items encountered.
-func flatdirs(path string) ([]os.FileInfo, error) {
+func flatdirs(dir, prefix string) ([]os.FileInfo, error) {
+	searchDir := path.Dir(path.Join(dir, prefix))
 	var list []os.FileInfo
-	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+	err := filepath.Walk(searchDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			return nil
 		}
-		flatname, err := filepath.Rel(path, p)
+		flatname, err := filepath.Rel(dir, p)
+		if !strings.HasPrefix(flatname, prefix) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
