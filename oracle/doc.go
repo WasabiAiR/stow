@@ -1,5 +1,5 @@
 /*
-Package Oracle provides an absraction of the Oracle Storage Cloud Service. In this package, an Oracle Service Instance of type Storage is represented by a Stow Container, and an Oracle Storage Object is represented by a Stow Item.
+Package oracle provides an absraction of the Oracle Storage Cloud Service. In this package, an Oracle Service Instance of type Storage is represented by a Stow Container, and an Oracle Storage Object is represented by a Stow Item.
 
 Oracle Storage Cloud Service is strictly a blob storage service, therefore nested directories do not exist.
 
@@ -44,4 +44,4 @@ Methods of oracle.Item allow the retrieval of a Storage Service Instance's:
 - Etag
 - content
 */
-package swift
+package oracle
