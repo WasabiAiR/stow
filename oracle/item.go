@@ -1,4 +1,4 @@
-package swift
+package oracle
 
 import (
 	"io"
