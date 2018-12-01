@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -33,8 +34,9 @@ func (c *container) Name() string {
 	return c.name
 }
 
-// Item returns a stow.Item instance of a container based on the
-// name of the container and the key representing
+// Item returns a stow.Item instance of a container based on the name of the container and the key representing. The
+// retrieved item only contains metadata about the object. This ensures that only the minimum amount of information is
+// transferred. Calling item.Open() will actually do a get request and open a stream to read from.
 func (c *container) Item(id string) (stow.Item, error) {
 	return c.getItem(id)
 }
@@ -126,7 +128,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	// Only Etag is returned.
 	response, err := c.client.PutObject(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "RemoveItem, deleting object")
+		return nil, errors.Wrap(err, "PutObject, putting object")
 	}
 	etag := cleanEtag(*response.ETag)
 
@@ -164,20 +166,19 @@ func (c *container) Region() string {
 // May be simpler to just stick it in PUT and and do a request every time, please vouch
 // for this if so.
 func (c *container) getItem(id string) (*item, error) {
-	params := &s3.GetObjectInput{
+	params := &s3.HeadObjectInput{
 		Bucket: aws.String(c.name),
 		Key:    aws.String(id),
 	}
 
-	res, err := c.client.GetObject(params)
+	res, err := c.client.HeadObject(params)
 	if err != nil {
 		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
-		if strings.Contains(err.Error(), "NoSuchKey") {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
 			return nil, stow.ErrNotFound
 		}
 		return nil, errors.Wrap(err, "getItem, getting the object")
 	}
-	defer res.Body.Close()
 
 	etag := cleanEtag(*res.ETag) // etag string value contains quotations. Remove them.
 	md, err := parseMetadata(res.Metadata)
