@@ -33,8 +33,6 @@ func (c *container) Name() string {
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
-	id = strings.Replace(id, " ", "+", -1)
-
 	blob := c.client.GetContainerReference(c.id).GetBlobReference(id)
 	err := blob.GetProperties(nil)
 	if err != nil {
