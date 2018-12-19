@@ -58,13 +58,16 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 		return nil, "", errors.Wrap(err, "Items, listing objects")
 	}
 
-	containerItems := make([]stow.Item, len(response.Contents)) // Allocate space for the Item slice.
+	var containerItems []stow.Item
 
 	for i, object := range response.Contents {
+		if *object.StorageClass == "GLACIER" {
+			continue
+		}
 		etag := cleanEtag(*object.ETag) // Copy etag value and remove the strings.
 		object.ETag = &etag             // Assign the value to the object field representing the item.
 
-		containerItems[i] = &item{
+		newItem := &item{
 			container: c,
 			client:    c.client,
 			properties: properties{
@@ -76,6 +79,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 				StorageClass: object.StorageClass,
 			},
 		}
+		containerItems = append(containerItems, newItem)
 	}
 
 	// Create a marker and determine if the list of items to retrieve is complete.
