@@ -60,7 +60,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 
 	var containerItems []stow.Item
 
-	for i, object := range response.Contents {
+	for _, object := range response.Contents {
 		if *object.StorageClass == "GLACIER" {
 			continue
 		}
