@@ -61,24 +61,25 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	var containerItems []stow.Item
 
 	for i, object := range response.Contents {
-		if *object.StorageClass != "GLACIER" {
-			etag := cleanEtag(*object.ETag) // Copy etag value and remove the strings.
-			object.ETag = &etag             // Assign the value to the object field representing the item.
-
-			newItem := &item{
-				container: c,
-				client:    c.client,
-				properties: properties{
-					ETag:         object.ETag,
-					Key:          object.Key,
-					LastModified: object.LastModified,
-					Owner:        object.Owner,
-					Size:         object.Size,
-					StorageClass: object.StorageClass,
-				},
-			}
-			containerItems = append(containerItems, newItem)
+		if *object.StorageClass == "GLACIER" {
+			continue
 		}
+		etag := cleanEtag(*object.ETag) // Copy etag value and remove the strings.
+		object.ETag = &etag             // Assign the value to the object field representing the item.
+
+		newItem := &item{
+			container: c,
+			client:    c.client,
+			properties: properties{
+				ETag:         object.ETag,
+				Key:          object.Key,
+				LastModified: object.LastModified,
+				Owner:        object.Owner,
+				Size:         object.Size,
+				StorageClass: object.StorageClass,
+			},
+		}
+		containerItems = append(containerItems, newItem)
 	}
 
 	// Create a marker and determine if the list of items to retrieve is complete.
