@@ -174,12 +174,10 @@ func (l *location) ItemByURL(url *url.URL) (stow.Item, error) {
 		return it, err
 	}
 
-	urlParts := strings.Split(url.Path, "/")
-	if len(urlParts) < 2 {
-		return nil, errors.New("parsing ItemByURL URL")
-	}
-	containerName := urlParts[0]
-	itemName := strings.Join(urlParts[1:], "/")
+	// url looks like this: s3://<containerName>/<itemName>
+	// example: s3://graymeta-demo/DPtest.txt
+	containerName := url.Host
+	itemName := strings.TrimPrefix(url.Path, "/")
 
 	c, err := l.Container(containerName)
 	if err != nil {
