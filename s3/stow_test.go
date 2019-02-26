@@ -50,7 +50,7 @@ func TestEtagCleanup(t *testing.T) {
 	}
 	for index, p := range permutations {
 		testStr := fmt.Sprintf(p, etagValue)
-		cleanTestStr := cleanEtag(testStr)
+		cleanTestStr := cleanEtag(&testStr)
 		if etagValue != cleanTestStr {
 			t.Errorf(`Failure at permutation #%d (%s), result: %s`,
 				index, permutations[index], cleanTestStr)
