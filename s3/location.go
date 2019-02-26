@@ -1,11 +1,14 @@
 package s3
 
 import (
+	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 )
@@ -51,35 +54,80 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 // to start a new client for every single container where the region matches, this would
 // also check the credentials on every new instance... Tabled for later.
 func (l *location) Containers(prefix, cursor string, count int) ([]stow.Container, string, error) {
-	var params *s3.ListBucketsInput
-
-	var containers []stow.Container
-
 	// Response returns exported Owner(*s3.Owner) and Bucket(*s3.[]Bucket)
+	var params *s3.ListBucketsInput
 	bucketList, err := l.client.ListBuckets(params)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Containers, listing the buckets")
 	}
 
+	// Seek to the current bucket, according to cursor.
+	if cursor != stow.CursorStart {
+		ok := false
+		for i, b := range bucketList.Buckets {
+			if *b.Name == cursor {
+				ok = true
+				bucketList.Buckets = bucketList.Buckets[i:]
+				break
+			}
+		}
+		if !ok {
+			return nil, "", stow.ErrBadCursor
+		}
+	}
+	cursor = ""
+
+	// Region is pulled from stow.Config. If Region is specified, only add
+	// Bucket to Container list if it is located in configured Region.
+	region, regionSet := l.config.Config(ConfigRegion)
+
+	// Endpoint would indicate that we are using s3-compatible storage, which
+	// does not support s3session.GetBucketRegion().
+	endpoint, endpointSet := l.config.Config(ConfigEndpoint)
+
 	// Iterate through the slice of pointers to buckets
+	var containers []stow.Container
 	for _, bucket := range bucketList.Buckets {
-		clientRegion, _ := l.config.Config("region")
+		if len(containers) == count {
+			cursor = *bucket.Name
+			break
+		}
 
 		if !strings.HasPrefix(*bucket.Name, prefix) {
 			continue
 		}
 
+		var err error
+		client := l.client
+		bucketRegion := region
+		if !endpointSet && endpoint == "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			bucketRegion, err = s3manager.GetBucketRegionWithClient(ctx, l.client, *bucket.Name)
+			cancel()
+			if err != nil {
+				return nil, "", errors.Wrapf(err, "Containers, getting bucket region for: %s", *bucket.Name)
+			}
+			if regionSet && region != "" && bucketRegion != region {
+				continue
+			}
+
+			client, _, err = newS3Client(l.config, bucketRegion)
+			if err != nil {
+				return nil, "", errors.Wrapf(err, "Containers, creating new client for region: %s", bucketRegion)
+			}
+		}
+
 		newContainer := &container{
 			name:           *(bucket.Name),
-			client:         l.client,
-			region:         clientRegion,
+			client:         client,
+			region:         bucketRegion,
 			customEndpoint: l.customEndpoint,
 		}
 
 		containers = append(containers, newContainer)
 	}
 
-	return containers, "", nil
+	return containers, cursor, nil
 }
 
 // Close simply satisfies the Location interface. There's nothing that
@@ -91,25 +139,27 @@ func (l *location) Close() error {
 // Container retrieves a stow.Container based on its name which must be
 // exact.
 func (l *location) Container(id string) (stow.Container, error) {
-	params := &s3.GetBucketLocationInput{
-		Bucket: aws.String(id), // Required
-	}
+	client := l.client
+	bucketRegion, _ := l.config.Config(ConfigRegion)
 
-	_, err := l.client.GetBucketLocation(params)
-	if err != nil {
-		// stow needs ErrNotFound to pass the test but amazon returns an opaque error
-		if strings.Contains(err.Error(), "NoSuchBucket") {
-			return nil, stow.ErrNotFound
+	// Endpoint would indicate that we are using s3-compatible storage, which
+	// does not support s3session.GetBucketRegion().
+	if endpoint, endpointSet := l.config.Config(ConfigEndpoint); !endpointSet && endpoint == "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		bucketRegion, _ = s3manager.GetBucketRegionWithClient(ctx, l.client, id)
+		cancel()
+
+		var err error
+		client, _, err = newS3Client(l.config, bucketRegion)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Container, creating new client for region: %s", bucketRegion)
 		}
-		return nil, errors.Wrap(err, "Container, getting the bucket location")
 	}
-
-	region, _ := l.config.Config("region")
 
 	c := &container{
 		name:           id,
-		client:         l.client,
-		region:         region,
+		client:         client,
+		region:         bucketRegion,
 		customEndpoint: l.customEndpoint,
 	}
 

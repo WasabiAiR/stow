@@ -95,7 +95,7 @@ func init() {
 		}
 
 		// Create a new client (s3 session)
-		client, endpoint, err := newS3Client(config)
+		client, endpoint, err := newS3Client(config, "")
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func init() {
 }
 
 // Attempts to create a session based on the information given.
-func newS3Client(config stow.Config) (client *s3.S3, endpoint string, err error) {
+func newS3Client(config stow.Config, region string) (client *s3.S3, endpoint string, err error) {
 	authType, _ := config.Config(ConfigAuthType)
 	accessKeyID, _ := config.Config(ConfigAccessKeyID)
 	secretKey, _ := config.Config(ConfigSecretKey)
@@ -135,8 +135,10 @@ func newS3Client(config stow.Config) (client *s3.S3, endpoint string, err error)
 		WithLogLevel(aws.LogOff).
 		WithSleepDelay(time.Sleep)
 
-	region, ok := config.Config(ConfigRegion)
-	if ok {
+	if region == "" {
+		region, _ = config.Config(ConfigRegion)
+	}
+	if region != "" {
 		awsConfig.WithRegion(region)
 	} else {
 		awsConfig.WithRegion("us-east-1")
@@ -146,7 +148,7 @@ func newS3Client(config stow.Config) (client *s3.S3, endpoint string, err error)
 		awsConfig.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, ""))
 	}
 
-	endpoint, ok = config.Config(ConfigEndpoint)
+	endpoint, ok := config.Config(ConfigEndpoint)
 	if ok {
 		awsConfig.WithEndpoint(endpoint).
 			WithS3ForcePathStyle(true)
