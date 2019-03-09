@@ -26,26 +26,15 @@ const (
 
 func init() {
 	validatefn := func(config stow.Config) error {
-		_, ok := config.Config(ConfigJSON)
-		if !ok {
-			return errors.New("missing JSON configuration")
-		}
-
-		_, ok = config.Config(ConfigProjectId)
+		_, ok := config.Config(ConfigProjectId)
 		if !ok {
 			return errors.New("missing Project ID")
 		}
 		return nil
 	}
 	makefn := func(config stow.Config) (stow.Location, error) {
-		_, ok := config.Config(ConfigJSON)
-		if !ok {
-			return nil, errors.New("missing JSON configuration")
-		}
-
-		_, ok = config.Config(ConfigProjectId)
-		if !ok {
-			return nil, errors.New("missing Project ID")
+		if err := validatefn(config); err != nil {
+			return nil, err
 		}
 
 		// Create a new client
