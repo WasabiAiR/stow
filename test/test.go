@@ -146,6 +146,15 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(readItemContents(is, item1), "item one")
 	is.NoErr(acceptableTime(t, is, items[0], item1))
 
+	if ir, ok := item1.(stow.ItemRanger); ok {
+		rc, err := ir.OpenRange(0, 3)
+		is.NoErr(err)
+		defer rc.Close()
+		b, err := ioutil.ReadAll(rc)
+		is.NoErr(err)
+		is.Equal(b, []byte("item"))
+	}
+
 	is.OK(item2.ID())
 	is.OK(item2.Name())
 	is.Equal(items[1].ID(), item2.ID())
