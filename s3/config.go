@@ -159,7 +159,10 @@ func newS3Client(config stow.Config, region string) (client *s3.S3, endpoint str
 		awsConfig.WithDisableSSL(true)
 	}
 
-	sess := session.New(awsConfig)
+	sess, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, "", err
+	}
 	if sess == nil {
 		return nil, "", errors.New("creating the S3 session")
 	}
