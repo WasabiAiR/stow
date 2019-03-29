@@ -131,6 +131,13 @@ type Item interface {
 	Metadata() (map[string]interface{}, error)
 }
 
+// ItemRanger represents an item that can be partially downloaded.
+type ItemRanger interface {
+	// OpenRange opens the item for reading starting at byte start and ending
+	// at byte end.
+	OpenRange(start, end uint64) (io.ReadCloser, error)
+}
+
 // Taggable represents a taggable Item
 type Taggable interface {
 	// Tags returns a list of tags that belong to a given Item
