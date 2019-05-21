@@ -12,7 +12,7 @@ import (
 const (
 	ConfigAccountID      = "account_id"
 	ConfigApplicationKey = "application_key"
-	HashType             = "sha1"
+	ConfigKeyID          = "application_key_id"
 )
 
 // Kind is the kind of Location this package provides.
@@ -20,24 +20,20 @@ const Kind = "b2"
 
 func init() {
 	validatefn := func(config stow.Config) error {
-		_, ok := config.Config(ConfigAccountID)
-		if !ok {
-			return errors.New("missing account id")
-		}
-		_, ok = config.Config(ConfigApplicationKey)
+		_, ok := config.Config(ConfigApplicationKey)
 		if !ok {
 			return errors.New("missing application key")
+		}
+		accountID, _ := config.Config(ConfigAccountID)
+		keyID, _ := config.Config(ConfigKeyID)
+		if accountID == "" && keyID == "" {
+			return errors.New("account ID or applicaton key ID needs to be set")
 		}
 		return nil
 	}
 	makefn := func(config stow.Config) (stow.Location, error) {
-		_, ok := config.Config(ConfigAccountID)
-		if !ok {
-			return nil, errors.New("missing account ID")
-		}
-		_, ok = config.Config(ConfigApplicationKey)
-		if !ok {
-			return nil, errors.New("missing application key")
+		if err := validatefn(config); err != nil {
+			return nil, err
 		}
 		l := &location{
 			config: config,
@@ -58,10 +54,12 @@ func init() {
 func newB2Client(cfg stow.Config) (*backblaze.B2, error) {
 	accountID, _ := cfg.Config(ConfigAccountID)
 	applicationKey, _ := cfg.Config(ConfigApplicationKey)
+	keyID, _ := cfg.Config(ConfigKeyID)
 
 	client, err := backblaze.NewB2(backblaze.Credentials{
 		AccountID:      accountID,
 		ApplicationKey: applicationKey,
+		KeyID:          keyID,
 	})
 
 	if err != nil {
