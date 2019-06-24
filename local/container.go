@@ -79,7 +79,11 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
 	prefix = filepath.FromSlash(prefix)
-	files, err := flatdirs(c.path)
+	walkBase := c.path
+	if prefix != "" {
+		walkBase = filepath.Dir(filepath.Join(c.path, prefix))
+	}
+	files, err := flatdirs(walkBase)
 	if err != nil {
 		return nil, "", err
 	}
