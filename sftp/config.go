@@ -39,11 +39,17 @@ const (
 	// found in the known_hosts file). If this is not specified, or is set to an
 	// empty string, the host key validation will be disabled.
 	ConfigHostPublicKey = "host_public_key"
+
+	// ConfigBasePath is the path to the root folder on the remote server. It can be
+	// relative to the user's home directory, or an absolute path. If not set, or
+	// set to an empty string, the user's home directory will be used.
+	ConfigBasePath = "base_path"
 )
 
 type conf struct {
 	host      string
 	port      int
+	basePath  string
 	sshConfig ssh.ClientConfig
 }
 
@@ -119,6 +125,11 @@ func parseConfig(config stow.Config) (*conf, error) {
 		}
 
 		c.sshConfig.HostKeyCallback = ssh.FixedHostKey(parsedHostKey)
+	}
+
+	c.basePath, ok = config.Config(ConfigBasePath)
+	if !ok || c.basePath == "" {
+		c.basePath = "."
 	}
 
 	return &c, nil

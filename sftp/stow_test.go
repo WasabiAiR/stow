@@ -139,6 +139,15 @@ func TestStow(t *testing.T) {
 			})
 		})
 	})
+
+	t.Run("stow_tests - with base path", func(t *testing.T) {
+		basePath := os.Getenv("SFTP_BASEPATH")
+		if basePath == "" {
+			t.Skip("skipping base paths test due to SFTP_BASEPATH not being set")
+		}
+		config[ConfigBasePath] = basePath
+		test.All(t, Kind, config)
+	})
 }
 
 func setupFiles(t *testing.T, c stow.Container, files []string) {

@@ -24,7 +24,7 @@ type location struct {
 
 // CreateContainer creates a new container, in this case a directory on the remote server.
 func (l *location) CreateContainer(containerName string) (stow.Container, error) {
-	if err := l.sftpClient.Mkdir(containerName); err != nil {
+	if err := l.sftpClient.Mkdir(filepath.Join(l.config.basePath, containerName)); err != nil {
 		return nil, err
 	}
 
@@ -36,7 +36,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 
 // Containers returns a slice of the Container interface, a cursor, and an error.
 func (l *location) Containers(prefix, cursor string, count int) ([]stow.Container, string, error) {
-	infos, err := l.sftpClient.ReadDir(".")
+	infos, err := l.sftpClient.ReadDir(l.config.basePath)
 	if err != nil {
 		return nil, "", err
 	}
@@ -99,7 +99,7 @@ func (l *location) Close() error {
 
 // Container retrieves a stow.Container based on its name which must be exact.
 func (l *location) Container(id string) (stow.Container, error) {
-	fi, err := l.sftpClient.Stat(id)
+	fi, err := l.sftpClient.Stat(filepath.Join(l.config.basePath, id))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, stow.ErrNotFound
@@ -117,7 +117,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 
 // RemoveContainer removes a container by name.
 func (l *location) RemoveContainer(id string) error {
-	return recurseRemove(l.sftpClient, id)
+	return recurseRemove(l.sftpClient, filepath.Join(l.config.basePath, id))
 }
 
 // recurseRemove recursively purges content from a path.
