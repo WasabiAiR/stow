@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/graymeta/stow/local"
@@ -49,7 +50,13 @@ func (i *item) URL() *url.URL {
 // and path of the file within the container. This response includes the body of
 // resource which is returned along with an error.
 func (i *item) Open() (io.ReadCloser, error) {
-	return i.container.location.sftpClient.Open(fmt.Sprintf("%s/%s", i.container.Name(), i.Name()))
+	return i.container.location.sftpClient.Open(
+		filepath.Join(
+			i.container.location.config.basePath,
+			i.container.Name(),
+			i.Name(),
+		),
+	)
 }
 
 // LastMod returns the last modified date of the item.

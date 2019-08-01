@@ -28,7 +28,7 @@ func (c *container) Name() string {
 // Item returns a stow.Item instance of a container based on the name of the
 // container and the file.
 func (c *container) Item(id string) (stow.Item, error) {
-	path := filepath.Join(c.name, filepath.FromSlash(id))
+	path := filepath.Join(c.location.config.basePath, c.name, filepath.FromSlash(id))
 	info, err := c.location.sftpClient.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -54,7 +54,7 @@ func (c *container) Item(id string) (stow.Item, error) {
 // the prefix argument. The 'cursor' variable facilitates pagination.
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
 	var entries []entry
-	entries, cursor, err := c.getFolderItems([]entry{}, prefix, "", c.name, cursor, count, false)
+	entries, cursor, err := c.getFolderItems([]entry{}, prefix, "", filepath.Join(c.location.config.basePath, c.name), cursor, count, false)
 	if err != nil {
 		return nil, "", err
 	}
@@ -127,7 +127,7 @@ func (c *container) getFolderItems(entries []entry, prefix, relPath, id, cursor 
 
 		// TODO: prefix could be optimized to not look down paths that don't match,
 		// but this is a quick/cheap first implementation.
-		filePath := strings.TrimPrefix(filepath.Join(id, file.Name()), c.name+"/")
+		filePath := strings.TrimPrefix(filepath.Join(id, file.Name()), filepath.Join(c.location.config.basePath, c.name)+"/")
 		if !strings.HasPrefix(filePath, prefix) {
 			continue
 		}
@@ -161,7 +161,7 @@ func (c *container) getFolderItems(entries []entry, prefix, relPath, id, cursor 
 
 // RemoveItem removes a file from the remote server.
 func (c *container) RemoveItem(id string) error {
-	return c.location.sftpClient.Remove(filepath.Join(c.name, filepath.FromSlash(id)))
+	return c.location.sftpClient.Remove(filepath.Join(c.location.config.basePath, c.name, filepath.FromSlash(id)))
 }
 
 // Put sends a request to upload content to the container.
@@ -170,7 +170,7 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, stow.NotSupported("metadata")
 	}
 
-	path := filepath.Join(c.name, filepath.FromSlash(name))
+	path := filepath.Join(c.location.config.basePath, c.name, filepath.FromSlash(name))
 	item := &item{
 		container: c,
 		path:      name,

@@ -24,6 +24,7 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 * Microsoft Azure Blob Storage
 * Openstack Swift (with auth v2)
 * Oracle Storage Cloud Service
+* SFTP
 
 ## Concepts
 
