@@ -24,7 +24,10 @@ type item struct {
 	infoErr  error
 }
 
-var _ stow.Item = (*item)(nil)
+var (
+	_ stow.Item       = (*item)(nil)
+	_ stow.ItemRanger = (*item)(nil)
+)
 
 // ID returns this item's ID
 func (i *item) ID() string {
@@ -65,6 +68,16 @@ func (i *item) Size() (int64, error) {
 // Open downloads the item
 func (i *item) Open() (io.ReadCloser, error) {
 	_, r, err := i.bucket.DownloadFileByName(i.name)
+	return r, err
+}
+
+// OpenRange opens the item for reading starting at byte start and ending
+// at byte end.
+func (i *item) OpenRange(start, end uint64) (io.ReadCloser, error) {
+	_, r, err := i.bucket.DownloadFileRangeByName(
+		i.name,
+		&backblaze.FileRange{Start: int64(start), End: int64(end)},
+	)
 	return r, err
 }
 

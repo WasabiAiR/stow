@@ -22,7 +22,10 @@ type item struct {
 	infoErr    error
 }
 
-var _ stow.Item = (*item)(nil)
+var (
+	_ stow.Item       = (*item)(nil)
+	_ stow.ItemRanger = (*item)(nil)
+)
 
 func (i *item) ID() string {
 	return i.id
@@ -92,4 +95,16 @@ func (i *item) getInfo() (stow.Item, error) {
 		return nil, err
 	}
 	return itemInfo, nil
+}
+
+// OpenRange opens the item for reading starting at byte start and ending
+// at byte end.
+func (i *item) OpenRange(start, end uint64) (io.ReadCloser, error) {
+	opts := &az.GetBlobRangeOptions{
+		Range: &az.BlobRange{
+			Start: start,
+			End:   end,
+		},
+	}
+	return i.client.GetContainerReference(i.container.id).GetBlobReference(i.id).GetRange(opts)
 }

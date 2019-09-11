@@ -24,6 +24,7 @@ Stow provides implementations for storage services, blob stores, cloud storage e
 * Microsoft Azure Blob Storage
 * Openstack Swift (with auth v2)
 * Oracle Storage Cloud Service
+* SFTP
 
 ## Concepts
 
@@ -93,9 +94,9 @@ To connect to a location, you need to know the `kind` string (available by acces
 ```go
 kind := "s3"
 config := stow.ConfigMap{
-	s3.ConfigAccessKeyID: "246810"
+	s3.ConfigAccessKeyID: "246810",
 	s3.ConfigSecretKey:   "abc123",
-	s3.ConfigRegion:      "eu-west-1"
+	s3.ConfigRegion:      "eu-west-1",
 }
 location, err := stow.Dial(kind, config)
 if err != nil {

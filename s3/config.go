@@ -45,6 +45,11 @@ const (
 	// ConfigDisableSSL is optional config value for disabling SSL support on custom endpoints
 	// Its default value is "false", to disable SSL set it to "true".
 	ConfigDisableSSL = "disable_ssl"
+
+	// ConfigV2Signing is an optional config value for signing requests with the v2 signature.
+	// Its default value is "false", to enable set to "true".
+	// This feature is useful for s3-compatible blob stores -- ie minio.
+	ConfigV2Signing = "v2_signing"
 )
 
 func init() {
@@ -159,12 +164,20 @@ func newS3Client(config stow.Config, region string) (client *s3.S3, endpoint str
 		awsConfig.WithDisableSSL(true)
 	}
 
-	sess := session.New(awsConfig)
+	sess, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, "", err
+	}
 	if sess == nil {
 		return nil, "", errors.New("creating the S3 session")
 	}
 
 	s3Client := s3.New(sess)
+
+	usev2, ok := config.Config(ConfigV2Signing)
+	if ok && usev2 == "true" {
+		setv2Handlers(s3Client)
+	}
 
 	return s3Client, endpoint, nil
 }

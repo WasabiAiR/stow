@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
@@ -154,6 +155,19 @@ func (l *location) Container(id string) (stow.Container, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Container, creating new client for region: %s", bucketRegion)
 		}
+	}
+
+	params := &s3.GetBucketLocationInput{
+		Bucket: aws.String(id),
+	}
+
+	_, err := client.GetBucketLocation(params)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchBucket" {
+			return nil, stow.ErrNotFound
+		}
+
+		return nil, errors.Wrap(err, "GetBucketLocation")
 	}
 
 	c := &container{

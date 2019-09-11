@@ -184,3 +184,19 @@ func (i *item) Tags() (map[string]interface{}, error) {
 
 	return i.tags, i.tagsErr
 }
+
+// OpenRange opens the item for reading starting at byte start and ending
+// at byte end.
+func (i *item) OpenRange(start, end uint64) (io.ReadCloser, error) {
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(i.container.Name()),
+		Key:    aws.String(i.ID()),
+		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", start, end)),
+	}
+
+	response, err := i.client.GetObject(params)
+	if err != nil {
+		return nil, errors.Wrap(err, "Open, getting the object")
+	}
+	return response.Body, nil
+}
