@@ -86,6 +86,10 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 	if n != size {
 		return nil, errors.New("bad size")
 	}
+	err = tmpFile.Sync()
+	if err != nil {
+		return nil, err
+	}
 	err = tmpFile.Close()
 	tmpFile = nil
 	if err != nil {
