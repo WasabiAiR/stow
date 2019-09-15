@@ -3,6 +3,7 @@ package local
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -15,6 +16,8 @@ type container struct {
 	name string
 	path string
 }
+
+const tmpPrefix = ".stow."
 
 func (c *container) ID() string {
 	return c.path
@@ -58,22 +61,41 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		path:          path,
 		contPrefixLen: len(c.path) + 1,
 	}
-	err := os.MkdirAll(filepath.Dir(path), 0777)
+	fileDir := filepath.Dir(path)
+	err := os.MkdirAll(fileDir, 0777)
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.Create(path)
+	tmpFile, err := ioutil.TempFile(fileDir, tmpPrefix)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	n, err := io.Copy(f, r)
+	tmpName := tmpFile.Name()
+	defer func() {
+		if tmpFile != nil {
+			tmpFile.Close()
+		}
+		if tmpName != "" {
+			os.Remove(tmpName)
+		}
+	}()
+	n, err := io.Copy(tmpFile, r)
 	if err != nil {
 		return nil, err
 	}
 	if n != size {
 		return nil, errors.New("bad size")
 	}
+	err = tmpFile.Close()
+	tmpFile = nil
+	if err != nil {
+		return nil, err
+	}
+	err = os.Rename(tmpName, path)
+	if err != nil {
+		return nil, err
+	}
+	tmpName = ""
 	return item, nil
 }
 
@@ -106,6 +128,10 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	var items []stow.Item
 	for _, f := range files {
 		if f.IsDir() {
+			continue
+		}
+		base := filepath.Base(f.Name())
+		if strings.HasPrefix(base, tmpPrefix) {
 			continue
 		}
 		path, err := filepath.Abs(filepath.Join(c.path, f.Name()))
