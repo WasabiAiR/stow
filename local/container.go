@@ -182,6 +182,11 @@ func (c *container) Item(id string) (stow.Item, error) {
 func flatdirs(path string) ([]os.FileInfo, error) {
 	var list []os.FileInfo
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		// On Unix-like OS, file might have disappeared between calling readdir
+		// and calling lstat - this is not a global error
+		if os.IsNotExist(err) && p != path {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
