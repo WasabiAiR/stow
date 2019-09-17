@@ -21,6 +21,48 @@ type location struct {
 	client         *s3.S3
 }
 
+// ConfigureVersioning configures versioning on the S3 bucket
+func (l *location) ConfigureVersioning(containerName string) error {
+	vc := &s3.VersioningConfiguration{}
+	if mfa, mfaSet := l.config.Config(ConfigMFADelete); mfaSet && mfa != "" {
+		vc.MFADelete = aws.String(mfa)
+	} else {
+		// by default disable MFA delete
+		vc.MFADelete = aws.String("Disabled")
+	}
+	if sta, staSet := l.config.Config(ConfigVersioningStatus); staSet && sta != "" {
+		vc.Status = aws.String(sta)
+	} else {
+		// by default enable versioning
+		vc.Status = aws.String("Enabled")
+	}
+	input := &s3.PutBucketVersioningInput{
+		Bucket:                  aws.String(containerName),
+		VersioningConfiguration: vc,
+	}
+	_, err := l.client.PutBucketVersioning(input)
+	return err
+}
+
+// ConfigureEncryption configures versioning on the S3 bucket
+func (l *location) ConfigureEncryption(containerName string) error {
+	sseCfg := &s3.ServerSideEncryptionByDefault{}
+	if alg, algSet := l.config.Config(ConfigServerSideEncryptionAlgorithm); algSet && alg != "" {
+		sseCfg.SSEAlgorithm = aws.String(alg)
+	} else {
+		// by default use AES256 encryption
+		sseCfg.SSEAlgorithm = aws.String("AES256")
+	}
+	if mfa, mfaSet := l.config.Config(ConfigKMSMasterKeyID); mfaSet && mfa != "" {
+		sseCfg.KMSMasterKeyID = aws.String(mfa)
+	}
+	rules := []*s3.ServerSideEncryptionRule{{ApplyServerSideEncryptionByDefault: sseCfg}}
+	serverConfig := &s3.ServerSideEncryptionConfiguration{Rules: rules}
+	input := &s3.PutBucketEncryptionInput{Bucket: aws.String(containerName), ServerSideEncryptionConfiguration: serverConfig}
+	_, err := l.client.PutBucketEncryption(input)
+	return err
+}
+
 // CreateContainer creates a new container, in this case an S3 bucket.
 // The bare minimum needed is a container name, but there are many other
 // options that can be provided.
@@ -34,7 +76,7 @@ func (l *location) CreateContainer(containerName string) (stow.Container, error)
 		return nil, errors.Wrap(err, "CreateContainer, creating the bucket")
 	}
 
-	region, _ := l.config.Config("region")
+	region, _ := l.config.Config(ConfigRegion)
 
 	newContainer := &container{
 		name:           containerName,
