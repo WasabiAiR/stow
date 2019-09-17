@@ -50,8 +50,8 @@ func (l *location) ConfigureEncryption(containerName string) error {
 	if alg, algSet := l.config.Config(ConfigServerSideEncryptionAlgorithm); algSet && alg != "" {
 		sseCfg.SSEAlgorithm = aws.String(alg)
 	}
-	if mfa, mfaSet := l.config.Config(ConfigKMSMasterKeyID); mfaSet && mfa != "" {
-		sseCfg.KMSMasterKeyID = aws.String(mfa)
+	if kms, kmsSet := l.config.Config(ConfigKMSMasterKeyID); kmsSet && kms != "" {
+		sseCfg.KMSMasterKeyID = aws.String(kms)
 	}
 	rules := []*s3.ServerSideEncryptionRule{{ApplyServerSideEncryptionByDefault: sseCfg}}
 	serverConfig := &s3.ServerSideEncryptionConfiguration{Rules: rules}
