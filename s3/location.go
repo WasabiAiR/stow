@@ -49,9 +49,6 @@ func (l *location) ConfigureEncryption(containerName string) error {
 	sseCfg := &s3.ServerSideEncryptionByDefault{}
 	if alg, algSet := l.config.Config(ConfigServerSideEncryptionAlgorithm); algSet && alg != "" {
 		sseCfg.SSEAlgorithm = aws.String(alg)
-	} else {
-		// by default use AES256 encryption
-		sseCfg.SSEAlgorithm = aws.String("AES256")
 	}
 	if mfa, mfaSet := l.config.Config(ConfigKMSMasterKeyID); mfaSet && mfa != "" {
 		sseCfg.KMSMasterKeyID = aws.String(mfa)

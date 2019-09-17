@@ -63,7 +63,8 @@ const (
 	// ConfigKMSMasterKeyID specifies the KMS key ID, when ConfigKServerSideEncryption is set to KMS
 	ConfigKMSMasterKeyID = "kms_master_key_id"
 
-	// ConfigServerSideEncryptionAlgorithm is the algorithm to use for encryption, by default AES256
+	// ConfigServerSideEncryptionAlgorithm is the algorithm to use for encryption (AES256 | aws:kms)
+	// https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-serversideencryptionbydefault.html
 	ConfigServerSideEncryptionAlgorithm = "server_side_encryption_algorithm"
 )
 
