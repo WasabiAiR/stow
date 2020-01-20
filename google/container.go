@@ -9,6 +9,15 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
+const (
+	metaContentType        = "Content-Type"
+	metaContentLanguage    = "Content-Language"
+	metaContentEncoding    = "Content-Encoding"
+	metaContentDisposition = "Content-Disposition"
+	metaCacheControl       = "Cache-Control"
+	metaACL                = "ACL"
+)
+
 type Container struct {
 	// Name is needed to retrieve items.
 	name string
@@ -49,7 +58,7 @@ func (c *Container) Item(id string) (stow.Item, error) {
 		return nil, err
 	}
 
-	mdParsed, err := parseMetadata(res.Metadata)
+	mdParsed, err := parseMetadata(res)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +110,7 @@ func (c *Container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			return nil, "", err
 		}
 
-		mdParsed, err := parseMetadata(o.Metadata)
+		mdParsed, err := parseMetadata(o)
 		if err != nil {
 			return nil, "", err
 		}
@@ -131,14 +140,11 @@ func (c *Container) RemoveItem(id string) error {
 // received are the name of the item, a reader representing the
 // content, and the size of the file.
 func (c *Container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	mdPrepped, err := prepMetadata(metadata)
+	object := &storage.Object{Name: name}
+
+	err := prepMetadata(object, metadata)
 	if err != nil {
 		return nil, err
-	}
-
-	object := &storage.Object{
-		Name:     name,
-		Metadata: mdPrepped,
 	}
 
 	res, err := c.client.Objects.Insert(c.name, object).Media(r).Do()
@@ -156,7 +162,7 @@ func (c *Container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, err
 	}
 
-	mdParsed, err := parseMetadata(res.Metadata)
+	mdParsed, err := parseMetadata(res)
 	if err != nil {
 		return nil, err
 	}
@@ -176,22 +182,66 @@ func (c *Container) Put(name string, r io.Reader, size int64, metadata map[strin
 	return newItem, nil
 }
 
-func parseMetadata(metadataParsed map[string]string) (map[string]interface{}, error) {
-	metadataParsedMap := make(map[string]interface{}, len(metadataParsed))
-	for key, value := range metadataParsed {
+func parseMetadata(o *storage.Object) (map[string]interface{}, error) {
+	metadataParsedMap := make(map[string]interface{})
+
+	if o.ContentType != "" {
+		metadataParsedMap[metaContentType] = o.ContentType
+	}
+	if o.ContentLanguage != "" {
+		metadataParsedMap[metaContentLanguage] = o.ContentLanguage
+	}
+	if o.ContentEncoding != "" {
+		metadataParsedMap[metaContentEncoding] = o.ContentEncoding
+	}
+	if o.ContentDisposition != "" {
+		metadataParsedMap[metaContentDisposition] = o.ContentDisposition
+	}
+	if o.CacheControl != "" {
+		metadataParsedMap[metaCacheControl] = o.CacheControl
+	}
+
+	if len(o.Acl) > 0 {
+		metadataParsedMap[metaACL] = o.Acl
+	}
+
+	for key, value := range o.Metadata {
 		metadataParsedMap[key] = value
 	}
 	return metadataParsedMap, nil
 }
 
-func prepMetadata(metadataParsed map[string]interface{}) (map[string]string, error) {
-	returnMap := make(map[string]string, len(metadataParsed))
-	for key, value := range metadataParsed {
+func prepMetadata(o *storage.Object, itemMetadata map[string]interface{}) error {
+	o.Metadata = make(map[string]string)
+	for key, value := range itemMetadata {
+		if key == metaACL {
+			acls, ok := value.([]*storage.ObjectAccessControl)
+			if !ok {
+				return errors.Errorf(`value of key '%s' in metadata must be of type []*storage.ObjectAccessControl`, key)
+			}
+			o.Acl = acls
+			continue
+		}
+
 		str, ok := value.(string)
 		if !ok {
-			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
+			return errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
 		}
-		returnMap[key] = str
+
+		switch key {
+		case metaContentType:
+			o.ContentType = str
+		case metaContentLanguage:
+			o.ContentLanguage = str
+		case metaContentEncoding:
+			o.ContentEncoding = str
+		case metaContentDisposition:
+			o.ContentDisposition = str
+		case metaCacheControl:
+			o.CacheControl = str
+		default:
+			o.Metadata[key] = str
+		}
 	}
-	return returnMap, nil
+	return nil
 }
