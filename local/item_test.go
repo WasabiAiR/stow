@@ -29,6 +29,7 @@ func TestItemReader(t *testing.T) {
 	is.OK(containers)
 	is.Equal(cursor, "")
 	three, err := l.Container(containers[0].ID())
+	is.NoErr(err)
 
 	items, cursor, err := three.Items("", stow.CursorStart, 10)
 	is.NoErr(err)
@@ -36,8 +37,8 @@ func TestItemReader(t *testing.T) {
 	item1 := items[0]
 
 	rc, err := item1.Open()
-	defer rc.Close()
 	is.NoErr(err)
+	defer rc.Close()
 	b, err := ioutil.ReadAll(rc)
 	is.NoErr(err)
 	is.Equal("3.1", string(b))
