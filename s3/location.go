@@ -147,7 +147,7 @@ func (l *location) Close() error {
 // exact.
 func (l *location) Container(id string) (stow.Container, error) {
 	client := l.client
-	bucketRegion, _ := l.config.Config(ConfigRegion)
+	bucketRegion, bucketRegionSet := l.config.Config(ConfigRegion)
 
 	// Endpoint would indicate that we are using s3-compatible storage, which
 	// does not support s3session.GetBucketRegion().
@@ -163,6 +163,17 @@ func (l *location) Container(id string) (stow.Container, error) {
 		}
 	}
 
+	c := &container{
+		name:           id,
+		client:         client,
+		region:         bucketRegion,
+		customEndpoint: l.customEndpoint,
+	}
+
+	if bucketRegionSet || bucketRegion != "" {
+		return c, nil
+	}
+
 	params := &s3.GetBucketLocationInput{
 		Bucket: aws.String(id),
 	}
@@ -174,13 +185,6 @@ func (l *location) Container(id string) (stow.Container, error) {
 		}
 
 		return nil, errors.Wrap(err, "GetBucketLocation")
-	}
-
-	c := &container{
-		name:           id,
-		client:         client,
-		region:         bucketRegion,
-		customEndpoint: l.customEndpoint,
 	}
 
 	return c, nil
