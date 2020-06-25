@@ -1,14 +1,14 @@
 package google
 
 import (
+	"github.com/cheekybits/is"
+	"github.com/graymeta/stow"
+	"github.com/graymeta/stow/test"
+	"google.golang.org/api/storage/v1"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
 )
 
 func TestStow(t *testing.T) {
@@ -32,35 +32,89 @@ func TestStow(t *testing.T) {
 	test.All(t, "google", config)
 }
 
-func TestPrepMetadataSuccess(t *testing.T) {
+func TestParseMetadataSuccess(t *testing.T) {
 	is := is.New(t)
 
-	m := make(map[string]string)
-	m["one"] = "two"
-	m["3"] = "4"
-	m["ninety-nine"] = "100"
+	aclItem := &storage.ObjectAccessControl{}
 
-	m2 := make(map[string]interface{})
-	for key, value := range m {
-		m2[key] = value
+	o := &storage.Object{
+		Name:               "myobject",
+		ContentType:        "text/html",
+		ContentEncoding:    "gzip",
+		ContentDisposition: "form-data",
+		ContentLanguage:    "et",
+		CacheControl:       "no-cache",
+		Metadata: map[string]string{
+			"myCustomKey": "myCustomvalue",
+		},
+		Acl: []*storage.ObjectAccessControl{
+			aclItem,
+		},
 	}
 
-	//returns map[string]interface
-	returnedMap, err := prepMetadata(m2)
-	is.NoErr(err)
+	expected := map[string]interface{}{
+		metaContentType:        "text/html",
+		metaContentEncoding:    "gzip",
+		metaContentDisposition: "form-data",
+		metaContentLanguage:    "et",
+		metaCacheControl:       "no-cache",
+		metaACL: []*storage.ObjectAccessControl{
+			aclItem,
+		},
+		"myCustomKey": "myCustomvalue",
+	}
 
-	if !reflect.DeepEqual(returnedMap, m) {
-		t.Errorf("Expected map (%+v) and returned map (%+v) are not equal.", m, returnedMap)
+	itemMeta, err := parseMetadata(o)
+	is.NoErr(err)
+	if !reflect.DeepEqual(itemMeta, expected) {
+		t.Errorf("Expected map (%+v) and returned map (%+v) are not equal.", expected, itemMeta)
 	}
 }
 
-func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
+func TestPrepMetadataSuccess(t *testing.T) {
 	is := is.New(t)
+
+	o := &storage.Object{Name: "myobject"}
+
+	m := map[string]interface{}{
+		metaContentType:        "text/html",
+		metaContentEncoding:    "gzip",
+		metaContentDisposition: "form-data",
+		metaContentLanguage:    "et",
+		metaCacheControl:       "no-cache",
+		"myCustomKey":          "myCustomvalue",
+	}
+
+	err := prepMetadata(o, m)
+	if err != nil {
+		t.Error("failed to prep metadata", err)
+	}
+
+	is.Equal(o.ContentType, "text/html")
+	is.Equal(o.ContentEncoding, "gzip")
+	is.Equal(o.ContentDisposition, "form-data")
+	is.Equal(o.ContentLanguage, "et")
+	is.Equal(o.CacheControl, "no-cache")
+
+	is.Equal(len(o.Metadata), 1)
+	customValue, ok := o.Metadata["myCustomKey"]
+	is.OK(ok)
+	is.Equal(customValue, "myCustomvalue")
+}
+
+func TestPrepMetadataFailureWithInvalidValues(t *testing.T) {
+	is := is.New(t)
+
+	o := &storage.Object{Name: "megaobject"}
 
 	m := make(map[string]interface{})
 	m["float"] = 8.9
 	m["number"] = 9
 
-	_, err := prepMetadata(m)
+	err := prepMetadata(o, m)
+	is.Err(err)
+
+	m = make(map[string]interface{})
+	m[metaACL] = 8.9
 	is.Err(err)
 }
