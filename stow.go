@@ -149,8 +149,14 @@ type Config interface {
 	// Config gets a string configuration value and a
 	// bool indicating whether the value was present or not.
 	Config(name string) (string, bool)
+	// NestedConfig gets a key/value configuration and a
+	// bool indicating whehter the value was present or not.
+	NestedConfig(name string) (Config, bool)
 	// Set sets the configuration name to specified value
 	Set(name, value string)
+	// SetNestedConfig sets the configuration name to the
+	// specified key/value configuration.
+	SetNestedConfig(name string, value Config)
 }
 
 // Register adds a Location implementation, with two helper functions.
@@ -221,17 +227,30 @@ func KindByURL(u *url.URL) (string, error) {
 
 // ConfigMap is a map[string]string that implements
 // the Config method.
-type ConfigMap map[string]string
+type ConfigMap map[string]interface{}
 
 // Config gets a string configuration value and a
 // bool indicating whether the value was present or not.
 func (c ConfigMap) Config(name string) (string, bool) {
-	val, ok := c[name]
+	val, ok := c[name].(string)
+	return val, ok
+}
+
+// NestedConfig gets a key/value configuration and a
+// bool indicating whehter the value was present or not.
+func (c ConfigMap) NestedConfig(name string) (Config, bool) {
+	val, ok := c[name].(Config)
 	return val, ok
 }
 
 // Set sets name configuration to value
 func (c ConfigMap) Set(name, value string) {
+	c[name] = value
+}
+
+// SetNestedConfig sets the configuration name to the
+// specified key/value configuration.
+func (c ConfigMap) SetNestedConfig(name string, value Config) {
 	c[name] = value
 }
 
