@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/graymeta/stow/local"
@@ -51,7 +51,7 @@ func (i *item) URL() *url.URL {
 // resource which is returned along with an error.
 func (i *item) Open() (io.ReadCloser, error) {
 	return i.container.location.sftpClient.Open(
-		filepath.Join(
+		path.Join(
 			i.container.location.config.basePath,
 			i.container.Name(),
 			i.Name(),
