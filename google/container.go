@@ -9,6 +9,7 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
+// Container for the Google Storage Service.
 type Container struct {
 	// Name is needed to retrieve items.
 	name string
@@ -27,6 +28,7 @@ func (c *Container) Name() string {
 	return c.name
 }
 
+// Bucket returns the storage bucket.
 func (c *Container) Bucket() (*storage.Bucket, error) {
 	return c.client.Buckets.Get(c.name).Do()
 }
@@ -44,7 +46,7 @@ func (c *Container) Item(id string) (stow.Item, error) {
 		return nil, err
 	}
 
-	u, err := prepUrl(res.MediaLink)
+	u, err := prepURL(res.MediaLink)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +98,7 @@ func (c *Container) Items(prefix string, cursor string, count int) ([]stow.Item,
 			return nil, "", err
 		}
 
-		u, err := prepUrl(o.MediaLink)
+		u, err := prepURL(o.MediaLink)
 		if err != nil {
 			return nil, "", err
 		}
@@ -123,6 +125,7 @@ func (c *Container) Items(prefix string, cursor string, count int) ([]stow.Item,
 	return containerItems, res.NextPageToken, nil
 }
 
+// RemoveItem identifies the file by it's ID, then removes all versions of that file
 func (c *Container) RemoveItem(id string) error {
 	return c.client.Objects.Delete(c.name, id).Do()
 }
@@ -151,7 +154,7 @@ func (c *Container) Put(name string, r io.Reader, size int64, metadata map[strin
 		return nil, err
 	}
 
-	u, err := prepUrl(res.MediaLink)
+	u, err := prepURL(res.MediaLink)
 	if err != nil {
 		return nil, err
 	}

@@ -20,16 +20,16 @@ import (
 )
 
 func TestStow(t *testing.T) {
-	accessKeyId := os.Getenv("S3ACCESSKEYID")
+	accessKeyID := os.Getenv("S3ACCESSKEYID")
 	secretKey := os.Getenv("S3SECRETKEY")
 	region := os.Getenv("S3REGION")
 
-	if accessKeyId == "" || secretKey == "" || region == "" {
+	if accessKeyID == "" || secretKey == "" || region == "" {
 		t.Skip("skipping test because missing one or more of S3ACCESSKEYID S3SECRETKEY S3REGION")
 	}
 
 	config := stow.ConfigMap{
-		"access_key_id": accessKeyId,
+		"access_key_id": accessKeyID,
 		"secret_key":    secretKey,
 		"region":        region,
 	}

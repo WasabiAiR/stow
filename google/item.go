@@ -10,6 +10,7 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
+// Item within the Google Storage Service.
 type Item struct {
 	container    *Container       // Container information is required by a few methods.
 	client       *storage.Service // A client is needed to make requests.
@@ -69,13 +70,13 @@ func (i *Item) ETag() (string, error) {
 	return i.etag, nil
 }
 
-// Object returns the Google Storage Object
+// StorageObject returns the Google Storage Object
 func (i *Item) StorageObject() *storage.Object {
 	return i.object
 }
 
-// prepUrl takes a MediaLink string and returns a url
-func prepUrl(str string) (*url.URL, error) {
+// prepURL takes a MediaLink string and returns a url
+func prepURL(str string) (*url.URL, error) {
 	u, err := url.Parse(str)
 	if err != nil {
 		return nil, err

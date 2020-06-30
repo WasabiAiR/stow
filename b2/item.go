@@ -60,7 +60,7 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 	return i.metadata, nil
 }
 
-// size returns the file's size, in bytes
+// Size returns the file's size, in bytes
 func (i *item) Size() (int64, error) {
 	return i.size, nil
 }
