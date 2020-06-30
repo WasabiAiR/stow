@@ -18,10 +18,12 @@ import (
 const Kind = "google"
 
 const (
-	// The service account json blob
-	ConfigJSON      = "json"
-	ConfigProjectId = "project_id"
-	ConfigScopes    = "scopes"
+	// ConfigJSON is a key whose value is the path of the JSON configuration file
+	ConfigJSON = "json"
+	// ConfigProjectID is a key whose value is the Project ID
+	ConfigProjectID = "project_id"
+	// ConfigScopes is a key with a comma separated list of scopes as its value.
+	ConfigScopes = "scopes"
 )
 
 func init() {
@@ -31,7 +33,7 @@ func init() {
 			return errors.New("missing JSON configuration")
 		}
 
-		_, ok = config.Config(ConfigProjectId)
+		_, ok = config.Config(ConfigProjectID)
 		if !ok {
 			return errors.New("missing Project ID")
 		}
@@ -43,7 +45,7 @@ func init() {
 			return nil, errors.New("missing JSON configuration")
 		}
 
-		_, ok = config.Config(ConfigProjectId)
+		_, ok = config.Config(ConfigProjectID)
 		if !ok {
 			return nil, errors.New("missing Project ID")
 		}

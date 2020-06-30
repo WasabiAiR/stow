@@ -15,6 +15,7 @@ type Location struct {
 	client *storage.Service
 }
 
+// Service returns the Google Storage Service.
 func (l *Location) Service() *storage.Service {
 	return l.client
 }
@@ -28,10 +29,10 @@ func (l *Location) Close() error {
 // CreateContainer creates a new container, in this case a bucket.
 func (l *Location) CreateContainer(containerName string) (stow.Container, error) {
 
-	projId, _ := l.config.Config(ConfigProjectId)
+	projID, _ := l.config.Config(ConfigProjectID)
 	// Create a bucket.
-	_, err := l.client.Buckets.Insert(projId, &storage.Bucket{Name: containerName}).Do()
-	//res, err := l.client.Buckets.Insert(projId, &storage.Bucket{Name: containerName}).Do()
+	_, err := l.client.Buckets.Insert(projID, &storage.Bucket{Name: containerName}).Do()
+	//res, err := l.client.Buckets.Insert(projID, &storage.Bucket{Name: containerName}).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -47,10 +48,10 @@ func (l *Location) CreateContainer(containerName string) (stow.Container, error)
 // Containers returns a slice of the Container interface, a cursor, and an error.
 func (l *Location) Containers(prefix string, cursor string, count int) ([]stow.Container, string, error) {
 
-	projId, _ := l.config.Config(ConfigProjectId)
+	projID, _ := l.config.Config(ConfigProjectID)
 
 	// List all objects in a bucket using pagination
-	call := l.client.Buckets.List(projId).MaxResults(int64(count))
+	call := l.client.Buckets.List(projID).MaxResults(int64(count))
 
 	if prefix != "" {
 		call.Prefix(prefix)

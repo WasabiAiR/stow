@@ -14,9 +14,9 @@ import (
 func TestStow(t *testing.T) {
 
 	credFile := os.Getenv("GOOGLE_CREDENTIALS_FILE")
-	projectId := os.Getenv("GOOGLE_PROJECT_ID")
+	projectID := os.Getenv("GOOGLE_PROJECT_ID")
 
-	if credFile == "" || projectId == "" {
+	if credFile == "" || projectID == "" {
 		t.Skip("skipping test because GOOGLE_CREDENTIALS_FILE or GOOGLE_PROJECT_ID not set.")
 	}
 
@@ -27,7 +27,7 @@ func TestStow(t *testing.T) {
 
 	config := stow.ConfigMap{
 		"json":       string(b),
-		"project_id": projectId,
+		"project_id": projectID,
 	}
 	test.All(t, "google", config)
 }

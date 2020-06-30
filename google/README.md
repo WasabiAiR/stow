@@ -19,7 +19,7 @@ import (
 
 stowLoc, err := stow.Dial(stowgs.Kind, stow.ConfigMap{
 	stowgs.ConfigJSON:      "<json config>",
-	stowgs.ConfigProjectId: "<project id>",
+	stowgs.ConfigProjectID: "<project id>",
 })
 if err != nil {
   log.Fatal(err)
@@ -46,7 +46,7 @@ By default, Stow uses `https://www.googleapis.com/auth/devstorage.read_write` sc
 ```go
 stowLoc, err := stow.Dial(stowgs.Kind, stow.ConfigMap{
 	stowgs.ConfigJSON:      "<json config>",
-	stowgs.ConfigProjectId: "<project id>",
+	stowgs.ConfigProjectID: "<project id>",
 	stowgs.ConfigScopes:    "<scope_1>,<scope_2>",
 })
 ```
