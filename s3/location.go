@@ -106,6 +106,12 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 			bucketRegion, err = s3manager.GetBucketRegionWithClient(ctx, l.client, *bucket.Name)
 			cancel()
 			if err != nil {
+				if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
+					// sometimes buckets will still show up int eh ListBuckets results after
+					// being deleted, but will 404 when determining the region. Use this as a
+					// strong signal that the bucket has been deleted.
+					continue
+				}
 				return nil, "", errors.Wrapf(err, "Containers, getting bucket region for: %s", *bucket.Name)
 			}
 			if regionSet && region != "" && bucketRegion != region {
@@ -141,7 +147,7 @@ func (l *location) Close() error {
 // exact.
 func (l *location) Container(id string) (stow.Container, error) {
 	client := l.client
-	bucketRegion, _ := l.config.Config(ConfigRegion)
+	bucketRegion, bucketRegionSet := l.config.Config(ConfigRegion)
 
 	// Endpoint would indicate that we are using s3-compatible storage, which
 	// does not support s3session.GetBucketRegion().
@@ -157,6 +163,17 @@ func (l *location) Container(id string) (stow.Container, error) {
 		}
 	}
 
+	c := &container{
+		name:           id,
+		client:         client,
+		region:         bucketRegion,
+		customEndpoint: l.customEndpoint,
+	}
+
+	if bucketRegionSet || bucketRegion != "" {
+		return c, nil
+	}
+
 	params := &s3.GetBucketLocationInput{
 		Bucket: aws.String(id),
 	}
@@ -168,13 +185,6 @@ func (l *location) Container(id string) (stow.Container, error) {
 		}
 
 		return nil, errors.Wrap(err, "GetBucketLocation")
-	}
-
-	c := &container{
-		name:           id,
-		client:         client,
-		region:         bucketRegion,
-		customEndpoint: l.customEndpoint,
 	}
 
 	return c, nil
