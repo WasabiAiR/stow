@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/cheekybits/is"
+
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/test"
 )
@@ -29,6 +30,7 @@ func TestStow(t *testing.T) {
 		"json":       string(b),
 		"project_id": projectId,
 	}
+
 	test.All(t, "google", config)
 }
 

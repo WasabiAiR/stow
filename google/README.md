@@ -30,7 +30,7 @@ if err != nil {
   log.Fatal(err)
 }
 
-if gsBucket, ok := stowBucket.(*stowgs.Bucket); ok {
+if gsBucket, ok := stowBucket.(*stowgs.Container); ok {
   if gsLoc, ok := stowLoc.(*stowgs.Location); ok {
 
     googleService := gsLoc.Service()
