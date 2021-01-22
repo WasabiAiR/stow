@@ -3,7 +3,7 @@ package sftp
 import (
 	"net/url"
 	"os"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 
@@ -24,7 +24,7 @@ type location struct {
 
 // CreateContainer creates a new container, in this case a directory on the remote server.
 func (l *location) CreateContainer(containerName string) (stow.Container, error) {
-	if err := l.sftpClient.Mkdir(filepath.Join(l.config.basePath, containerName)); err != nil {
+	if err := l.sftpClient.Mkdir(path.Join(l.config.basePath, containerName)); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func (l *location) Close() error {
 
 // Container retrieves a stow.Container based on its name which must be exact.
 func (l *location) Container(id string) (stow.Container, error) {
-	fi, err := l.sftpClient.Stat(filepath.Join(l.config.basePath, id))
+	fi, err := l.sftpClient.Stat(path.Join(l.config.basePath, id))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, stow.ErrNotFound
@@ -117,12 +117,12 @@ func (l *location) Container(id string) (stow.Container, error) {
 
 // RemoveContainer removes a container by name.
 func (l *location) RemoveContainer(id string) error {
-	return recurseRemove(l.sftpClient, filepath.Join(l.config.basePath, id))
+	return recurseRemove(l.sftpClient, path.Join(l.config.basePath, id))
 }
 
 // recurseRemove recursively purges content from a path.
-func recurseRemove(client *sftp.Client, path string) error {
-	infos, err := client.ReadDir(path)
+func recurseRemove(client *sftp.Client, p string) error {
+	infos, err := client.ReadDir(p)
 	if err != nil {
 		return err
 	}
@@ -131,12 +131,12 @@ func recurseRemove(client *sftp.Client, path string) error {
 		if !v.IsDir() {
 			return errors.Errorf("directory not empty - %q", v.Name())
 		}
-		if err := recurseRemove(client, filepath.Join(path, v.Name())); err != nil {
+		if err := recurseRemove(client, path.Join(p, v.Name())); err != nil {
 			return err
 		}
 	}
 
-	return client.RemoveDirectory(path)
+	return client.RemoveDirectory(p)
 }
 
 // ItemByURL retrieves a stow.Item by parsing the URL.
