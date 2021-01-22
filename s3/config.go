@@ -50,6 +50,22 @@ const (
 	// Its default value is "false", to enable set to "true".
 	// This feature is useful for s3-compatible blob stores -- ie minio.
 	ConfigV2Signing = "v2_signing"
+
+	// ConfigMFADelete specifies whether MFA delete is enabled in the bucket versioning configuration.
+	// This element is only returned if the bucket has been configured with MFA
+	// delete. If the bucket has never been so configured, this element is not returned.
+	// By default 'Disabled'
+	ConfigMFADelete = "mfa_delete"
+
+	// ConfigVersioningStatus specifies the versioning state of the bucket. By default 'Enabled'
+	ConfigVersioningStatus = "versioning"
+
+	// ConfigKMSMasterKeyID specifies the KMS key ID, when ConfigKServerSideEncryption is set to KMS
+	ConfigKMSMasterKeyID = "kms_master_key_id"
+
+	// ConfigServerSideEncryptionAlgorithm is the algorithm to use for encryption (AES256 | aws:kms)
+	// https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-serversideencryptionbydefault.html
+	ConfigServerSideEncryptionAlgorithm = "server_side_encryption_algorithm"
 )
 
 func init() {
