@@ -47,11 +47,6 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		// test the connection
-		_, _, err = l.Containers("", stow.CursorStart, 1)
-		if err != nil {
-			return nil, err
-		}
 		return l, nil
 	}
 	kindfn := func(u *url.URL) bool {
