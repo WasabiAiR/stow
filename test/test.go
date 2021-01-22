@@ -108,12 +108,9 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(item3)
 
 	defer func() {
-		err := c1.RemoveItem(item1.ID())
-		is.NoErr(err)
-		err = c1.RemoveItem(item2.ID())
-		is.NoErr(err)
-		err = c1.RemoveItem(item3.ID())
-		is.NoErr(err)
+		c1.RemoveItem(item1.ID())
+		c1.RemoveItem(item2.ID())
+		c1.RemoveItem(item3.ID())
 	}()
 
 	// make sure we can get a small set of paginated results
@@ -287,6 +284,20 @@ func All(t *testing.T, kind string, config stow.Config) {
 	})
 	is.NoErr(err)
 	is.Equal(found, 3) // should find three items
+
+	//item removal by ID
+	err = c1.RemoveItem(item2.ID())
+	is.NoErr(err)
+	noItem, err = c1copy.Item(item2.ID())
+	is.Equal(stow.ErrNotFound, err)
+	is.Nil(noItem)
+
+	//item removal by name
+	err = c1.RemoveItem(item1Name)
+	is.NoErr(err)
+	noItem, err = c1copy.Item(item1.ID())
+	is.Equal(stow.ErrNotFound, err)
+	is.Nil(noItem)
 }
 
 func totalNetFDs(t *testing.T) (int, []byte) {
