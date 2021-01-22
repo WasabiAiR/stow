@@ -25,11 +25,6 @@ const (
 
 func init() {
 	validatefn := func(config stow.Config) error {
-		_, ok := config.Config(ConfigJSON)
-		if !ok {
-			return errors.New("missing JSON configuration")
-		}
-
 		_, ok = config.Config(ConfigProjectId)
 		if !ok {
 			return errors.New("missing Project ID")
@@ -37,11 +32,6 @@ func init() {
 		return nil
 	}
 	makefn := func(config stow.Config) (stow.Location, error) {
-		_, ok := config.Config(ConfigJSON)
-		if !ok {
-			return nil, errors.New("missing JSON configuration")
-		}
-
 		_, ok = config.Config(ConfigProjectId)
 		if !ok {
 			return nil, errors.New("missing Project ID")
