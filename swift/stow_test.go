@@ -30,6 +30,26 @@ func TestStow(t *testing.T) {
 	test.All(t, "swift", cfg)
 }
 
+func TestStowApplicationCredential(t *testing.T) {
+	tenantAuthURL := os.Getenv("SWIFTCREDENTIALAUTHURL")
+	credentialID := os.Getenv("SWIFTCREDENTIALID")
+	credentialName := os.Getenv("SWIFTCREDENTIALNAME")
+	credentialSecret := os.Getenv("SWIFTCREDENTIALSECRET")
+
+	if tenantAuthURL == "" || credentialID == "" || credentialName == "" || credentialSecret == "" {
+		t.Skip("skipping test because missing one or more of SWIFTCREDENTIALAUTHURL SWIFTCREDENTIALID SWIFTCREDENTIALNAME SWIFTCREDENTIALSECRET")
+	}
+
+	cfg := stow.ConfigMap{
+		ConfigTenantAuthURL:               tenantAuthURL,
+		ConfigApplicationCredentialID:     credentialID,
+		ConfigApplicationCredentialName:   credentialName,
+		ConfigApplicationCredentialSecret: credentialSecret,
+	}
+
+	test.All(t, "swift", cfg)
+}
+
 func TestPrepMetadataSuccess(t *testing.T) {
 	is := is.New(t)
 

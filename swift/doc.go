@@ -12,6 +12,12 @@ stow.Dial requires both a string value of the particular Stow Location Kind ("sw
 - a key of swift.ConfigTenantName with a value of the Swift endpoint's tenant name
 - a key of swift.ConfigTenantAuthURL with a value of the Swift endpoint's authentication URL
 
+To auth with openstack application credential (https://docs.openstack.org/keystone/queens/user/application_credentials.html) the stow.Config require the specifc key value:
+- a key of swift.ConfigTenantAuthURL with a value of the Swift endpoint's authentication URL
+- a key of swift.ConfigApplicationCredentialName with a value of the application credential name
+- a key of swift.ConfigApplicationCredentialID with a value of the application credential id
+- a key of swift.ConfigApplicationCredentialSecret with a value of the application credential secret
+
 Location
 
 Methods of swift.location allow the retrieval of a Swift Container (Container or Containers). A stow.Item representation of a Swift Object can also be retrieved based on the Object's URL (ItemByURL).
