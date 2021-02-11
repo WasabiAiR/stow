@@ -9,6 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/aws/aws-sdk-go v1.23.4
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dnaeon/go-vcr v1.1.0 // indirect
 	github.com/google/readahead v0.0.0-20161222183148-eaceba169032 // indirect
 	github.com/hashicorp/go-multierror v1.0.0
@@ -22,6 +23,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 // indirect
 	google.golang.org/api v0.8.0
 	gopkg.in/kothar/go-backblaze.v0 v0.0.0-20190520213052-702d4e7eb465
 )
