@@ -1,6 +1,8 @@
 package azure
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -30,6 +32,11 @@ func (c *container) ID() string {
 
 func (c *container) Name() string {
 	return c.id
+}
+
+func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
+	_ stow.PresignRequestParams) (url string, err error) {
+	return "", fmt.Errorf("unsupported")
 }
 
 func (c *container) Item(id string) (stow.Item, error) {

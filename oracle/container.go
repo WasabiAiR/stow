@@ -1,6 +1,8 @@
 package oracle
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -15,6 +17,11 @@ type container struct {
 }
 
 var _ stow.Container = (*container)(nil)
+
+func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
+	_ stow.PresignRequestParams) (url string, err error) {
+	return "", fmt.Errorf("unsupported")
+}
 
 // ID returns a string value representing a unique container, in this case it's
 // the Container's name.
