@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -41,6 +42,8 @@ func (c *container) PreSignRequest(ctx context.Context, clientMethod stow.Client
 			Bucket: aws.String(c.name),
 			Key:    aws.String(id),
 		})
+	default:
+		return "", fmt.Errorf("unsupported client method [%v]", clientMethod.String())
 	}
 
 	req.SetContext(ctx)

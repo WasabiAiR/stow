@@ -57,7 +57,6 @@ type ClientMethod int
 const (
 	ClientMethodGet ClientMethod = iota
 	ClientMethodPut
-	ClientMethodPost
 )
 
 // IsCursorEnd checks whether the cursor indicates there are no
