@@ -1,6 +1,8 @@
 package b2
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -22,6 +24,11 @@ func (c *container) ID() string {
 	// names instead of the ID (specifically the B2.Bucket method). For that reason,
 	// return name instead of ID. We can still use the id field internally when necessary
 	return c.bucket.Name
+}
+
+func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
+	_ stow.PresignRequestParams) (url string, err error) {
+	return "", fmt.Errorf("unsupported")
 }
 
 // Name returns the name of the bucket

@@ -1,6 +1,7 @@
 package stow
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/url"
@@ -45,6 +46,19 @@ var (
 	NoPrefix = ""
 )
 
+// HttpMethod defines an alias type for string to represent http Methods. These are defined in RFC 7231 section 4.3.
+type HttpMethod = string
+
+//go:generate enumer --type=ClientMethod --trimprefix=ClientMethod -json
+
+// ClientMethod defines common client methods across storage providers
+type ClientMethod int
+
+const (
+	ClientMethodGet ClientMethod = iota
+	ClientMethodPut
+)
+
 // IsCursorEnd checks whether the cursor indicates there are no
 // more items or not.
 func IsCursorEnd(cursor string) bool {
@@ -77,6 +91,12 @@ type Location interface {
 	ItemByURL(url *url.URL) (Item, error)
 }
 
+type PresignRequestParams struct {
+	ExpiresIn   time.Duration
+	ExtraParams map[string]interface{}
+	HttpMethod  HttpMethod
+}
+
 // Container represents a container.
 type Container interface {
 	// ID gets a unique string describing this Container.
@@ -100,6 +120,9 @@ type Container interface {
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
 	Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (Item, error)
+
+	// PreSignRequest generates a pre-signed url for the given id (key after bucket/container) and a given clientMethod.
+	PreSignRequest(ctx context.Context, clientMethod ClientMethod, id string, params PresignRequestParams) (url string, err error)
 }
 
 // Item represents an item inside a Container.

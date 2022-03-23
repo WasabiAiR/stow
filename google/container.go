@@ -3,6 +3,8 @@ package google
 import (
 	"context"
 	"io"
+	"net/http"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
@@ -33,8 +35,25 @@ func (c *Container) Name() string {
 }
 
 // Bucket returns the google bucket attributes
-func (c *Container) Bucket() *storage.BucketHandle{
+func (c *Container) Bucket() *storage.BucketHandle {
 	return c.client.Bucket(c.name)
+}
+
+func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMethod, id string,
+	params stow.PresignRequestParams) (url string, err error) {
+	if len(params.HttpMethod) == 0 {
+		switch clientMethod {
+		case stow.ClientMethodGet:
+			params.HttpMethod = http.MethodGet
+		case stow.ClientMethodPut:
+			params.HttpMethod = http.MethodPut
+		}
+	}
+
+	return storage.SignedURL(c.name, id, &storage.SignedURLOptions{
+		Method:  params.HttpMethod,
+		Expires: time.Now().Add(params.ExpiresIn),
+	})
 }
 
 // Item returns a stow.Item instance of a container based on the

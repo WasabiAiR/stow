@@ -6,13 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
 )
 
 type location struct {
-	config stow.Config
-	client *az.BlobStorageClient
+	config      stow.Config
+	account     string
+	client      *az.BlobStorageClient
+	sharedCreds *azblob.SharedKeyCredential
 }
 
 func (l *location) Close() error {
@@ -56,6 +60,8 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 			id:         azureContainer.Name,
 			properties: azureContainer.Properties,
 			client:     l.client,
+			creds:      l.sharedCreds,
+			account:    l.account,
 		}
 	}
 	return containers, response.NextMarker, nil
