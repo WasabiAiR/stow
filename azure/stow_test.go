@@ -1,10 +1,13 @@
 package azure
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
@@ -77,4 +80,24 @@ func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 
 	_, err := prepMetadata(m)
 	is.Err(err)
+}
+
+func TestContainer_PreSignRequest(t *testing.T) {
+	if azureaccount == "" || azurekey == "" {
+		t.Skip("skipping test because missing either AZUREACCOUNT or AZUREKEY")
+	}
+
+	l, err := stow.Dial(Kind, stow.ConfigMap{
+		ConfigAccount: azureaccount,
+		ConfigKey:     azurekey,
+	})
+
+	assert.NoError(t, err)
+	c, err := l.Container("test")
+	assert.NoError(t, err)
+
+	u, err := c.PreSignRequest(context.Background(), stow.ClientMethodPut, "file.txt", stow.PresignRequestParams{})
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, u)
 }
