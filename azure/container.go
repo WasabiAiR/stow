@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	azblob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -20,8 +21,10 @@ var timeFormat = "Mon, 2 Jan 2006 15:04:05 MST"
 
 type container struct {
 	id         string
+	account    string
 	properties az.ContainerProperties
 	client     *az.BlobStorageClient
+	creds      *azblob.SharedKeyCredential
 }
 
 var _ stow.Container = (*container)(nil)
@@ -34,9 +37,34 @@ func (c *container) Name() string {
 	return c.id
 }
 
-func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
-	_ stow.PresignRequestParams) (url string, err error) {
-	return "", fmt.Errorf("unsupported")
+func (c *container) PreSignRequest(_ context.Context, method stow.ClientMethod, key string,
+	params stow.PresignRequestParams) (url string, err error) {
+	containerName := c.id
+	blobName := key
+
+	permissions := azblob.BlobSASPermissions{}
+	switch method {
+	case stow.ClientMethodGet:
+		permissions.Read = true
+	case stow.ClientMethodPut:
+		permissions.Add = true
+		permissions.Write = true
+	}
+
+	sasQueryParams, err := azblob.BlobSASSignatureValues{
+		Protocol:      azblob.SASProtocolHTTPS,
+		ExpiryTime:    time.Now().Add(params.ExpiresIn),
+		ContainerName: containerName,
+		BlobName:      blobName,
+		Permissions:   permissions.String(),
+	}.NewSASQueryParameters(c.creds)
+	if err != nil {
+		return "", err
+	}
+
+	// Create the SAS URL for the resource you wish to access, and append the SAS query parameters.
+	qp := sasQueryParams.Encode()
+	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s?%s", c.account, containerName, blobName, qp), nil
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
