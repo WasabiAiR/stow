@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 )
 
 var (
