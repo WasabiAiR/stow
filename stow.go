@@ -93,6 +93,7 @@ type Location interface {
 
 type PresignRequestParams struct {
 	ExpiresIn   time.Duration
+	ContentMD5  string
 	ExtraParams map[string]interface{}
 	HttpMethod  HttpMethod
 }
@@ -120,7 +121,6 @@ type Container interface {
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
 	Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (Item, error)
-
 	// PreSignRequest generates a pre-signed url for the given id (key after bucket/container) and a given clientMethod.
 	PreSignRequest(ctx context.Context, clientMethod ClientMethod, id string, params PresignRequestParams) (url string, err error)
 }
