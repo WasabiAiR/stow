@@ -1,6 +1,6 @@
-module github.com/graymeta/stow
+module github.com/flyteorg/stow
 
-go 1.14
+go 1.18
 
 require (
 	cloud.google.com/go v0.38.0

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 
-	"github.com/graymeta/stow"
+	"github.com/flyteorg/stow"
 )
 
 type Container struct {

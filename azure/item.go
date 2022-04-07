@@ -7,7 +7,7 @@ import (
 	"time"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
-	"github.com/graymeta/stow"
+	"github.com/flyteorg/stow"
 	"github.com/pkg/errors"
 )
 
