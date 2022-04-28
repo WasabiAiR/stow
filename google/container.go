@@ -50,7 +50,7 @@ func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMe
 		}
 	}
 
-	return storage.SignedURL(c.name, id, &storage.SignedURLOptions{
+	return c.Bucket().SignedURL(id, &storage.SignedURLOptions{
 		Method:  params.HttpMethod,
 		Expires: time.Now().Add(params.ExpiresIn),
 		MD5:     params.ContentMD5,
