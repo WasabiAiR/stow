@@ -10,7 +10,7 @@ RUN yum -y install \
     which \
     && yum clean all
 
-ENV goversion 1.11.13
+ENV goversion 1.17
 ENV gofile go${goversion}.linux-amd64.tar.gz
 ENV gourl https://storage.googleapis.com/golang/${gofile}
 

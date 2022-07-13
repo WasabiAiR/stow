@@ -2,9 +2,11 @@ package azure
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
-	az "github.com/Azure/azure-sdk-for-go/storage"
+	az "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+
 	"github.com/graymeta/stow"
 )
 
@@ -60,7 +62,7 @@ func init() {
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
-func newBlobStorageClient(cfg stow.Config) (*az.BlobStorageClient, error) {
+func newBlobStorageClient(cfg stow.Config) (*az.ServiceClient, error) {
 	acc, ok := cfg.Config(ConfigAccount)
 	if !ok {
 		return nil, errors.New("missing account id")
@@ -69,10 +71,11 @@ func newBlobStorageClient(cfg stow.Config) (*az.BlobStorageClient, error) {
 	if !ok {
 		return nil, errors.New("missing auth key")
 	}
-	basicClient, err := az.NewBasicClient(acc, key)
+	creds, err := az.NewSharedKeyCredential(acc, key)
 	if err != nil {
 		return nil, errors.New("bad credentials")
 	}
-	client := basicClient.GetBlobService()
-	return &client, err
+	//client := basicClient.GetBlobService()
+	client, err := az.NewServiceClientWithSharedKey(fmt.Sprintf("https://%s.blob.core.windows.net/", acc), creds, nil)
+	return client, err
 }

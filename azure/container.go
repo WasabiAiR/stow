@@ -1,13 +1,12 @@
 package azure
 
 import (
-	"io"
-	"strings"
-	"time"
-
-	az "github.com/Azure/azure-sdk-for-go/storage"
+	"context"
+	az "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
+	"io"
+	"strings"
 )
 
 // The maximum size of an object that can be Put in a single request
@@ -19,7 +18,7 @@ var timeFormat = "Mon, 2 Jan 2006 15:04:05 MST"
 type container struct {
 	id         string
 	properties az.ContainerProperties
-	client     *az.BlobStorageClient
+	client     *az.ServiceClient
 }
 
 var _ stow.Container = (*container)(nil)
@@ -33,10 +32,16 @@ func (c *container) Name() string {
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
-	blob := c.client.GetContainerReference(c.id).GetBlobReference(id)
-	err := blob.GetProperties(nil)
+	ctx := context.Background()
+
+	id = strings.Replace(id, " ", "+", -1)
+	blob, err := getBlobClient(c.client, c.id, id)
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
+		return nil, err
+	}
+	properties, err := blob.GetProperties(ctx, nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "BlobNotFound") {
 			return nil, stow.ErrNotFound
 		}
 		return nil, err
@@ -45,86 +50,83 @@ func (c *container) Item(id string) (stow.Item, error) {
 		id:         id,
 		container:  c,
 		client:     c.client,
-		properties: blob.Properties,
+		properties: newStowProperties(cleanEtag(*properties.ETag), *properties.ContentLength, *properties.LastModified),
 	}
-
-	etag := cleanEtag(item.properties.Etag) // Etags returned from this method include quotes. Strip them.
-	item.properties.Etag = etag             // Assign the corrected string value to the field.
-
 	return item, nil
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
-	params := az.ListBlobsParameters{
-		Prefix:     prefix,
-		MaxResults: uint(count),
+	countParam := int32(count)
+	params := az.ContainerListBlobsFlatOptions{
+		Prefix:     &prefix,
+		MaxResults: &countParam,
 	}
-	if cursor != "" {
-		params.Marker = cursor
-	}
-	listblobs, err := c.client.GetContainerReference(c.id).ListBlobs(params)
+
+	containerObj, err := c.client.NewContainerClient(c.id)
 	if err != nil {
 		return nil, "", err
 	}
-	items := make([]stow.Item, len(listblobs.Blobs))
-	for i, blob := range listblobs.Blobs {
+
+	if cursor != "" {
+		params.Marker = &cursor
+	}
+	pager := containerObj.ListBlobsFlat(&params)
+	//Retrieve next page
+	success := pager.NextPage(context.Background())
+	if !success {
+		return nil, "", errors.New("eof, no more data")
+	}
+	resp := pager.PageResponse()
+	items := make([]stow.Item, len(resp.Segment.BlobItems))
+
+	for i, blob := range resp.Segment.BlobItems {
 
 		// Clean Etag just in case.
-		blob.Properties.Etag = cleanEtag(blob.Properties.Etag)
+		cleanTag := cleanEtag(*blob.Properties.Etag)
+		blob.Properties.Etag = &cleanTag
 
 		items[i] = &item{
-			id:         blob.Name,
+			id:         *blob.Name,
 			container:  c,
 			client:     c.client,
-			properties: blob.Properties,
+			properties: newStowProperties(*blob.Properties.Etag, *blob.Properties.ContentLength, *blob.Properties.LastModified),
 		}
 	}
-	return items, listblobs.NextMarker, nil
+	return items, *resp.NextMarker, nil
 }
 
 func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	mdParsed, err := prepMetadata(metadata)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
-	}
-
 	name = strings.Replace(name, " ", "+", -1)
+	resp, err := c.multipartUpload(name, r, metadata)
 
-	if size > maxPutSize {
-		// Do a multipart upload
-		err := c.multipartUpload(name, r, size)
-		if err != nil {
-			return nil, errors.Wrap(err, "multipart upload")
-		}
-	} else {
-		err = c.client.GetContainerReference(c.id).GetBlobReference(name).CreateBlockBlobFromReader(r, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to create or update Item")
-		}
-	}
+	var (
+		etag string = ""
+	)
 
-	err = c.SetItemMetadata(name, mdParsed)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update item, setting Item metadata")
-	}
+		return nil, err
 
-	item := &item{
-		id:        name,
-		container: c,
-		client:    c.client,
-		properties: az.BlobProperties{
-			LastModified:  az.TimeRFC1123(time.Now()),
-			Etag:          "",
-			ContentLength: size,
-		},
 	}
-	return item, nil
+	item := &item{
+		id:         name,
+		container:  c,
+		client:     c.client,
+		properties: newStowProperties(etag, size, *resp.LastModified),
+	}
+	return item, err
 }
 
 func (c *container) SetItemMetadata(itemName string, md map[string]string) error {
-	blob := c.client.GetContainerReference(c.id).GetBlobReference(itemName)
-	blob.Metadata = md
-	return blob.SetMetadata(nil)
+	containerObj, err := c.client.NewContainerClient(c.id)
+	if err != nil {
+		return err
+	}
+	blobClient, err := containerObj.NewBlobClient(itemName)
+	if err != nil {
+		return err
+	}
+	_, err = blobClient.SetMetadata(context.Background(), md, nil)
+	return err
 }
 
 func parseMetadata(md map[string]string) (map[string]interface{}, error) {
@@ -148,7 +150,16 @@ func prepMetadata(md map[string]interface{}) (map[string]string, error) {
 }
 
 func (c *container) RemoveItem(id string) error {
-	return c.client.GetContainerReference(c.id).GetBlobReference(id).Delete(nil)
+	containerObj, err := c.client.NewContainerClient(c.id)
+	if err != nil {
+		return err
+	}
+	blobClient, err := containerObj.NewBlobClient(id)
+	if err != nil {
+		return err
+	}
+	_, err = blobClient.Delete(context.Background(), nil)
+	return err
 }
 
 // Remove quotation marks from beginning and end. This includes quotations that

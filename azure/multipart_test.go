@@ -73,13 +73,11 @@ func TestMultipartUpload(t *testing.T) {
 	is.NoErr(err)
 	defer f.Close()
 
-	fi, err := f.Stat()
-	is.NoErr(err)
-
 	name := "bigfile/thebigfile"
 	azc, ok := cont.(*container)
 	is.OK(ok)
-	is.NoErr(azc.multipartUpload(name, f, fi.Size()))
+	_, err = azc.multipartUpload(name, f, nil)
+	is.NoErr(err)
 
 	item, err := cont.Item(name)
 	is.NoErr(err)

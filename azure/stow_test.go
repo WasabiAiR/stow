@@ -2,13 +2,13 @@ package azure
 
 import (
 	"fmt"
+	"github.com/graymeta/stow/test"
 	"os"
 	"reflect"
 	"testing"
 
 	"github.com/cheekybits/is"
 	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
 )
 
 var (

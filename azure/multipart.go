@@ -1,12 +1,13 @@
 package azure
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"io"
 
-	az "github.com/Azure/azure-sdk-for-go/storage"
+	az "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 )
 
 // constants related to multi-part uploads
@@ -57,40 +58,20 @@ func determineChunkSize(size int64) (int64, error) {
 
 // multipartUpload performs a multi-part upload by chunking the data, putting each chunk, then
 // assembling the chunks into a blob
-func (c *container) multipartUpload(name string, r io.Reader, size int64) error {
-	chunkSize, err := determineChunkSize(size)
+func (c *container) multipartUpload(name string, r io.Reader, m map[string]interface{}) (az.BlockBlobCommitBlockListResponse, error) {
+	blobClient, err := getBlobClient(c.client, c.id, name)
 	if err != nil {
-		return err
+		return az.BlockBlobCommitBlockListResponse{}, err
 	}
-	var buf = make([]byte, chunkSize)
-
-	var blocks []az.Block
-	var rawID uint64
-	blob := c.client.GetContainerReference(c.id).GetBlobReference(name)
-
-	// TODO: upload the parts in parallel
-	for {
-		n, err := r.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-
-		blockID := encodedBlockID(rawID)
-		chunk := buf[:n]
-
-		if err := blob.PutBlock(blockID, chunk, nil); err != nil {
-			return err
-		}
-
-		blocks = append(blocks, az.Block{
-			ID:     blockID,
-			Status: az.BlockStatusLatest,
-		})
-		rawID++
+	options := az.UploadStreamOptions{}
+	mdParsed, err := prepMetadata(m)
+	if err == nil {
+		options.Metadata = mdParsed
 	}
+	resp, err := blobClient.UploadStream(context.Background(), r, options)
+	if err != nil {
+		return az.BlockBlobCommitBlockListResponse{}, err
+	}
+	return resp, nil
 
-	return blob.PutBlockList(blocks, nil)
 }
