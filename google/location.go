@@ -34,7 +34,14 @@ func (l *Location) Close() error {
 func (l *Location) CreateContainer(containerName string) (stow.Container, error) {
 	projId, _ := l.config.Config(ConfigProjectId)
 	bucket := l.client.Bucket(containerName)
-	if err := bucket.Create(l.ctx, projId, nil); err != nil {
+
+	location, _ := l.config.Config(ConfigLocation)
+	storageClass, _ := l.config.Config(ConfigStorageClass)
+	bucketAttributes := &storage.BucketAttrs{
+		Location: location,
+		StorageClass: storageClass,
+	}
+	if err := bucket.Create(l.ctx, projId, bucketAttributes); err != nil {
 		if e, ok := err.(*googleapi.Error); ok && e.Code == 409 {
 			return &Container{
 				name:   containerName,
