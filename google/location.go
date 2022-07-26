@@ -38,7 +38,7 @@ func (l *Location) CreateContainer(containerName string) (stow.Container, error)
 	location, _ := l.config.Config(ConfigLocation)
 	storageClass, _ := l.config.Config(ConfigStorageClass)
 	bucketAttributes := &storage.BucketAttrs{
-		Location: location,
+		Location:     location,
 		StorageClass: storageClass,
 	}
 	if err := bucket.Create(l.ctx, projId, bucketAttributes); err != nil {
