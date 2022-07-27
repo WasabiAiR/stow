@@ -101,7 +101,7 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 		var err error
 		client := l.client
 		bucketRegion := region
-		if !endpointSet && endpoint == "" {
+		if !endpointSet || endpoint == "" {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			bucketRegion, err = s3manager.GetBucketRegionWithClient(ctx, l.client, *bucket.Name)
 			cancel()
@@ -151,7 +151,7 @@ func (l *location) Container(id string) (stow.Container, error) {
 
 	// Endpoint would indicate that we are using s3-compatible storage, which
 	// does not support s3session.GetBucketRegion().
-	if endpoint, endpointSet := l.config.Config(ConfigEndpoint); !endpointSet && endpoint == "" {
+	if endpoint, endpointSet := l.config.Config(ConfigEndpoint); !endpointSet || endpoint == "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		bucketRegion, _ = s3manager.GetBucketRegionWithClient(ctx, l.client, id)
 		cancel()
