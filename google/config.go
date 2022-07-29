@@ -18,11 +18,10 @@ const Kind = "google"
 
 const (
 	// The service account json blob
-	ConfigJSON         = "json"
-	ConfigProjectId    = "project_id"
-	ConfigScopes       = "scopes"
-	ConfigLocation     = "Location"
-	ConfigStorageClass = "StorageClass"
+	ConfigJSON      = "json"
+	ConfigProjectId = "project_id"
+	ConfigScopes    = "scopes"
+	ConfigLocation  = "Location"
 )
 
 func init() {

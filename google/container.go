@@ -20,6 +20,9 @@ type Container struct {
 
 	// ctx is used on google storage API calls
 	ctx context.Context
+
+	// Location where the bucket exists
+	location string
 }
 
 // ID returns a string value which represents the name of the container.
@@ -32,8 +35,14 @@ func (c *Container) Name() string {
 	return c.name
 }
 
+// Location returns a string representing the region of the container.
+// See https://pkg.go.dev/cloud.google.com/go/storage@v0.38.0#BucketAttrs
+func (c *Container) Location() string {
+	return c.location
+}
+
 // Bucket returns the google bucket attributes
-func (c *Container) Bucket() *storage.BucketHandle{
+func (c *Container) Bucket() *storage.BucketHandle {
 	return c.client.Bucket(c.name)
 }
 

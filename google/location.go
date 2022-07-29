@@ -36,10 +36,8 @@ func (l *Location) CreateContainer(containerName string) (stow.Container, error)
 	bucket := l.client.Bucket(containerName)
 
 	location, _ := l.config.Config(ConfigLocation)
-	storageClass, _ := l.config.Config(ConfigStorageClass)
 	bucketAttributes := &storage.BucketAttrs{
-		Location:     location,
-		StorageClass: storageClass,
+		Location: location,
 	}
 	if err := bucket.Create(l.ctx, projId, bucketAttributes); err != nil {
 		if e, ok := err.(*googleapi.Error); ok && e.Code == 409 {
@@ -52,9 +50,10 @@ func (l *Location) CreateContainer(containerName string) (stow.Container, error)
 	}
 
 	return &Container{
-		name:   containerName,
-		client: l.client,
-		ctx:    l.ctx,
+		name:     containerName,
+		client:   l.client,
+		ctx:      l.ctx,
+		location: location,
 	}, nil
 }
 
@@ -76,9 +75,10 @@ func (l *Location) Containers(prefix string, cursor string, count int) ([]stow.C
 	var containers []stow.Container
 	for _, container := range results {
 		containers = append(containers, &Container{
-			name:   container.Name,
-			client: l.client,
-			ctx:    l.ctx,
+			name:     container.Name,
+			client:   l.client,
+			ctx:      l.ctx,
+			location: container.Location,
 		})
 	}
 
@@ -97,9 +97,10 @@ func (l *Location) Container(id string) (stow.Container, error) {
 	}
 
 	c := &Container{
-		name:   attrs.Name,
-		client: l.client,
-		ctx:    l.ctx,
+		name:     attrs.Name,
+		client:   l.client,
+		ctx:      l.ctx,
+		location: attrs.Location,
 	}
 
 	return c, nil
