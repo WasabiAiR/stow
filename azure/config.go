@@ -3,6 +3,7 @@ package azure
 import (
 	"errors"
 	"net/url"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 
@@ -29,6 +30,7 @@ const (
 const Kind = "azure"
 const defaultBaseUrl = "core.windows.net"
 const defaultAPIVersion = "2018-03-28"
+const defaultHTTPSStr = "true"
 
 func init() {
 	validatefn := func(config stow.Config) error {
@@ -109,15 +111,11 @@ func getAccount(cfg stow.Config) (account, key string, baseUrl string, APIVersio
 	var useHTTPSStr string
 	useHTTPSStr, ok = cfg.Config(ConfigUseHTTPS)
 	if !ok {
-		useHTTPSStr = ""
+		useHTTPSStr = defaultHTTPSStr
 	}
-	switch useHTTPSStr {
-	case "true":
-		useHTTPS = true
-	case "false":
-		useHTTPS = false
-	default:
-		useHTTPS = true
+	useHTTPS, err = strconv.ParseBool(useHTTPSStr)
+	if err != nil {
+		return "", "", "", "", false, errors.New("invalid value for use_https_str")
 	}
 	return acc, key, baseUrl, APIVersion, useHTTPS, nil
 }
