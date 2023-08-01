@@ -14,19 +14,21 @@ import (
 // ConfigKey should be an access key
 // ConfigBaseUrl is the base URL of the cloud you want to connect to. The default
 // is Azure Public cloud
-// ConfigDefaultAPIVersion is the Azure Storage API version string used when a
+// ConfigAPIVersion is the Azure Storage API version string used when a
 // client is created.
 // ConfigUseHTTPS specifies whether you want to use HTTPS to connect
 const (
-	ConfigAccount           = "account"
-	ConfigKey               = "key"
-	ConfigBaseUrl           = "base_url"
-	ConfigDefaultAPIVersion = "default_api_version"
-	ConfigUseHTTPS          = "use_https"
+	ConfigAccount    = "account"
+	ConfigKey        = "key"
+	ConfigBaseUrl    = "base_url"
+	ConfigAPIVersion = "api_version"
+	ConfigUseHTTPS   = "use_https"
 )
 
 // Kind is the kind of Location this package provides.
 const Kind = "azure"
+const defaultBaseUrl = "core.windows.net"
+const defaultAPIVersion = "2018-03-28"
 
 func init() {
 	validatefn := func(config stow.Config) error {
@@ -84,7 +86,7 @@ func init() {
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
-func getAccount(cfg stow.Config) (account, key string, baseUrl string, defaultAPIVersion string, useHTTPS bool, err error) {
+func getAccount(cfg stow.Config) (account, key string, baseUrl string, APIVersion string, useHTTPS bool, err error) {
 	acc, ok := cfg.Config(ConfigAccount)
 	if !ok {
 		return "", "", "", "", false, errors.New("missing account id")
@@ -97,11 +99,11 @@ func getAccount(cfg stow.Config) (account, key string, baseUrl string, defaultAP
 
 	baseUrl, ok = cfg.Config(ConfigBaseUrl)
 	if !ok {
-		baseUrl = "core.windows.net"
+		baseUrl = defaultBaseUrl
 	}
-	defaultAPIVersion, ok = cfg.Config(ConfigDefaultAPIVersion)
+	APIVersion, ok = cfg.Config(ConfigAPIVersion)
 	if !ok {
-		defaultAPIVersion = "2018-03-28"
+		APIVersion = defaultAPIVersion
 	}
 
 	var useHTTPSStr string
@@ -117,11 +119,11 @@ func getAccount(cfg stow.Config) (account, key string, baseUrl string, defaultAP
 	default:
 		useHTTPS = true
 	}
-	return acc, key, baseUrl, defaultAPIVersion, useHTTPS, nil
+	return acc, key, baseUrl, APIVersion, useHTTPS, nil
 }
 
-func newBlobStorageClient(account, key string, baseUrl string, defaultAPIVersion string, useHTTPS bool) (*az.BlobStorageClient, error) {
-	basicClient, err := az.NewClient(account, key, baseUrl, defaultAPIVersion, useHTTPS)
+func newBlobStorageClient(account, key string, baseUrl string, APIVersion string, useHTTPS bool) (*az.BlobStorageClient, error) {
+	basicClient, err := az.NewClient(account, key, baseUrl, APIVersion, useHTTPS)
 	if err != nil {
 		return nil, errors.New("bad credentials")
 	}

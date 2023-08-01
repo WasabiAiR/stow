@@ -10,7 +10,7 @@ stow.Dial requires both a string value of the particular Stow Location Kind ("az
 - a key of azure.ConfigAccount with a value of the Azure Resource Name
 - a key of azure.ConfigKey with a value of the Azure Access Key
 - an optional key of azure.ConfigBaseUrl to specify which base URL you would like to use. Defaults to public Azure.
-- an optional key of azure.ConfigDefaultAPIVersion to specify which Storage API version you would like to use. Defaults to 2018-03-28
+- an optional key of azure.ConfigAPIVersion to specify which Storage API version you would like to use. Defaults to 2018-03-28
 - an optional key of azure.ConfigUseHTTPS to specify whether to use HTTPS. Defaults to true
 
 # Location
