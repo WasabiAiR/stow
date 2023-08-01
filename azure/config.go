@@ -12,14 +12,14 @@ import (
 	"github.com/flyteorg/stow"
 )
 
-// ConfigAccount and ConfigKey are the supported configuration items for
-// Azure blob storage.
-// SovereignCloud only supports "us" but there are other options listed
+// ConfigAccount should be the name of your storage account in the Azure portal
+// ConfigKey should be an access key
+// ConfigCloud can be one of "public", "germany", "us", or "china". Defaults to public.
 // https://pkg.go.dev/github.com/Azure/go-autorest/autorest/azure#Environment
 const (
 	ConfigAccount = "account"
 	ConfigKey     = "key"
-	ConfigCloud   = "cloud"
+	ConfigCloud   = "public"
 )
 
 // Kind is the kind of Location this package provides.
@@ -99,7 +99,7 @@ func getAccount(cfg stow.Config) (account, key string, env azure.Environment, er
 	switch cloud {
 	case "us":
 		env = azure.USGovernmentCloud
-	case "german":
+	case "germany":
 		env = azure.GermanCloud
 	case "china":
 		env = azure.ChinaCloud
