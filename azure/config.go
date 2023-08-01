@@ -2,11 +2,9 @@ package azure
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/go-autorest/autorest/azure"
 
 	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/flyteorg/stow"
@@ -14,12 +12,17 @@ import (
 
 // ConfigAccount should be the name of your storage account in the Azure portal
 // ConfigKey should be an access key
-// ConfigCloud can be one of "public", "germany", "us", or "china". Defaults to public.
-// https://pkg.go.dev/github.com/Azure/go-autorest/autorest/azure#Environment
+// ConfigBaseUrl is the base URL of the cloud you want to connect to. The default
+// is Azure Public cloud
+// ConfigDefaultAPIVersion is the Azure Storage API version string used when a
+// client is created.
+// ConfigUseHTTPS specifies whether you want to use HTTPS to connect
 const (
-	ConfigAccount = "account"
-	ConfigKey     = "key"
-	ConfigCloud   = "public"
+	ConfigAccount           = "account"
+	ConfigKey               = "key"
+	ConfigBaseUrl           = "base_url"
+	ConfigDefaultAPIVersion = "default_api_version"
+	ConfigUseHTTPS          = "use_https"
 )
 
 // Kind is the kind of Location this package provides.
@@ -50,14 +53,14 @@ func init() {
 			config: config,
 		}
 
-		acc, key, env, err := getAccount(l.config)
+		acc, key, env, api, https, err := getAccount(l.config)
 		if err != nil {
 			return nil, err
 		}
 
 		l.account = acc
 
-		l.client, err = newBlobStorageClient(acc, key, env)
+		l.client, err = newBlobStorageClient(acc, key, env, api, https)
 		if err != nil {
 			return nil, err
 		}
@@ -81,38 +84,44 @@ func init() {
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
-func getAccount(cfg stow.Config) (account, key string, env azure.Environment, err error) {
+func getAccount(cfg stow.Config) (account, key string, baseUrl string, defaultAPIVersion string, useHTTPS bool, err error) {
 	acc, ok := cfg.Config(ConfigAccount)
 	if !ok {
-		return "", "", azure.Environment{}, errors.New("missing account id")
+		return "", "", "", "", false, errors.New("missing account id")
 	}
 
 	key, ok = cfg.Config(ConfigKey)
 	if !ok {
-		return "", "", azure.Environment{}, errors.New("missing auth key")
+		return "", "", "", "", false, errors.New("missing auth key")
 	}
 
-	cloud, ok := cfg.Config(ConfigCloud)
+	baseUrl, ok = cfg.Config(ConfigBaseUrl)
 	if !ok {
-		return "", "", azure.Environment{}, errors.New("missing auth key")
+		baseUrl = "core.windows.net"
 	}
-	switch cloud {
-	case "us":
-		env = azure.USGovernmentCloud
-	case "germany":
-		env = azure.GermanCloud
-	case "china":
-		env = azure.ChinaCloud
-	case "public":
-		env = azure.PublicCloud
+	defaultAPIVersion, ok = cfg.Config(ConfigDefaultAPIVersion)
+	if !ok {
+		defaultAPIVersion = "2018-03-28"
+	}
+
+	var useHTTPSStr string
+	useHTTPSStr, ok = cfg.Config(ConfigUseHTTPS)
+	if !ok {
+		useHTTPSStr = ""
+	}
+	switch useHTTPSStr {
+	case "true":
+		useHTTPS = true
+	case "false":
+		useHTTPS = false
 	default:
-		return "", "", azure.Environment{}, fmt.Errorf("invalid cloud %s", cloud)
+		useHTTPS = true
 	}
-	return acc, key, env, nil
+	return acc, key, baseUrl, defaultAPIVersion, useHTTPS, nil
 }
 
-func newBlobStorageClient(account, key string, env azure.Environment) (*az.BlobStorageClient, error) {
-	basicClient, err := az.NewBasicClientOnSovereignCloud(account, key, env)
+func newBlobStorageClient(account, key string, baseUrl string, defaultAPIVersion string, useHTTPS bool) (*az.BlobStorageClient, error) {
+	basicClient, err := az.NewClient(account, key, baseUrl, defaultAPIVersion, useHTTPS)
 	if err != nil {
 		return nil, errors.New("bad credentials")
 	}
