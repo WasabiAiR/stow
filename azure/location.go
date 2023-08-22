@@ -31,12 +31,15 @@ func (l *location) CreateContainer(name string) (stow.Container, error) {
 		}
 		return nil, err
 	}
+	baseUrl := getBaseAzureUrlOrDefault(l.config)
+
 	container := &container{
 		id: name,
 		properties: az.ContainerProperties{
 			LastModified: time.Now().Format(timeFormat),
 		},
-		client: l.client,
+		client:  l.client,
+		baseUrl: baseUrl,
 	}
 	time.Sleep(time.Second * 3)
 	return container, nil
@@ -56,12 +59,14 @@ func (l *location) Containers(prefix, cursor string, count int) ([]stow.Containe
 	}
 	containers := make([]stow.Container, len(response.Containers))
 	for i, azureContainer := range response.Containers {
+		baseUrl := getBaseAzureUrlOrDefault(l.config)
 		containers[i] = &container{
 			id:         azureContainer.Name,
 			properties: azureContainer.Properties,
 			client:     l.client,
 			creds:      l.sharedCreds,
 			account:    l.account,
+			baseUrl:    baseUrl,
 		}
 	}
 	return containers, response.NextMarker, nil

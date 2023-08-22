@@ -25,6 +25,7 @@ type container struct {
 	properties az.ContainerProperties
 	client     *az.BlobStorageClient
 	creds      *azblob.SharedKeyCredential
+	baseUrl    string
 }
 
 var _ stow.Container = (*container)(nil)
@@ -64,7 +65,7 @@ func (c *container) PreSignRequest(_ context.Context, method stow.ClientMethod, 
 
 	// Create the SAS URL for the resource you wish to access, and append the SAS query parameters.
 	qp := sasQueryParams.Encode()
-	return fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s?%s", c.account, containerName, blobName, qp), nil
+	return fmt.Sprintf("https://%s.blob.%s/%s/%s?%s", c.account, c.baseUrl, containerName, blobName, qp), nil
 }
 
 func (c *container) Item(id string) (stow.Item, error) {
