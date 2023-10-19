@@ -3,15 +3,29 @@ Package azure provides an abstraction for the Microsoft Azure Storage service. I
 
 # Usage and Credentials
 
-Two pieces of information are needed to access an Azure Resorce of type "Storage account": the Resource Name (found in the "All Resources" tab of the Azure Portal console) and the Access Key (found in the "Access Keys" tab in the "Settings" pane of a Resource's details page).
-
-stow.Dial requires both a string value of the particular Stow Location Kind ("azure") and a stow.Config instance. The stow.Config instance requires two entries with the specific key value attributes:
+stow.Dial requires both a string value of the particular Stow Location Kind ("azure") and a stow.Config instance. The list below outlines all configuration values:
 
 - a key of azure.ConfigAccount with a value of the Azure Resource Name
-- a key of azure.ConfigKey with a value of the Azure Access Key
-- an optional key of azure.ConfigBaseUrl to specify which base URL you would like to use. Defaults to core.windows.net (public Azure)
-- an optional key of azure.ConfigAPIVersion to specify which Storage API version you would like to use. Defaults to 2018-03-28
-- an optional key of azure.ConfigUseHTTPS to specify whether to use HTTPS when connecting to Azure storage. Defaults to true
+- a key of azure.ConfigKey with a value of the Azure Access Key (only used with shared key authentication)
+- an optional key of azure.ConfigDomainSuffix to specify the Azure API domain. Defaults to `core.windows.net` (public Azure)
+- an optional key of azure.ConfigUploadConcurrency to specify the upload concurrency to use. Defaults to `4`.
+
+## Authentication Methods
+
+There are two ways to authenticate to a Microsoft Azure Storage account:
+
+- Shared Key Authentication ([Discouraged by MSFT](https://tinyurl.com/3umn4hpn))
+- Azure AD Authentication (requires Role Assignments)
+
+### Shared Key Authentication
+
+To perform shared key authentication, the configuration must include the `azure.ConfigKey` property and the storage account must not prevent the use of shared keys ([MSFT reference here](https://tinyurl.com/3dxkzh99))
+
+### Azure AD Authentication
+
+Azure AD authentication is resolved using the Default credential, which performs a hunt for credentials
+in the environment in a cross-SDK and cross-platform way. The documentation for the resolution process
+[can be found here](https://tinyurl.com/5ajy83c9).
 
 # Location
 
@@ -41,9 +55,5 @@ Methods of azure.Item allow the retrieval of an Azure Storage Container's:
 - last modified date
 - Etag
 - content
-
-# Caveats
-
-At this point in time, the upload limit of a blob is about 60MB. This is an implementation restraint.
 */
 package azure

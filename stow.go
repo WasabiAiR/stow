@@ -109,7 +109,7 @@ type Container interface {
 	// Items gets a page of items with the specified
 	// prefix for this Container.
 	// The specified cursor is a pointer to the start of
-	// the items to get. It it obtained from a previous
+	// the items to get. It should be obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
 	// count is the number of items to return per page.

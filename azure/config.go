@@ -2,35 +2,44 @@ package azure
 
 import (
 	"errors"
+	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"net/url"
 	"strconv"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-
-	az "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/flyteorg/stow"
 )
 
 // ConfigAccount should be the name of your storage account in the Azure portal
 // ConfigKey should be an access key
-// ConfigBaseUrl is the base URL of the cloud you want to connect to. The default
-// is Azure Public cloud
-// ConfigAPIVersion is the Azure Storage API version string used when a
-// client is created.
-// ConfigUseHTTPS specifies whether you want to use HTTPS to connect
+// ConfigDomainSuffix the domain suffix to use for storage account communication. The default is the Azure Public cloud
+// ConfigUploadConcurrency the upload concurrency to use when uploading. Default is 4.
+// ConfigBaseUrlDepreciated Kept for backwards compatability, use ConfigDomainSuffix instead
 const (
-	ConfigAccount    = "account"
-	ConfigKey        = "key"
-	ConfigBaseUrl    = "base_url"
-	ConfigAPIVersion = "api_version"
-	ConfigUseHTTPS   = "use_https"
+	ConfigAccount            = "account"
+	ConfigKey                = "key"
+	ConfigDomainSuffix       = "domain_suffix"
+	ConfigUploadConcurrency  = "upload_concurrency"
+	ConfigBaseUrlDepreciated = "base_url"
 )
+
+// Removed configuration values, will cause failures if used.
+const (
+	ConfigUseHttpsRemoved   = "use_https"
+	ConfigApiVersionRemoved = "api_version"
+)
+
+var removedConfigKeys = []string{ConfigUseHttpsRemoved, ConfigApiVersionRemoved}
 
 // Kind is the kind of Location this package provides.
 const Kind = "azure"
-const defaultBaseUrl = "core.windows.net"
-const defaultAPIVersion = "2018-03-28"
-const defaultHTTPSStr = "true"
+
+// defaultDomainSuffix is the domain suffix for the Azure Public Cloud
+const defaultDomainSuffix = "core.windows.net"
+
+// defaultUploadConcurrency is the default upload concurrency
+const defaultUploadConcurrency = 4
 
 func init() {
 	validatefn := func(config stow.Config) error {
@@ -38,38 +47,37 @@ func init() {
 		if !ok {
 			return errors.New("missing account id")
 		}
-		_, ok = config.Config(ConfigKey)
-		if !ok {
-			return errors.New("missing auth key")
+		for _, removedConfigKey := range removedConfigKeys {
+			_, ok = config.Config(removedConfigKey)
+			if ok {
+				return fmt.Errorf("removed config option used [%s]", removedConfigKey)
+			}
 		}
 		return nil
 	}
 	makefn := func(config stow.Config) (stow.Location, error) {
-		_, ok := config.Config(ConfigAccount)
+		acctName, ok := config.Config(ConfigAccount)
 		if !ok {
 			return nil, errors.New("missing account id")
 		}
-		_, ok = config.Config(ConfigKey)
-		if !ok {
-			return nil, errors.New("missing auth key")
+
+		var uploadConcurrency int
+		var err error
+		uploadConcurrencyStr, ok := config.Config(ConfigUploadConcurrency)
+		if !ok || len(uploadConcurrencyStr) == 0 {
+			uploadConcurrency = defaultUploadConcurrency
+		} else {
+			uploadConcurrency, err = strconv.Atoi(uploadConcurrencyStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid upload concurrency [%v]", uploadConcurrency)
+			}
 		}
 		l := &location{
-			config: config,
+			accountName:       acctName,
+			uploadConcurrency: uploadConcurrency,
 		}
 
-		acc, key, env, api, https, err := getAccount(l.config)
-		if err != nil {
-			return nil, err
-		}
-
-		l.account = acc
-
-		l.client, err = newBlobStorageClient(acc, key, env, api, https)
-		if err != nil {
-			return nil, err
-		}
-
-		l.sharedCreds, err = azblob.NewSharedKeyCredential(acc, key)
+		l.client, l.preSigner, err = makeAccountClient(config)
 		if err != nil {
 			return nil, err
 		}
@@ -88,50 +96,69 @@ func init() {
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
-func getAccount(cfg stow.Config) (account, key string, baseUrl string, APIVersion string, useHTTPS bool, err error) {
-	acc, ok := cfg.Config(ConfigAccount)
+// makeAccountClient is a factory function for producing client instances
+func makeAccountClient(cfg stow.Config) (*azblob.Client, RequestPreSigner, error) {
+	accountName, ok := cfg.Config(ConfigAccount)
 	if !ok {
-		return "", "", "", "", false, errors.New("missing account id")
+		return nil, nil, errors.New("missing account id")
 	}
 
-	key, ok = cfg.Config(ConfigKey)
-	if !ok {
-		return "", "", "", "", false, errors.New("missing auth key")
-	}
+	domainSuffix := resolveAzureDomainSuffix(cfg)
+	serviceUrl := fmt.Sprintf("https://%s.blob.%s", accountName, domainSuffix)
 
-	baseUrl = getBaseAzureUrlOrDefault(cfg)
-
-	APIVersion, ok = cfg.Config(ConfigAPIVersion)
-	if !ok {
-		APIVersion = defaultAPIVersion
+	key, ok := cfg.Config(ConfigKey)
+	if ok && key != "" {
+		return newSharedKeyClient(accountName, key, serviceUrl)
 	}
-
-	var useHTTPSStr string
-	useHTTPSStr, ok = cfg.Config(ConfigUseHTTPS)
-	if !ok {
-		useHTTPSStr = defaultHTTPSStr
-	}
-	useHTTPS, err = strconv.ParseBool(useHTTPSStr)
-	if err != nil {
-		return "", "", "", "", false, errors.New("invalid value for use_https_str")
-	}
-	return acc, key, baseUrl, APIVersion, useHTTPS, nil
+	return newDefaultAzureIdentityClient(serviceUrl)
 }
 
-func getBaseAzureUrlOrDefault(cfg stow.Config) string {
-	baseUrl, ok := cfg.Config(ConfigBaseUrl)
-	if !ok || baseUrl == "" {
-		baseUrl = defaultBaseUrl
+// newSharedKeyClient creates client objects for working with a storage account
+// using shared keys.
+func newSharedKeyClient(accountName, key, serviceUrl string) (*azblob.Client, RequestPreSigner, error) {
+	sharedKeyCred, err := azblob.NewSharedKeyCredential(accountName, key)
+	if err != nil {
+		return nil, nil, err
 	}
-	return baseUrl
+	client, err := azblob.NewClientWithSharedKeyCredential(
+		serviceUrl,
+		sharedKeyCred,
+		nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	preSigner, err := NewSharedKeyRequestPreSigner(accountName, key)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, preSigner, nil
 }
 
-func newBlobStorageClient(account, key string, baseUrl string, APIVersion string, useHTTPS bool) (*az.BlobStorageClient, error) {
-	basicClient, err := az.NewClient(account, key, baseUrl, APIVersion, useHTTPS)
+// newDefaultAzureIdentityClient creates client objects for working with a storage
+// account using Azure AD auth, resolved using the default Azure credential chain.
+func newDefaultAzureIdentityClient(serviceUrl string) (*azblob.Client, RequestPreSigner, error) {
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, errors.New("bad credentials")
+		return nil, nil, err
+	}
+	client, err := azblob.NewClient(serviceUrl, cred, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	preSigner, err := NewDelegatedKeyPreSigner(client.ServiceClient())
+	return client, preSigner, nil
+}
+
+// resolveAzureDomainSuffix returns the Azure domain suffix to use
+func resolveAzureDomainSuffix(cfg stow.Config) string {
+	domainSuffix, ok := cfg.Config(ConfigDomainSuffix)
+	if ok && domainSuffix != "" {
+		return domainSuffix
 	}
 
-	client := basicClient.GetBlobService()
-	return &client, err
+	domainSuffix, ok = cfg.Config(ConfigBaseUrlDepreciated)
+	if ok && domainSuffix != "" {
+		return domainSuffix
+	}
+	return defaultDomainSuffix
 }
