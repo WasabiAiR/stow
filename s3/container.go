@@ -164,8 +164,9 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 		Key:    aws.String(name),
 		Bucket: aws.String(c.name),
 	})
+
 	var etag string
-	if i.ETag != nil && err == nil {
+	if err == nil && i.ETag != nil {
 		etag = cleanEtag(*i.ETag)
 	}
 
