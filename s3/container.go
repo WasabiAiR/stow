@@ -2,6 +2,7 @@ package s3
 
 import (
 	"io"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -60,6 +61,12 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	var containerItems []stow.Item
 
 	for _, object := range response.Contents {
+		if object.StorageClass == nil {
+			if object.Key != nil {
+				log.Printf("Return Storage Class is empty for object %s \n", *object.Key)
+			}
+			continue
+		}
 		if *object.StorageClass == "GLACIER" {
 			continue
 		}
