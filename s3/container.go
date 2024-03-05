@@ -43,10 +43,16 @@ func (c *container) PreSignRequest(ctx context.Context, clientMethod stow.Client
 			contentMD5 = aws.String(params.ContentMD5)
 		}
 
+		metadata := make(map[string]*string)
+		for key, value := range params.Metadata {
+			metadata[key] = aws.String(value)
+		}
+
 		req, _ = c.client.PutObjectRequest(&s3.PutObjectInput{
 			Bucket:     aws.String(c.name),
 			Key:        aws.String(id),
 			ContentMD5: contentMD5,
+			Metadata:   metadata,
 		})
 	default:
 		return "", fmt.Errorf("unsupported client method [%v]", clientMethod.String())

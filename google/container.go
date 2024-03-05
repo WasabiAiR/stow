@@ -2,6 +2,7 @@ package google
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -50,10 +51,15 @@ func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMe
 		}
 	}
 
+	headers := make([]string, 0, len(params.Metadata))
+	for k, v := range params.Metadata {
+		headers = append(headers, fmt.Sprintf("x-goog-meta-%s: %s", k, v))
+	}
 	return c.Bucket().SignedURL(id, &storage.SignedURLOptions{
 		Method:  params.HttpMethod,
 		Expires: time.Now().Add(params.ExpiresIn),
 		MD5:     params.ContentMD5,
+		Headers: headers,
 	})
 }
 
