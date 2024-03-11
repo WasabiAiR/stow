@@ -59,6 +59,8 @@ const (
 	ClientMethodPut
 )
 
+const FlyteContentMD5 = "flyteContentMD5"
+
 // IsCursorEnd checks whether the cursor indicates there are no
 // more items or not.
 func IsCursorEnd(cursor string) bool {
@@ -92,11 +94,16 @@ type Location interface {
 }
 
 type PresignRequestParams struct {
-	ExpiresIn   time.Duration
-	ContentMD5  string
-	ExtraParams map[string]interface{}
-	HttpMethod  HttpMethod
-	Metadata    map[string]string
+	ExpiresIn             time.Duration
+	ContentMD5            string
+	ExtraParams           map[string]interface{}
+	HttpMethod            HttpMethod
+	AddContentMD5Metadata bool
+}
+
+type PresignResponse struct {
+	Url                    string
+	RequiredRequestHeaders map[string]string
 }
 
 // Container represents a container.
@@ -123,7 +130,7 @@ type Container interface {
 	// read from the reader.
 	Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (Item, error)
 	// PreSignRequest generates a pre-signed url for the given id (key after bucket/container) and a given clientMethod.
-	PreSignRequest(ctx context.Context, clientMethod ClientMethod, id string, params PresignRequestParams) (url string, err error)
+	PreSignRequest(ctx context.Context, clientMethod ClientMethod, id string, params PresignRequestParams) (response PresignResponse, err error)
 }
 
 // Item represents an item inside a Container.

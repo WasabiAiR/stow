@@ -27,8 +27,8 @@ func (c *container) ID() string {
 }
 
 func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
-	_ stow.PresignRequestParams) (url string, err error) {
-	return "", fmt.Errorf("unsupported")
+	_ stow.PresignRequestParams) (url stow.PresignResponse, err error) {
+	return stow.PresignResponse{}, fmt.Errorf("unsupported")
 }
 
 // Name returns the name of the bucket

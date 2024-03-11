@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -28,9 +29,10 @@ type container struct {
 }
 
 func (c *container) PreSignRequest(ctx context.Context, clientMethod stow.ClientMethod, id string,
-	params stow.PresignRequestParams) (url string, err error) {
+	params stow.PresignRequestParams) (response stow.PresignResponse, err error) {
 
 	var req *request.Request
+	var requestHeaders map[string]string
 	switch clientMethod {
 	case stow.ClientMethodGet:
 		req, _ = c.client.GetObjectRequest(&s3.GetObjectInput{
@@ -44,8 +46,10 @@ func (c *container) PreSignRequest(ctx context.Context, clientMethod stow.Client
 		}
 
 		metadata := make(map[string]*string)
-		for key, value := range params.Metadata {
-			metadata[key] = aws.String(value)
+		requestHeaders := map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
+		if params.AddContentMD5Metadata {
+			metadata[stow.FlyteContentMD5] = aws.String(params.ContentMD5)
+			requestHeaders[fmt.Sprintf("x-amz-meta-%s", stow.FlyteContentMD5)] = params.ContentMD5
 		}
 
 		req, _ = c.client.PutObjectRequest(&s3.PutObjectInput{
@@ -55,12 +59,13 @@ func (c *container) PreSignRequest(ctx context.Context, clientMethod stow.Client
 			Metadata:   metadata,
 		})
 	default:
-		return "", fmt.Errorf("unsupported client method [%v]", clientMethod.String())
+		return stow.PresignResponse{}, fmt.Errorf("unsupported client method [%v]", clientMethod.String())
 	}
 
 	req.SetContext(ctx)
+	url, err := req.Presign(params.ExpiresIn)
 
-	return req.Presign(params.ExpiresIn)
+	return stow.PresignResponse{Url: url, RequiredRequestHeaders: requestHeaders}, err
 }
 
 // ID returns a string value which represents the name of the container.

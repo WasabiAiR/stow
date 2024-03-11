@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ func (c *container) Name() string {
 }
 
 func (c *container) PreSignRequest(ctx context.Context, method stow.ClientMethod, key string,
-	params stow.PresignRequestParams) (url string, err error) {
+	params stow.PresignRequestParams) (response stow.PresignResponse, err error) {
 	containerName := c.id
 	blobName := key
 
@@ -61,12 +62,20 @@ func (c *container) PreSignRequest(ctx context.Context, method stow.ClientMethod
 	})
 
 	if err != nil {
-		return "", err
+		return stow.PresignResponse{}, err
 	}
 
 	// Create the SAS URL for the resource you wish to access, and append the SAS query parameters.
 	qp := sasQueryParams.Encode()
-	return fmt.Sprintf("%s/%s?%s", c.client.URL(), blobName, qp), nil
+
+	requestHeaders := map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
+	requestHeaders["x-ms-blob-type"] = "BlockBlob" // https://learn.microsoft.com/en-us/rest/api/storageservices/put-blob?tabs=microsoft-entra-id#remarks
+
+	if params.AddContentMD5Metadata {
+		requestHeaders[fmt.Sprintf("x-ms-meta-%s", stow.FlyteContentMD5)] = params.ContentMD5
+	}
+
+	return stow.PresignResponse{Url: fmt.Sprintf("%s/%s?%s", c.client.URL(), blobName, qp), RequiredRequestHeaders: requestHeaders}, nil
 }
 
 func (c *container) Item(id string) (stow.Item, error) {

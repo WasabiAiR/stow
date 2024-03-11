@@ -34,8 +34,8 @@ func (c *container) URL() *url.URL {
 }
 
 func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
-	_ stow.PresignRequestParams) (url string, err error) {
-	return "", fmt.Errorf("unsupported")
+	_ stow.PresignRequestParams) (response stow.PresignResponse, err error) {
+	return stow.PresignResponse{}, fmt.Errorf("unsupported")
 }
 
 func (c *container) CreateItem(name string) (stow.Item, io.WriteCloser, error) {

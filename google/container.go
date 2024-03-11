@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/flyteorg/stow"
 )
+
+const googleMetadataPrefix = "x-goog-meta-"
 
 type Container struct {
 	// Name is needed to retrieve items.
@@ -41,7 +44,7 @@ func (c *Container) Bucket() *storage.BucketHandle {
 }
 
 func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMethod, id string,
-	params stow.PresignRequestParams) (url string, err error) {
+	params stow.PresignRequestParams) (response stow.PresignResponse, err error) {
 	if len(params.HttpMethod) == 0 {
 		switch clientMethod {
 		case stow.ClientMethodGet:
@@ -51,16 +54,21 @@ func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMe
 		}
 	}
 
-	headers := make([]string, 0, len(params.Metadata))
-	for k, v := range params.Metadata {
-		headers = append(headers, fmt.Sprintf("x-goog-meta-%s: %s", k, v))
+	headers := make([]string, 0, 3)
+	requestHeaders := map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
+	if params.AddContentMD5Metadata {
+		headers = append(headers, fmt.Sprintf("%s%s: %s", googleMetadataPrefix, stow.FlyteContentMD5, params.ContentMD5))
+		requestHeaders[fmt.Sprintf("%s%s", googleMetadataPrefix, stow.FlyteContentMD5)] = params.ContentMD5
 	}
-	return c.Bucket().SignedURL(id, &storage.SignedURLOptions{
+
+	url, error := c.Bucket().SignedURL(id, &storage.SignedURLOptions{
 		Method:  params.HttpMethod,
 		Expires: time.Now().Add(params.ExpiresIn),
 		MD5:     params.ContentMD5,
 		Headers: headers,
 	})
+
+	return stow.PresignResponse{Url: url, RequiredRequestHeaders: requestHeaders}, error
 }
 
 // Item returns a stow.Item instance of a container based on the
