@@ -45,20 +45,20 @@ func (c *Container) Bucket() *storage.BucketHandle {
 
 func (c *Container) PreSignRequest(_ context.Context, clientMethod stow.ClientMethod, id string,
 	params stow.PresignRequestParams) (response stow.PresignResponse, err error) {
+	headers := make([]string, 0, 3)
+	var requestHeaders map[string]string
 	if len(params.HttpMethod) == 0 {
 		switch clientMethod {
 		case stow.ClientMethodGet:
 			params.HttpMethod = http.MethodGet
 		case stow.ClientMethodPut:
 			params.HttpMethod = http.MethodPut
+			requestHeaders = map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
+			if params.AddContentMD5Metadata {
+				headers = append(headers, fmt.Sprintf("%s%s: %s", googleMetadataPrefix, stow.FlyteContentMD5, params.ContentMD5))
+				requestHeaders[fmt.Sprintf("%s%s", googleMetadataPrefix, stow.FlyteContentMD5)] = params.ContentMD5
+			}
 		}
-	}
-
-	headers := make([]string, 0, 3)
-	requestHeaders := map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
-	if params.AddContentMD5Metadata {
-		headers = append(headers, fmt.Sprintf("%s%s: %s", googleMetadataPrefix, stow.FlyteContentMD5, params.ContentMD5))
-		requestHeaders[fmt.Sprintf("%s%s", googleMetadataPrefix, stow.FlyteContentMD5)] = params.ContentMD5
 	}
 
 	url, error := c.Bucket().SignedURL(id, &storage.SignedURLOptions{
