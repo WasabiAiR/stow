@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/cheekybits/is"
 	"github.com/flyteorg/stow"
@@ -311,7 +312,7 @@ func ContainerPreSignRequest(
 	assert.NoError(t, err)
 	client := &http.Client{}
 	content := []byte("stowtest")
-	req, err := http.NewRequest("PUT", u, bytes.NewReader(content))
+	req, err := http.NewRequest("PUT", u.Url, bytes.NewReader(content))
 	is.NoErr(err)
 	req.ContentLength = int64(len(content))
 	req.Header.Set("Content-Type", "text/plain")
@@ -334,7 +335,8 @@ func ContainerPreSignRequest(
 		},
 	)
 
-	req, err = http.NewRequest("GET", u, nil)
+	is.NoErr(err)
+	req, err = http.NewRequest("GET", u.Url, nil)
 	is.NoErr(err)
 	err = requestPreparer(stow.ClientMethodGet, req)
 	is.NoErr(err)
