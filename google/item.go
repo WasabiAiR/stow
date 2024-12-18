@@ -75,15 +75,21 @@ func (i *Item) StorageObject() *storage.ObjectAttrs {
 	return i.object
 }
 
-// prepUrl takes a MediaLink string and returns a url
-func prepUrl(str string) (*url.URL, error) {
-	u, err := url.Parse(str)
-	if err != nil {
-		return nil, err
+// prepUrl takes ObjectAttrs and returns a url constructed from the bucket and name.
+// We don't use attr.MediaLink because it is in the format
+// `google://storage.googleapis.com/download/storage/v1/b/some-bucket/...` instead of
+// `gs://some-bucket/...`.
+// Otherwise, when using stow to list a bucket `gs://...`, the resulting objects
+// `google://storage.googleapis.com/download/storage/v1/b/...` could not be found
+// using the same stow client.
+func prepUrl(attr *storage.ObjectAttrs) *url.URL {
+	u := url.URL{
+		Scheme: Protocol,
+		Host:   attr.Bucket,
+		Path:   attr.Name,
 	}
-	u.Scheme = "google"
 
 	// Discard the query string
 	u.RawQuery = ""
-	return u, nil
+	return &u
 }

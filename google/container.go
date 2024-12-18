@@ -150,10 +150,7 @@ func merge(metadata ...map[string]string) map[string]string {
 }
 
 func (c *Container) convertToStowItem(attr *storage.ObjectAttrs) (stow.Item, error) {
-	u, err := prepUrl(attr.MediaLink)
-	if err != nil {
-		return nil, err
-	}
+	u := prepUrl(attr)
 
 	mdParsed, err := parseMetadata(attr.Metadata)
 	if err != nil {

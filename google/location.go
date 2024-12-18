@@ -113,22 +113,34 @@ func (l *Location) RemoveContainer(id string) error {
 // ItemByURL retrieves a stow.Item by parsing the URL, in this
 // case an item is an object.
 func (l *Location) ItemByURL(url *url.URL) (stow.Item, error) {
-	if url.Scheme != Kind {
+	if url.Scheme == Kind {
+		// Url in the form: google://storage.googleapis.com/download/storage/v1/b/some-bucket
+		pieces := strings.SplitN(url.Path, "/", 8)
+
+		c, err := l.Container(pieces[5])
+		if err != nil {
+			return nil, stow.ErrNotFound
+		}
+
+		i, err := c.Item(pieces[7])
+		if err != nil {
+			return nil, stow.ErrNotFound
+		}
+		return i, nil
+
+	} else if url.Scheme == Protocol {
+		// Url in the form: gs://some-bucket
+		c, err := l.Container(url.Host)
+		if err != nil {
+			return nil, stow.ErrNotFound
+		}
+
+		i, err := c.Item(url.Path)
+		if err != nil {
+			return nil, stow.ErrNotFound
+		}
+		return i, nil
+	} else {
 		return nil, errors.New("not valid google storage URL")
 	}
-
-	// /download/storage/v1/b/stowtesttoudhratik/o/a_first%2Fthe%20item
-	pieces := strings.SplitN(url.Path, "/", 8)
-
-	c, err := l.Container(pieces[5])
-	if err != nil {
-		return nil, stow.ErrNotFound
-	}
-
-	i, err := c.Item(pieces[7])
-	if err != nil {
-		return nil, stow.ErrNotFound
-	}
-
-	return i, nil
 }

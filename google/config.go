@@ -15,6 +15,7 @@ import (
 
 // Kind represents the name of the location/storage type.
 const Kind = "google"
+const Protocol = "gs"
 
 const (
 	// The service account json blob
