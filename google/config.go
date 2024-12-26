@@ -10,11 +10,12 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 
-	"github.com/graymeta/stow"
+	"github.com/flyteorg/stow"
 )
 
 // Kind represents the name of the location/storage type.
 const Kind = "google"
+const Protocol = "gs"
 
 const (
 	// The service account json blob
