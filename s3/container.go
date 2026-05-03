@@ -60,7 +60,7 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	var containerItems []stow.Item
 
 	for _, object := range response.Contents {
-		if *object.StorageClass == "GLACIER" {
+		if object.StorageClass != nil && *object.StorageClass == "GLACIER" {
 			continue
 		}
 		etag := cleanEtag(*object.ETag) // Copy etag value and remove the strings.
