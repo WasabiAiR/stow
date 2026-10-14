@@ -192,15 +192,31 @@ func (c *container) PutContext(ctx context.Context, name string, r io.Reader, si
 		return nil, fmt.Errorf("unable to create or update item, preparing metadata: %w", err)
 	}
 
-	uploader := transfermanager.New(c.client, func(o *transfermanager.Options) {
-		o.RequestChecksumCalculation = c.client.Options().RequestChecksumCalculation
-	})
-	_, err = uploader.UploadObject(ctx, &transfermanager.UploadObjectInput{
-		Bucket:   new(c.name), // Required
-		Key:      new(name),   // Required
-		Body:     r,
-		Metadata: mdPrepped, // map[string]string
-	})
+	body, ok := r.(readerAtSeeker)
+	var offset, length int64
+	if ok {
+		offset, length, err = bodyRange(body)
+		if err != nil {
+			// A pipe, FIFO or stdin is an *os.File too, but it can't seek.
+			// Nothing has been read from it yet, so read it to the end
+			// instead. The transfer manager would seek it too, so hide that.
+			ok = false
+			r = struct{ io.Reader }{r}
+		}
+	}
+	if ok {
+		err = c.putStreamed(ctx, name, body, offset, length, mdPrepped)
+	} else {
+		uploader := transfermanager.New(c.client, func(o *transfermanager.Options) {
+			o.RequestChecksumCalculation = c.client.Options().RequestChecksumCalculation
+		})
+		_, err = uploader.UploadObject(ctx, &transfermanager.UploadObjectInput{
+			Bucket:   new(c.name), // Required
+			Key:      new(name),   // Required
+			Body:     r,
+			Metadata: mdPrepped, // map[string]string
+		})
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("PutObject, putting object: %w", err)
