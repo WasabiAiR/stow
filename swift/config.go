@@ -1,12 +1,13 @@
 package swift
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
 
-	"github.com/graymeta/stow"
-	"github.com/ncw/swift"
+	"github.com/flyteorg/stow"
+	"github.com/ncw/swift/v2"
 )
 
 // Config key constants.
@@ -87,7 +88,7 @@ func newSwiftClient(cfg stow.Config) (*swift.Connection, error) {
 		// Add Default transport
 		Transport: http.DefaultTransport,
 	}
-	err := client.Authenticate()
+	err := client.Authenticate(context.Background())
 	if err != nil {
 		return nil, errors.New("Unable to authenticate")
 	}

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/graymeta/stow/local"
+	"github.com/flyteorg/stow/local"
 )
 
 type item struct {
@@ -16,7 +16,7 @@ type item struct {
 	path      string
 	size      int64
 	modTime   time.Time
-	md        map[string]interface{}
+	md        map[string]any
 }
 
 // ID returns a string value that represents the name of a file.
@@ -70,12 +70,12 @@ func (i *item) ETag() (string, error) {
 }
 
 // Metadata returns some item level metadata about the item.
-func (i *item) Metadata() (map[string]interface{}, error) {
+func (i *item) Metadata() (map[string]any, error) {
 	return i.md, nil
 }
 
-func getFileMetadata(info os.FileInfo) map[string]interface{} {
-	return map[string]interface{}{
+func getFileMetadata(info os.FileInfo) map[string]any {
+	return map[string]any{
 		// Reuse the constants from the local package for consistency.
 		local.MetadataIsDir: info.IsDir(),
 		local.MetadataName:  info.Name(),

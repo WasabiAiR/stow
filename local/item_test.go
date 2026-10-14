@@ -1,7 +1,7 @@
 package local_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/local"
 )
 
 func TestItemReader(t *testing.T) {
@@ -39,7 +39,7 @@ func TestItemReader(t *testing.T) {
 	rc, err := item1.Open()
 	is.NoErr(err)
 	defer rc.Close()
-	b, err := ioutil.ReadAll(rc)
+	b, err := io.ReadAll(rc)
 	is.NoErr(err)
 	is.Equal("3.1", string(b))
 
@@ -137,8 +137,8 @@ func TestItemFromURL(t *testing.T) {
 	is.NoErr(err)
 	defer teardown()
 	os.MkdirAll(filepath.Join(testDir, "a", "b"), 0777)
-	ioutil.WriteFile(filepath.Join(testDir, "a", "f2"), []byte("abc"), 0666)
-	ioutil.WriteFile(filepath.Join(testDir, "a", "b", "f3"), []byte("abc"), 0666)
+	os.WriteFile(filepath.Join(testDir, "a", "f2"), []byte("abc"), 0666)
+	os.WriteFile(filepath.Join(testDir, "a", "b", "f3"), []byte("abc"), 0666)
 
 	cfg := stow.ConfigMap{"path": testDir}
 	l, err := stow.Dial(local.Kind, cfg)

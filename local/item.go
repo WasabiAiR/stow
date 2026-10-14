@@ -32,7 +32,7 @@ type item struct {
 	infoOnce      sync.Once // protects info
 	info          os.FileInfo
 	infoErr       error
-	metadata      map[string]interface{}
+	metadata      map[string]any
 }
 
 func (i *item) ID() string {
@@ -98,7 +98,7 @@ func (i *item) setMetadata(info os.FileInfo) {
 }
 
 // Metadata gets stat information for the file.
-func (i *item) Metadata() (map[string]interface{}, error) {
+func (i *item) Metadata() (map[string]any, error) {
 	err := i.ensureInfo()
 	if err != nil {
 		return nil, err

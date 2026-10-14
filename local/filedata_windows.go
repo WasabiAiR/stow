@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
+func getFileMetadata(path string, info os.FileInfo) map[string]any {
 	hardlink, symlink, linkTarget := false, false, ""
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		symlink = true
 		linkTarget, _ = os.Readlink(path)
 	}
-	m := map[string]interface{}{
+	m := map[string]any{
 		MetadataPath:       filepath.Clean(path),
 		MetadataIsDir:      info.IsDir(),
 		MetadataDir:        filepath.Dir(path),

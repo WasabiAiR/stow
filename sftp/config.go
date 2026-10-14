@@ -1,12 +1,12 @@
 package sftp
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 
-	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/flyteorg/stow"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
@@ -92,12 +92,12 @@ func parseConfig(config stow.Config) (*conf, error) {
 		if passphrase != "" {
 			signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(privKey), []byte(passphrase))
 			if err != nil {
-				return nil, errors.Wrap(err, "parsing key with passphrase")
+				return nil, fmt.Errorf("parsing key with passphrase: %w", err)
 			}
 		} else {
 			signer, err = ssh.ParsePrivateKey([]byte(privKey))
 			if err != nil {
-				return nil, errors.Wrap(err, "parsing key")
+				return nil, fmt.Errorf("parsing key: %w", err)
 			}
 		}
 		c.sshConfig.Auth = append(c.sshConfig.Auth, ssh.PublicKeys(signer))
@@ -121,7 +121,7 @@ func parseConfig(config stow.Config) (*conf, error) {
 	if hostKey, ok := config.Config(ConfigHostPublicKey); ok && hostKey != "" {
 		_, _, parsedHostKey, _, _, err := ssh.ParseKnownHosts([]byte(hostKey))
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing host key")
+			return nil, fmt.Errorf("parsing host key: %w", err)
 		}
 
 		c.sshConfig.HostKeyCallback = ssh.FixedHostKey(parsedHostKey)
@@ -153,7 +153,7 @@ func init() {
 		// Connect to the remote server and perform the SSH handshake.
 		loc.sshClient, err = ssh.Dial("tcp", c.Host(), &c.sshConfig)
 		if err != nil {
-			return nil, errors.Wrap(err, "ssh connection")
+			return nil, fmt.Errorf("ssh connection: %w", err)
 		}
 
 		// Open an SFTP session over an existing ssh connection.
@@ -162,7 +162,7 @@ func init() {
 			// close the ssh connection if the sftp connection fails. This avoids leaking
 			// the ssh connection.
 			loc.Close()
-			return nil, errors.Wrap(err, "sftp connection")
+			return nil, fmt.Errorf("sftp connection: %w", err)
 		}
 
 		return loc, nil

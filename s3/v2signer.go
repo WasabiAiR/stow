@@ -23,42 +23,19 @@ THE SOFTWARE.
 package s3
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"fmt"
-	"log"
 	"net/http"
-	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/corehandlers"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 )
-
-const (
-	signatureVersion = "2"
-	signatureMethod  = "HmacSHA1"
-	timeFormat       = "2006-01-02T15:04:05Z"
-)
-
-type signer struct {
-	// Values that must be populated from the request
-	Request     *http.Request
-	Time        time.Time
-	Credentials *credentials.Credentials
-	Debug       aws.LogLevelType
-	Logger      aws.Logger
-
-	Query        url.Values
-	stringToSign string
-	signature    string
-}
 
 var s3ParamsToSign = map[string]bool{
 	"acl":                          true,
@@ -67,6 +44,7 @@ var s3ParamsToSign = map[string]bool{
 	"notification":                 true,
 	"partNumber":                   true,
 	"policy":                       true,
+	"tagging":                      true,
 	"requestPayment":               true,
 	"torrent":                      true,
 	"uploadId":                     true,
@@ -84,105 +62,72 @@ var s3ParamsToSign = map[string]bool{
 	"delete":                       true,
 }
 
-func setv2Handlers(svc *s3.S3) {
-	svc.Handlers.Build.PushBack(func(r *request.Request) {
-		parsedURL, err := url.Parse(r.HTTPRequest.URL.String())
-		if err != nil {
-			log.Fatal("Failed to parse URL", err)
-		}
-		r.HTTPRequest.URL.Opaque = parsedURL.Path
-	})
+// v2Signer signs requests with signature version 2. The SDK only knows
+// signature version 4, so it is plugged in as the client's version 4 signer.
+type v2Signer struct{}
 
-	svc.Handlers.Sign.Clear()
-	svc.Handlers.Sign.PushBack(Sign)
-	svc.Handlers.Sign.PushBackNamed(corehandlers.BuildContentLengthHandler)
+// SignHTTP signs the request with an Authorization header.
+func (v2Signer) SignHTTP(_ context.Context, credentials aws.Credentials, r *http.Request, _ string, _ string, _ string,
+	signingTime time.Time, _ ...func(*v4.SignerOptions)) error {
+	r.Header["Host"] = []string{r.URL.Host}
+	r.Header["x-amz-date"] = []string{signingTime.In(time.UTC).Format(time.RFC1123)}
+
+	signature := signV2(credentials, r, "")
+	r.Header["Authorization"] = []string{"AWS " + credentials.AccessKeyID + ":" + signature}
+	return nil
 }
 
-// Sign requests with signature version 2.
-//
-// Will sign the requests with the service config's Credentials object
-// Signing is skipped if the credentials is the credentials.AnonymousCredentials
-// object.
-func Sign(req *request.Request) {
-	// If the request does not need to be signed ignore the signing of the
-	// request if the AnonymousCredentials object is used.
-	if req.Config.Credentials == credentials.AnonymousCredentials {
-		return
-	}
-
-	v2 := signer{
-		Request:     req.HTTPRequest,
-		Time:        req.Time,
-		Credentials: req.Config.Credentials,
-		Debug:       req.Config.LogLevel.Value(),
-		Logger:      req.Config.Logger,
-	}
-
-	req.Error = v2.Sign()
-
-	if req.Error != nil {
-		return
-	}
-}
-
-func (v2 *signer) Sign() error {
-	credValue, err := v2.Credentials.Get()
+// PresignHTTP signs the request with query parameters. The SDK passes the
+// lifetime of the URL in the version 4 X-Amz-Expires parameter.
+func (v2Signer) PresignHTTP(_ context.Context, credentials aws.Credentials, r *http.Request, _ string, _ string, _ string,
+	signingTime time.Time, _ ...func(*v4.SignerOptions)) (string, http.Header, error) {
+	params := r.URL.Query()
+	lifetime, err := strconv.ParseInt(params.Get("X-Amz-Expires"), 10, 64)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
-	accessKey := credValue.AccessKeyID
+	expires := strconv.FormatInt(signingTime.Unix()+lifetime, 10)
+
+	params.Del("X-Amz-Expires")
+	params.Set("AWSAccessKeyId", credentials.AccessKeyID)
+	params.Set("Expires", expires)
+	r.URL.RawQuery = params.Encode()
+
+	params.Set("Signature", signV2(credentials, r, expires))
+	r.URL.RawQuery = params.Encode()
+	return r.URL.String(), r.Header, nil
+}
+
+// signV2 returns the version 2 signature of the request. A presigned request
+// is signed with its expiry time instead of its date.
+func signV2(credentials aws.Credentials, r *http.Request, expires string) string {
 	var (
-		md5, ctype, date, xamz string
-		xamzDate               bool
-		sarray                 []string
+		md5, ctype, xamz string
+		sarray           []string
 	)
+	date := expires
 
-	headers := v2.Request.Header
-	params := v2.Request.URL.Query()
-	parsedURL, err := url.Parse(v2.Request.URL.String())
-	if err != nil {
-		return err
-	}
-	host, canonicalPath := parsedURL.Host, parsedURL.Path
-	v2.Request.Header["Host"] = []string{host}
-	v2.Request.Header["x-amz-date"] = []string{v2.Time.In(time.UTC).Format(time.RFC1123)}
-
-	for k, v := range headers {
+	for k, v := range r.Header {
 		k = strings.ToLower(k)
 		switch k {
 		case "content-md5":
 			md5 = v[0]
 		case "content-type":
 			ctype = v[0]
-		case "date":
-			if !xamzDate {
-				date = v[0]
-			}
 		default:
 			if strings.HasPrefix(k, "x-amz-") {
-				vall := strings.Join(v, ",")
-				sarray = append(sarray, k+":"+vall)
-				if k == "x-amz-date" {
-					xamzDate = true
-					date = ""
-				}
+				sarray = append(sarray, k+":"+strings.Join(v, ","))
 			}
 		}
 	}
 	if len(sarray) > 0 {
-		sort.StringSlice(sarray).Sort()
+		sort.Strings(sarray)
 		xamz = strings.Join(sarray, "\n") + "\n"
 	}
 
-	expires := false
-	if v, ok := params["Expires"]; ok {
-		expires = true
-		date = v[0]
-		params["AWSAccessKeyId"] = []string{accessKey}
-	}
-
+	canonicalPath := r.URL.EscapedPath()
 	sarray = sarray[0:0]
-	for k, v := range params {
+	for k, v := range r.URL.Query() {
 		if s3ParamsToSign[k] {
 			for _, vi := range v {
 				if vi == "" {
@@ -194,41 +139,18 @@ func (v2 *signer) Sign() error {
 		}
 	}
 	if len(sarray) > 0 {
-		sort.StringSlice(sarray).Sort()
+		sort.Strings(sarray)
 		canonicalPath = canonicalPath + "?" + strings.Join(sarray, "&")
 	}
 
-	v2.stringToSign = strings.Join([]string{
-		v2.Request.Method,
+	stringToSign := strings.Join([]string{
+		r.Method,
 		md5,
 		ctype,
 		date,
 		xamz + canonicalPath,
 	}, "\n")
-	hash := hmac.New(sha1.New, []byte(credValue.SecretAccessKey))
-	hash.Write([]byte(v2.stringToSign))
-	v2.signature = base64.StdEncoding.EncodeToString(hash.Sum(nil))
-
-	if expires {
-		params["Signature"] = []string{string(v2.signature)}
-	} else {
-		headers["Authorization"] = []string{"AWS " + accessKey + ":" + string(v2.signature)}
-	}
-
-	if v2.Debug.Matches(aws.LogDebugWithSigning) {
-		v2.logSigningInfo()
-	}
-	return nil
-}
-
-const logSignInfoMsg = `DEBUG: Request Signature:
----[ STRING TO SIGN ]--------------------------------
-%s
----[ SIGNATURE ]-------------------------------------
-%s
------------------------------------------------------`
-
-func (v2 *signer) logSigningInfo() {
-	msg := fmt.Sprintf(logSignInfoMsg, v2.stringToSign, v2.signature)
-	v2.Logger.Log(msg)
+	hash := hmac.New(sha1.New, []byte(credentials.SecretAccessKey))
+	hash.Write([]byte(stringToSign))
+	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
 }

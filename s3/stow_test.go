@@ -11,12 +11,14 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 )
 
 func TestStow(t *testing.T) {
@@ -35,6 +37,36 @@ func TestStow(t *testing.T) {
 	}
 
 	test.All(t, "s3", config)
+}
+
+func TestPreSignedURL(t *testing.T) {
+	is := is.New(t)
+	accessKeyId := os.Getenv("S3ACCESSKEYID")
+	secretKey := os.Getenv("S3SECRETKEY")
+	region := os.Getenv("S3REGION")
+
+	if accessKeyId == "" || secretKey == "" || region == "" {
+		t.Skip("skipping test because missing one or more of S3ACCESSKEYID S3SECRETKEY S3REGION")
+	}
+
+	config := stow.ConfigMap{
+		"access_key_id": accessKeyId,
+		"secret_key":    secretKey,
+		"region":        region,
+	}
+
+	location, err := stow.Dial("s3", config)
+	is.NoErr(err)
+
+	container, err := location.Container("flyte-demo")
+	ctx := t.Context()
+	res, err := container.PreSignRequest(ctx, stow.ClientMethodPut, "blah/bloh/fileon", stow.PresignRequestParams{
+		ExpiresIn: time.Hour,
+	})
+
+	is.NoErr(err)
+	t.Log(res)
+	assert.NotEmpty(t, res)
 }
 
 func TestEtagCleanup(t *testing.T) {
@@ -61,15 +93,14 @@ func TestEtagCleanup(t *testing.T) {
 func TestPrepMetadataSuccess(t *testing.T) {
 	is := is.New(t)
 
-	m := make(map[string]*string)
-	m["one"] = aws.String("two")
-	m["3"] = aws.String("4")
-	m["ninety-nine"] = aws.String("100")
+	m := make(map[string]string)
+	m["one"] = "two"
+	m["3"] = "4"
+	m["ninety-nine"] = "100"
 
-	m2 := make(map[string]interface{})
+	m2 := make(map[string]any)
 	for key, value := range m {
-		str := *value
-		m2[key] = str
+		m2[key] = value
 	}
 
 	returnedMap, err := prepMetadata(m2)
@@ -83,7 +114,7 @@ func TestPrepMetadataSuccess(t *testing.T) {
 func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 	is := is.New(t)
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["float"] = 8.9
 	m["number"] = 9
 
@@ -100,6 +131,13 @@ func TestInvalidAuthtype(t *testing.T) {
 	_, err := stow.Dial("s3", config)
 	is.Err(err)
 	is.True(strings.Contains(err.Error(), "invalid auth_type"))
+}
+
+func TestEndpointURL(t *testing.T) {
+	assert.Equal(t, "https://minio:9000", endpointURL("minio:9000", false))
+	assert.Equal(t, "http://minio:9000", endpointURL("minio:9000", true))
+	assert.Equal(t, "http://minio:9000", endpointURL("http://minio:9000", false))
+	assert.Equal(t, "https://minio:9000", endpointURL("https://minio:9000", true))
 }
 
 func TestV2SigningEnabled(t *testing.T) {
@@ -184,7 +222,7 @@ func TestWillRequestRegionWhenConfigured(t *testing.T) {
 		is.NoErr(err)
 		is.Equal(awsLocationQuery.Encode(), r.URL.RawQuery)
 		b, _ := json.Marshal(s3.GetBucketLocationOutput{
-			LocationConstraint: aws.String("whatever"),
+			LocationConstraint: "whatever",
 		})
 		w.Write(b)
 		w.WriteHeader(http.StatusOK)

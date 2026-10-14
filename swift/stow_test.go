@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 )
 
 func TestStow(t *testing.T) {
@@ -38,7 +38,7 @@ func TestPrepMetadataSuccess(t *testing.T) {
 	m["3"] = "4"
 	m["ninety-nine"] = "100"
 
-	m2 := make(map[string]interface{})
+	m2 := make(map[string]any)
 	for key, value := range m {
 		m2[key] = value
 	}
@@ -60,7 +60,7 @@ func TestPrepMetadataSuccess(t *testing.T) {
 func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 	is := is.New(t)
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["float"] = 8.9
 	m["number"] = 9
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/local"
 )
 
 func TestContainers(t *testing.T) {
@@ -198,7 +198,7 @@ func TestContainersPaging(t *testing.T) {
 	is.NoErr(err)
 	is.OK(l)
 
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		_, err := l.CreateContainer(fmt.Sprintf("container-%02d", i))
 		is.NoErr(err)
 	}

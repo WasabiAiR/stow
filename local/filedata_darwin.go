@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
+func getFileMetadata(path string, info os.FileInfo) map[string]any {
 
 	hardlink := false
 	symlink := false
 	var linkTarget string
-	var inodedata interface{}
+	var inodedata any
 	if inode, err := getInodeinfo(info); err != nil {
-		inodedata = map[string]interface{}{"error": err.Error()}
+		inodedata = map[string]any{"error": err.Error()}
 	} else {
 		inodedata = inode
 		if inode.NLink > 1 {
@@ -27,7 +27,7 @@ func getFileMetadata(path string, info os.FileInfo) map[string]interface{} {
 		symlink = true
 		linkTarget, _ = os.Readlink(path)
 	}
-	m := map[string]interface{}{
+	m := map[string]any{
 		MetadataPath:       filepath.Clean(path),
 		MetadataIsDir:      info.IsDir(),
 		MetadataDir:        filepath.Dir(path),

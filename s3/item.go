@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -8,10 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/flyteorg/stow"
 )
 
 // The item struct contains an id (also the name of the file/S3 Object/Item),
@@ -25,25 +25,32 @@ type item struct {
 	// Container information is required by a few methods.
 	container *container
 	// A client is needed to make requests.
-	client *s3.S3
+	client *s3.Client
 	// properties represent the characteristics of the file. Name, Etag, etc.
 	properties properties
-	infoOnce   sync.Once
-	infoErr    error
-	tags       map[string]interface{}
-	tagsOnce   sync.Once
-	tagsErr    error
+	infoMu     sync.Mutex
+	tags       map[string]any
+	tagsMu     sync.Mutex
 }
 
 type properties struct {
-	ETag         *string    `type:"string"`
-	Key          *string    `min:"1" type:"string"`
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
-	Owner        *s3.Owner  `type:"structure"`
-	Size         *int64     `type:"integer"`
-	StorageClass *string    `type:"string" enum:"ObjectStorageClass"`
-	Metadata     map[string]interface{}
+	ETag         *string      `type:"string"`
+	Key          *string      `min:"1" type:"string"`
+	LastModified *time.Time   `type:"timestamp" timestampFormat:"iso8601"`
+	Owner        *types.Owner `type:"structure"`
+	Size         *int64       `type:"integer"`
+	StorageClass *string      `type:"string" enum:"ObjectStorageClass"`
+	Metadata     map[string]any
 }
+
+var (
+	_ stow.Item              = (*item)(nil)
+	_ stow.ContextItem       = (*item)(nil)
+	_ stow.ItemRanger        = (*item)(nil)
+	_ stow.ContextItemRanger = (*item)(nil)
+	_ stow.Taggable          = (*item)(nil)
+	_ stow.ContextTaggable   = (*item)(nil)
+)
 
 // ID returns a string value that represents the name of a file.
 func (i *item) ID() string {
@@ -83,14 +90,19 @@ func (i *item) URL() *url.URL {
 // and path of the file within the container. This response includes the body of
 // resource which is returned along with an error.
 func (i *item) Open() (io.ReadCloser, error) {
+	return i.OpenContext(context.Background())
+}
+
+// OpenContext is Open with a context.
+func (i *item) OpenContext(ctx context.Context) (io.ReadCloser, error) {
 	params := &s3.GetObjectInput{
-		Bucket: aws.String(i.container.Name()),
-		Key:    aws.String(i.ID()),
+		Bucket: new(i.container.Name()),
+		Key:    new(i.ID()),
 	}
 
-	response, err := i.client.GetObject(params)
+	response, err := i.client.GetObject(ctx, params)
 	if err != nil {
-		return nil, errors.Wrap(err, "Open, getting the object")
+		return nil, fmt.Errorf("Open, getting the object: %w", err)
 	}
 	return response.Body, nil
 }
@@ -101,102 +113,111 @@ func (i *item) Open() (io.ReadCloser, error) {
 // does return the specified field. This more detailed information is kept so that we
 // won't have to do it again.
 func (i *item) LastMod() (time.Time, error) {
-	err := i.ensureInfo()
+	return i.LastModContext(context.Background())
+}
+
+// LastModContext is LastMod with a context.
+func (i *item) LastModContext(ctx context.Context) (time.Time, error) {
+	err := i.ensureInfo(ctx)
 	if err != nil {
-		return time.Time{}, errors.Wrap(err, "retrieving Last Modified information of Item")
+		return time.Time{}, fmt.Errorf("retrieving Last Modified information of Item: %w", err)
 	}
 	return *i.properties.LastModified, nil
 }
 
 // ETag returns the ETag value from the properies field of an item.
 func (i *item) ETag() (string, error) {
+	return i.ETagContext(context.Background())
+}
+
+// ETagContext is ETag with a context.
+func (i *item) ETagContext(_ context.Context) (string, error) {
 	return *(i.properties.ETag), nil
 }
 
-func (i *item) Metadata() (map[string]interface{}, error) {
-	err := i.ensureInfo()
+func (i *item) Metadata() (map[string]any, error) {
+	return i.MetadataContext(context.Background())
+}
+
+// MetadataContext is Metadata with a context.
+func (i *item) MetadataContext(ctx context.Context) (map[string]any, error) {
+	err := i.ensureInfo(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving metadata")
+		return nil, fmt.Errorf("retrieving metadata: %w", err)
 	}
 	return i.properties.Metadata, nil
 }
 
-func (i *item) ensureInfo() error {
-	if i.properties.Metadata == nil || i.properties.LastModified == nil {
-		i.infoOnce.Do(func() {
-			// Retrieve Item information
-			itemInfo, infoErr := i.getInfo()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
+func (i *item) ensureInfo(ctx context.Context) error {
+	i.infoMu.Lock()
+	defer i.infoMu.Unlock()
 
-			// Set metadata field
-			i.properties.Metadata, infoErr = itemInfo.Metadata()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
-
-			// Set LastModified field
-			lmValue, infoErr := itemInfo.LastMod()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
-			i.properties.LastModified = &lmValue
-		})
+	if i.properties.Metadata != nil && i.properties.LastModified != nil {
+		return nil
 	}
-	return i.infoErr
-}
 
-func (i *item) getInfo() (stow.Item, error) {
-	itemInfo, err := i.container.getItem(i.ID())
+	// Retrieve Item information
+	itemInfo, err := i.container.getItem(ctx, i.ID())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return itemInfo, nil
+	i.properties.Metadata = itemInfo.properties.Metadata
+	i.properties.LastModified = itemInfo.properties.LastModified
+	return nil
 }
 
 // Tags returns a map of tags on an Item
-func (i *item) Tags() (map[string]interface{}, error) {
-	i.tagsOnce.Do(func() {
-		params := &s3.GetObjectTaggingInput{
-			Bucket: aws.String(i.container.name),
-			Key:    aws.String(i.ID()),
-		}
+func (i *item) Tags() (map[string]any, error) {
+	return i.TagsContext(context.Background())
+}
 
-		res, err := i.client.GetObjectTagging(params)
-		if err != nil {
-			if strings.Contains(err.Error(), "NoSuchKey") {
-				i.tagsErr = stow.ErrNotFound
-				return
-			}
-			i.tagsErr = errors.Wrap(err, "getObjectTagging")
-			return
-		}
+// TagsContext is Tags with a context.
+func (i *item) TagsContext(ctx context.Context) (map[string]any, error) {
+	i.tagsMu.Lock()
+	defer i.tagsMu.Unlock()
 
-		i.tags = make(map[string]interface{})
-		for _, t := range res.TagSet {
-			i.tags[*t.Key] = *t.Value
-		}
-	})
+	if i.tags != nil {
+		return i.tags, nil
+	}
 
-	return i.tags, i.tagsErr
+	params := &s3.GetObjectTaggingInput{
+		Bucket: new(i.container.name),
+		Key:    new(i.ID()),
+	}
+
+	res, err := i.client.GetObjectTagging(ctx, params)
+	if err != nil {
+		if strings.Contains(err.Error(), "NoSuchKey") {
+			return nil, stow.ErrNotFound
+		}
+		return nil, fmt.Errorf("getObjectTagging: %w", err)
+	}
+
+	tags := make(map[string]any)
+	for _, t := range res.TagSet {
+		tags[*t.Key] = *t.Value
+	}
+	i.tags = tags
+	return i.tags, nil
 }
 
 // OpenRange opens the item for reading starting at byte start and ending
 // at byte end.
 func (i *item) OpenRange(start, end uint64) (io.ReadCloser, error) {
+	return i.OpenRangeContext(context.Background(), start, end)
+}
+
+// OpenRangeContext is OpenRange with a context.
+func (i *item) OpenRangeContext(ctx context.Context, start, end uint64) (io.ReadCloser, error) {
 	params := &s3.GetObjectInput{
-		Bucket: aws.String(i.container.Name()),
-		Key:    aws.String(i.ID()),
-		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", start, end)),
+		Bucket: new(i.container.Name()),
+		Key:    new(i.ID()),
+		Range:  new(fmt.Sprintf("bytes=%d-%d", start, end)),
 	}
 
-	response, err := i.client.GetObject(params)
+	response, err := i.client.GetObject(ctx, params)
 	if err != nil {
-		return nil, errors.Wrap(err, "Open, getting the object")
+		return nil, fmt.Errorf("Open, getting the object: %w", err)
 	}
 	return response.Body, nil
 }

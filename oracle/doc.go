@@ -3,7 +3,7 @@ Package oracle provides an absraction of the Oracle Storage Cloud Service. In th
 
 Oracle Storage Cloud Service is strictly a blob storage service, therefore nested directories do not exist.
 
-Usage and Credentials
+# Usage and Credentials
 
 The most important detail in accessing the service is the authorization endpoint of the Service Instance. This URL can be found in the Overview page of the Instance, and is the value which corresponds to the "Service REST endpoint" field.
 
@@ -15,13 +15,13 @@ stow.Dial requires both a string value of the particular Stow Location Kind ("or
 - a key of oracle.ConfigPassword with a value of the account pasword
 - a key of oracle.AuthEndpoint with a value of the authorization endpoint
 
-Location
+# Location
 
 Methods of oracle.location allow the retrieval of an Oracle Cloud Service Storage Instance (Container or Containers). A stow.Item representation of an Oracle Object can also be retrieved based on the Object's URL (ItemByURL).
 
 Additional oracle.location methods provide capabilities to create and remove Storage Service Instances (CreateContainer or RemoveContainer, respectively).
 
-Container
+# Container
 
 Methods of an oracle.container allow the retrieval of a Storage Service Instance's:
 
@@ -33,7 +33,7 @@ Additional methods of an oracle.container allow Stow to:
 - remove an Object (RemoveItem)
 - update or create an Object (Put)
 
-Item
+# Item
 
 Methods of oracle.Item allow the retrieval of a Storage Service Instance's:
 - name (ID or name)

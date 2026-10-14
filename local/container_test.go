@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/local"
 )
 
 func TestItemsPaging(t *testing.T) {
@@ -27,7 +27,7 @@ func TestItemsPaging(t *testing.T) {
 	container := containers[1]
 
 	// make 25 items
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		_, err := container.Put(fmt.Sprintf("item-%02d", i), strings.NewReader(`item`), 4, nil)
 		is.NoErr(err)
 	}

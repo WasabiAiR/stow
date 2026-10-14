@@ -1,15 +1,14 @@
 package sftp
 
 import (
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,7 +24,7 @@ func TestStow(t *testing.T) {
 		t.Skip("skipping tests because environment isn't configured")
 	}
 
-	b, err := ioutil.ReadFile(os.Getenv("SFTP_PRIVATE_KEY_FILE"))
+	b, err := os.ReadFile(os.Getenv("SFTP_PRIVATE_KEY_FILE"))
 	require.NoError(t, err)
 	config[ConfigPrivateKey] = string(b)
 	config[ConfigPrivateKeyPassphrase] = os.Getenv("SFTP_PRIVATE_KEY_PASSPHRASE")

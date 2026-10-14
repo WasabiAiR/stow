@@ -1,7 +1,9 @@
 package stow
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/url"
 	"sync"
@@ -45,6 +47,21 @@ var (
 	NoPrefix = ""
 )
 
+// HttpMethod defines an alias type for string to represent http Methods. These are defined in RFC 7231 section 4.3.
+type HttpMethod = string
+
+//go:generate enumer --type=ClientMethod --trimprefix=ClientMethod -json
+
+// ClientMethod defines common client methods across storage providers
+type ClientMethod int
+
+const (
+	ClientMethodGet ClientMethod = iota
+	ClientMethodPut
+)
+
+const FlyteContentMD5 = "flyteContentMD5"
+
 // IsCursorEnd checks whether the cursor indicates there are no
 // more items or not.
 func IsCursorEnd(cursor string) bool {
@@ -77,6 +94,19 @@ type Location interface {
 	ItemByURL(url *url.URL) (Item, error)
 }
 
+type PresignRequestParams struct {
+	ExpiresIn             time.Duration
+	ContentMD5            string
+	ExtraParams           map[string]any
+	HttpMethod            HttpMethod
+	AddContentMD5Metadata bool
+}
+
+type PresignResponse struct {
+	Url                    string
+	RequiredRequestHeaders map[string]string
+}
+
 // Container represents a container.
 type Container interface {
 	// ID gets a unique string describing this Container.
@@ -88,7 +118,7 @@ type Container interface {
 	// Items gets a page of items with the specified
 	// prefix for this Container.
 	// The specified cursor is a pointer to the start of
-	// the items to get. It it obtained from a previous
+	// the items to get. It should be obtained from a previous
 	// call to this method, or should be CursorStart for the
 	// first page.
 	// count is the number of items to return per page.
@@ -99,7 +129,9 @@ type Container interface {
 	RemoveItem(id string) error
 	// Put creates a new Item with the specified name, and contents
 	// read from the reader.
-	Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (Item, error)
+	Put(name string, r io.Reader, size int64, metadata map[string]any) (Item, error)
+	// PreSignRequest generates a pre-signed url for the given id (key after bucket/container) and a given clientMethod.
+	PreSignRequest(ctx context.Context, clientMethod ClientMethod, id string, params PresignRequestParams) (response PresignResponse, err error)
 }
 
 // Item represents an item inside a Container.
@@ -128,7 +160,7 @@ type Item interface {
 	LastMod() (time.Time, error)
 	// Metadata gets a map of key/values that belong
 	// to this Item.
-	Metadata() (map[string]interface{}, error)
+	Metadata() (map[string]any, error)
 }
 
 // ItemRanger represents an item that can be partially downloaded.
@@ -138,10 +170,54 @@ type ItemRanger interface {
 	OpenRange(start, end uint64) (io.ReadCloser, error)
 }
 
+// Copier is implemented by containers that can copy an item into themselves.
+type Copier interface {
+	// Copy copies src into the container as an item called name, replacing
+	// any existing item, and returns the new item. When src comes from the
+	// same kind of location and the backend supports it, the copy is made
+	// on the server side and the content never passes through the caller.
+	// Otherwise the content is streamed from src to the container.
+	Copy(ctx context.Context, src Item, name string) (Item, error)
+}
+
+// StreamCopy copies src into dst as an item called name by streaming the
+// content through the caller. It is what Copier implementations fall back
+// to when the backend cannot copy src on the server side.
+func StreamCopy(ctx context.Context, dst Container, src Item, name string) (Item, error) {
+	if src == nil {
+		return nil, errors.New("copy: nil source item")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	size, err := src.Size()
+	if err != nil {
+		return nil, fmt.Errorf("copy, getting the source size: %w", err)
+	}
+	metadata, err := MetadataContext(ctx, src)
+	if err != nil {
+		return nil, fmt.Errorf("copy, getting the source metadata: %w", err)
+	}
+	r, err := OpenContext(ctx, src)
+	if err != nil {
+		return nil, fmt.Errorf("copy, opening the source: %w", err)
+	}
+
+	item, err := PutContext(ctx, dst, name, r, size, metadata)
+	if closeErr := r.Close(); err == nil && closeErr != nil {
+		err = fmt.Errorf("copy, closing the source: %w", closeErr)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
 // Taggable represents a taggable Item
 type Taggable interface {
 	// Tags returns a list of tags that belong to a given Item
-	Tags() (map[string]interface{}, error)
+	Tags() (map[string]any, error)
 }
 
 // Config represents key/value configuration.

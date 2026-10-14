@@ -1,13 +1,14 @@
 package swift
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/graymeta/stow"
-	"github.com/ncw/swift"
+	"github.com/flyteorg/stow"
+	"github.com/ncw/swift/v2"
 )
 
 type container struct {
@@ -15,7 +16,10 @@ type container struct {
 	client *swift.Connection
 }
 
-var _ stow.Container = (*container)(nil)
+var (
+	_ stow.Container        = (*container)(nil)
+	_ stow.ContextContainer = (*container)(nil)
+)
 
 func (c *container) ID() string {
 	return c.id
@@ -25,17 +29,32 @@ func (c *container) Name() string {
 	return c.id
 }
 
+func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
+	_ stow.PresignRequestParams) (response stow.PresignResponse, err error) {
+	return stow.PresignResponse{}, fmt.Errorf("unsupported")
+}
+
 func (c *container) Item(id string) (stow.Item, error) {
-	return c.getItem(id)
+	return c.ItemContext(context.Background(), id)
+}
+
+// ItemContext is Item with a context.
+func (c *container) ItemContext(ctx context.Context, id string) (stow.Item, error) {
+	return c.getItem(ctx, id)
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
+	return c.ItemsContext(context.Background(), prefix, cursor, count)
+}
+
+// ItemsContext is Items with a context.
+func (c *container) ItemsContext(ctx context.Context, prefix, cursor string, count int) ([]stow.Item, string, error) {
 	params := &swift.ObjectsOpts{
 		Limit:  count,
 		Marker: cursor,
 		Prefix: prefix,
 	}
-	objects, err := c.client.Objects(c.id, params)
+	objects, err := c.client.Objects(ctx, c.id, params)
 	if err != nil {
 		return nil, "", err
 	}
@@ -58,20 +77,25 @@ func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string
 	return items, marker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]any) (stow.Item, error) {
+	return c.PutContext(context.Background(), name, r, size, metadata)
+}
+
+// PutContext is Put with a context.
+func (c *container) PutContext(ctx context.Context, name string, r io.Reader, size int64, metadata map[string]any) (stow.Item, error) {
 	mdPrepped, err := prepMetadata(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
+		return nil, fmt.Errorf("unable to create or update Item, preparing metadata: %w", err)
 	}
 
-	headers, err := c.client.ObjectPut(c.id, name, r, false, "", "", mdPrepped)
+	headers, err := c.client.ObjectPut(ctx, c.id, name, r, false, "", "", mdPrepped)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item")
+		return nil, fmt.Errorf("unable to create or update Item: %w", err)
 	}
 
 	mdParsed, err := parseMetadata(headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item, parsing metadata")
+		return nil, fmt.Errorf("unable to create or update Item, parsing metadata: %w", err)
 	}
 
 	item := &item{
@@ -85,21 +109,26 @@ func (c *container) Put(name string, r io.Reader, size int64, metadata map[strin
 }
 
 func (c *container) RemoveItem(id string) error {
-	return c.client.ObjectDelete(c.id, id)
+	return c.RemoveItemContext(context.Background(), id)
 }
 
-func (c *container) getItem(id string) (*item, error) {
-	info, headers, err := c.client.Object(c.id, id)
+// RemoveItemContext is RemoveItem with a context.
+func (c *container) RemoveItemContext(ctx context.Context, id string) error {
+	return c.client.ObjectDelete(ctx, c.id, id)
+}
+
+func (c *container) getItem(ctx context.Context, id string) (*item, error) {
+	info, headers, err := c.client.Object(ctx, c.id, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "Object Not Found") {
 			return nil, stow.ErrNotFound
 		}
-		return nil, errors.Wrap(err, "error retrieving item")
+		return nil, fmt.Errorf("error retrieving item: %w", err)
 	}
 
 	md, err := parseMetadata(headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to retrieve Item information, parsing metadata")
+		return nil, fmt.Errorf("unable to retrieve Item information, parsing metadata: %w", err)
 	}
 
 	item := &item{
@@ -115,8 +144,8 @@ func (c *container) getItem(id string) (*item, error) {
 }
 
 // Keys are returned as all lowercase, dashes are allowed
-func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
-	m := make(map[string]interface{}, len(md))
+func parseMetadata(md swift.Headers) (map[string]any, error) {
+	m := make(map[string]any, len(md))
 	for key, value := range md.ObjectMetadata() {
 		m[key] = value
 	}
@@ -124,7 +153,7 @@ func parseMetadata(md swift.Headers) (map[string]interface{}, error) {
 }
 
 // TODO determine invalid keys.
-func prepMetadata(md map[string]interface{}) (map[string]string, error) {
+func prepMetadata(md map[string]any) (map[string]string, error) {
 	m := make(map[string]string, len(md))
 	for key, value := range md {
 		str, ok := value.(string)

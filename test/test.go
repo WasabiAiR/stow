@@ -2,10 +2,10 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -17,8 +17,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
+	"github.com/flyteorg/stow"
 )
 
 // All runs a generic suite of tests for Stow storage
@@ -28,19 +30,12 @@ import (
 // via stow.Register.
 // Locations should be empty.
 func All(t *testing.T, kind string, config stow.Config) {
-	is := is.New(t)
+	is, location := initTest(t, kind, config)
 	isWindows := false
 
 	if runtime.GOOS == "windows" {
 		isWindows = true
 	}
-
-	err := stow.Validate(kind, config)
-	is.NoErr(err)
-
-	location, err := stow.Dial(kind, config)
-	is.NoErr(err)
-	is.OK(location)
 
 	// testing for file descriptors won't work on Windows
 	var startFDs int
@@ -89,7 +84,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 	}()
 
 	// Item metadata. Keys are usually transposed differently depending on the sdk.
-	md1 := map[string]interface{}{"stowmetadata": "foo"}
+	md1 := map[string]any{"stowmetadata": "foo"}
 
 	// add three items to c1 + add metadata to one item, assert if the implementation allows.
 	// Tests metadata retrieval on PUTs.
@@ -150,7 +145,7 @@ func All(t *testing.T, kind string, config stow.Config) {
 		rc, err := ir.OpenRange(0, 3)
 		is.NoErr(err)
 		defer rc.Close()
-		b, err := ioutil.ReadAll(rc)
+		b, err := io.ReadAll(rc)
 		is.NoErr(err)
 		is.Equal(b, []byte("item"))
 	}
@@ -175,6 +170,8 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.OK(etag(t, is, items[0]))
 	is.OK(etag(t, is, items[1]))
 	is.OK(etag(t, is, items[2]))
+
+	testContext(t, is, location, c1, item1, "item one")
 
 	// get container by ID
 	c1copy, err := location.Container(c1.ID())
@@ -289,6 +286,213 @@ func All(t *testing.T, kind string, config stow.Config) {
 	is.Equal(found, 3) // should find three items
 }
 
+// testContext checks the functions that take a context. With a live context
+// they do what the methods without a context do, with a cancelled context
+// they fail with the error of the context. They reach the implementation of
+// the location when it has methods with a context.
+func testContext(t *testing.T, is is.I, location stow.Location, container stow.Container, item stow.Item, content string) {
+	ctx := t.Context()
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+
+	c, err := stow.ContainerContext(ctx, location, container.ID())
+	is.NoErr(err)
+	is.Equal(c.ID(), container.ID())
+
+	containers, _, err := stow.ContainersContext(ctx, location, stow.NoPrefix, stow.CursorStart, 100)
+	is.NoErr(err)
+	is.True(len(containers) > 0)
+
+	i, err := stow.ItemContext(ctx, c, item.ID())
+	is.NoErr(err)
+	is.Equal(i.ID(), item.ID())
+
+	items, _, err := stow.ItemsContext(ctx, c, stow.NoPrefix, stow.CursorStart, 100)
+	is.NoErr(err)
+	is.Equal(len(items), 3)
+
+	r, err := stow.OpenContext(ctx, i)
+	is.NoErr(err)
+	b, err := io.ReadAll(r)
+	is.NoErr(err)
+	is.NoErr(r.Close())
+	is.Equal(string(b), content)
+
+	if ir, ok := i.(stow.ItemRanger); ok {
+		r, err := stow.OpenRangeContext(ctx, ir, 0, 3)
+		is.NoErr(err)
+		b, err := io.ReadAll(r)
+		is.NoErr(err)
+		is.NoErr(r.Close())
+		is.Equal(string(b), content[:4])
+	}
+
+	wantETag, err := i.ETag()
+	is.NoErr(err)
+	gotETag, err := stow.ETagContext(ctx, i)
+	is.NoErr(err)
+	is.Equal(gotETag, wantETag)
+
+	wantLastMod, err := i.LastMod()
+	is.NoErr(err)
+	gotLastMod, err := stow.LastModContext(ctx, i)
+	is.NoErr(err)
+	is.True(gotLastMod.Equal(wantLastMod))
+
+	wantMetadata, err := i.Metadata()
+	is.NoErr(err)
+	gotMetadata, err := stow.MetadataContext(ctx, i)
+	is.NoErr(err)
+	is.Equal(gotMetadata, wantMetadata)
+
+	// an item that is put has its information loaded on demand
+	const putContent = "item with a context"
+	put, err := stow.PutContext(ctx, c, "the_context/the item", strings.NewReader(putContent), int64(len(putContent)), nil)
+	is.NoErr(err)
+	_, err = stow.LastModContext(ctx, put)
+	is.NoErr(err)
+	_, err = stow.MetadataContext(ctx, put)
+	is.NoErr(err)
+	is.NoErr(stow.RemoveItemContext(ctx, c, put.ID()))
+
+	_, err = stow.ContainerContext(cancelled, location, container.ID())
+	assert.ErrorIs(t, err, context.Canceled)
+	_, _, err = stow.ContainersContext(cancelled, location, stow.NoPrefix, stow.CursorStart, 10)
+	assert.ErrorIs(t, err, context.Canceled)
+	_, err = stow.CreateContainerContext(cancelled, location, "stowtest"+randName(10))
+	assert.ErrorIs(t, err, context.Canceled)
+	err = stow.RemoveContainerContext(cancelled, location, "stowtest"+randName(10))
+	assert.ErrorIs(t, err, context.Canceled)
+	_, err = stow.ItemContext(cancelled, c, item.ID())
+	assert.ErrorIs(t, err, context.Canceled)
+	_, _, err = stow.ItemsContext(cancelled, c, stow.NoPrefix, stow.CursorStart, 100)
+	assert.ErrorIs(t, err, context.Canceled)
+	_, err = stow.PutContext(cancelled, c, "the_context/cancelled", strings.NewReader(putContent), int64(len(putContent)), nil)
+	assert.ErrorIs(t, err, context.Canceled)
+	err = stow.RemoveItemContext(cancelled, c, item.ID())
+	assert.ErrorIs(t, err, context.Canceled)
+	_, err = stow.OpenContext(cancelled, i)
+	assert.ErrorIs(t, err, context.Canceled)
+	if ir, ok := i.(stow.ItemRanger); ok {
+		_, err = stow.OpenRangeContext(cancelled, ir, 0, 3)
+		assert.ErrorIs(t, err, context.Canceled)
+	}
+
+	// nothing was changed with the cancelled context
+	items, _, err = stow.ItemsContext(ctx, c, stow.NoPrefix, stow.CursorStart, 100)
+	is.NoErr(err)
+	is.Equal(len(items), 3)
+}
+
+type PresignedRequestPreparer func(method stow.ClientMethod, r *http.Request) error
+
+func ContainerPreSignRequest(
+	t *testing.T, kind string, config stow.Config, requestPreparer PresignedRequestPreparer,
+) {
+	is, location := initTest(t, kind, config)
+
+	testContainer, err := location.CreateContainer("stowtest" + randName(10))
+	is.NoErr(err)
+
+	defer func() {
+		location.RemoveContainer(testContainer.ID())
+	}()
+
+	u, err := testContainer.PreSignRequest(
+		t.Context(),
+		stow.ClientMethodPut,
+		"presigned-put.txt",
+		stow.PresignRequestParams{
+			ExpiresIn: time.Minute * 5,
+		},
+	)
+
+	is.NoErr(err)
+	assert.NoError(t, err)
+	client := &http.Client{}
+	content := []byte("stowtest")
+	req, err := http.NewRequest("PUT", u.Url, bytes.NewReader(content))
+	is.NoErr(err)
+	req.ContentLength = int64(len(content))
+	req.Header.Set("Content-Type", "text/plain")
+	err = requestPreparer(stow.ClientMethodPut, req)
+	is.NoErr(err)
+
+	resp, err := client.Do(req)
+	is.NoErr(err)
+	if resp.StatusCode != 201 && resp.StatusCode != 200 {
+		io.Copy(os.Stdout, resp.Body)
+	}
+	is.Equal(201, resp.StatusCode)
+
+	u, err = testContainer.PreSignRequest(
+		t.Context(),
+		stow.ClientMethodGet,
+		"presigned-put.txt",
+		stow.PresignRequestParams{
+			ExpiresIn: time.Minute * 5,
+		},
+	)
+
+	is.NoErr(err)
+	req, err = http.NewRequest("GET", u.Url, nil)
+	is.NoErr(err)
+	err = requestPreparer(stow.ClientMethodGet, req)
+	is.NoErr(err)
+
+	resp, err = client.Do(req)
+	is.NoErr(err)
+	is.Equal(200, resp.StatusCode)
+	respBytes, err := io.ReadAll(resp.Body)
+	is.NoErr(err)
+	is.Equal(content, respBytes)
+}
+
+func BigFileUpload(t *testing.T, kind string, config stow.Config, fileSize int64) {
+	is, location := initTest(t, kind, config)
+
+	testContainer, err := location.CreateContainer("uploadtest" + randName(10))
+	is.NoErr(err)
+
+	defer func() {
+		location.RemoveContainer(testContainer.ID())
+	}()
+
+	f, err := os.CreateTemp(".", "temp-file")
+	is.NoErr(err)
+	defer func() {
+		os.Remove(f.Name())
+	}()
+	f.Truncate(fileSize)
+	item, err := testContainer.Put("test-upload-file", f, fileSize, map[string]any{})
+	is.NoErr(err)
+	itemSize, err := item.Size()
+	is.NoErr(err)
+	is.Equal(fileSize, itemSize)
+}
+
+func ExistingContainerDoesNotProduceAnError(t *testing.T, kind string, config stow.Config) {
+	is, location := initTest(t, kind, config)
+	testContainer, err := location.CreateContainer("stowtest-" + randName(10))
+	is.NoErr(err)
+	defer func() { location.RemoveContainer(testContainer.Name()) }()
+	dupAttempt, err := location.CreateContainer(testContainer.Name())
+	is.NoErr(err)
+	is.Equal(testContainer.Name(), dupAttempt.Name())
+}
+
+func initTest(t *testing.T, kind string, config stow.Config) (is.I, stow.Location) {
+	is := is.New(t)
+
+	err := stow.Validate(kind, config)
+	is.NoErr(err)
+
+	location, err := stow.Dial(kind, config)
+	is.NoErr(err)
+	is.OK(location)
+	return is, location
+}
+
 func totalNetFDs(t *testing.T) (int, []byte) {
 	lsof, err := exec.Command("lsof", "-b", "-n", "-p", strconv.Itoa(os.Getpid())).Output()
 	if err != nil {
@@ -309,7 +513,7 @@ func createContainer(is is.I, location stow.Location, name string) stow.Containe
 	return container
 }
 
-func putItem(is is.I, container stow.Container, name, content string, md map[string]interface{}) (stow.Item, bool) {
+func putItem(is is.I, container stow.Container, name, content string, md map[string]any) (stow.Item, bool) {
 	var skipAssertion bool // skip metadata assertion
 	item, err := container.Put(name, strings.NewReader(content), int64(len(content)), md)
 
@@ -335,7 +539,7 @@ func readItemContents(is is.I, item stow.Item) string {
 		_, err = s.Seek(0, io.SeekStart)
 		is.NoErr(err)
 	}
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	is.NoErr(err)
 	return string(b)
 }
@@ -402,16 +606,15 @@ func randName(length int) string {
 	return string(b)
 }
 
-func checkMetadata(t *testing.T, is is.I, item stow.Item, md map[string]interface{}) error {
+func checkMetadata(t *testing.T, is is.I, item stow.Item, md map[string]any) error {
 	itemMD, err := item.Metadata()
 	if err != nil {
 		is.Failf("error retrieving item metadata: %v", err)
 	}
 
-	t.Logf("Item metadata: %v", itemMD)
-	t.Logf("Expected item metadata: %v", md)
-
 	if !reflect.DeepEqual(itemMD, md) {
+		t.Logf("Item metadata: %v", itemMD)
+		t.Logf("Expected item metadata: %v", md)
 		return errors.New("metadata mismatch")
 	}
 	return nil

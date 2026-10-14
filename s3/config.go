@@ -1,16 +1,19 @@
 package s3
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/url"
-	"time"
+	"os"
+	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go/logging"
+	"github.com/flyteorg/stow"
 )
 
 // Kind represents the name of the location/storage type.
@@ -33,7 +36,7 @@ const (
 
 	// ConfigToken is an optional argument which is required when providing
 	// credentials with temporary access.
-	// ConfigToken = "token"
+	ConfigToken = "token"
 
 	// ConfigRegion represents the region/availability zone of the session.
 	ConfigRegion = "region"
@@ -41,6 +44,9 @@ const (
 	// ConfigEndpoint is optional config value for changing s3 endpoint
 	// used for e.g. minio.io
 	ConfigEndpoint = "endpoint"
+
+	// ConfigDisableForcePathStyle is optional config value to disable default force path style
+	ConfigDisableForcePathStyle = "disable_force_path_style"
 
 	// ConfigDisableSSL is optional config value for disabling SSL support on custom endpoints
 	// Its default value is "false", to disable SSL set it to "true".
@@ -99,13 +105,13 @@ func init() {
 			}
 		}
 
-		// Create a new client (s3 session)
+		// Create a new client
 		client, endpoint, err := newS3Client(config, "")
 		if err != nil {
 			return nil, err
 		}
 
-		// Create a location with given config and client (s3 session).
+		// Create a location with given config and client.
 		loc := &location{
 			config:         config,
 			client:         client,
@@ -122,62 +128,75 @@ func init() {
 	stow.Register(Kind, makefn, kindfn, validatefn)
 }
 
-// Attempts to create a session based on the information given.
-func newS3Client(config stow.Config, region string) (client *s3.S3, endpoint string, err error) {
+// Attempts to create a client based on the information given.
+func newS3Client(config stow.Config, region string) (client *s3.Client, endpoint string, err error) {
 	authType, _ := config.Config(ConfigAuthType)
 	accessKeyID, _ := config.Config(ConfigAccessKeyID)
 	secretKey, _ := config.Config(ConfigSecretKey)
-	//	token, _ := config.Config(ConfigToken)
+	token, _ := config.Config(ConfigToken)
 
 	if authType == "" {
 		authType = authTypeAccessKey
 	}
 
-	awsConfig := aws.NewConfig().
-		WithHTTPClient(http.DefaultClient).
-		WithMaxRetries(aws.UseServiceDefaultRetries).
-		WithLogger(aws.NewDefaultLogger()).
-		WithLogLevel(aws.LogOff).
-		WithSleepDelay(time.Sleep)
-
 	if region == "" {
 		region, _ = config.Config(ConfigRegion)
 	}
-	if region != "" {
-		awsConfig.WithRegion(region)
-	} else {
-		awsConfig.WithRegion("us-east-1")
+	if region == "" {
+		region = "us-east-1"
 	}
 
+	loadOptions := []func(*awsconfig.LoadOptions) error{
+		awsconfig.WithLogger(logging.Nop{}),
+		awsconfig.WithRegion(region),
+	}
+	// The SDK adds the CA bundle of AWS_CA_BUNDLE only to an HTTP client it
+	// builds itself, and fails to load the config with any other client.
+	if os.Getenv("AWS_CA_BUNDLE") == "" {
+		loadOptions = append(loadOptions, awsconfig.WithHTTPClient(http.DefaultClient))
+	}
 	if authType == authTypeAccessKey {
-		awsConfig.WithCredentials(credentials.NewStaticCredentials(accessKeyID, secretKey, ""))
+		loadOptions = append(loadOptions, awsconfig.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(accessKeyID, secretKey, token)))
 	}
 
-	endpoint, ok := config.Config(ConfigEndpoint)
-	if ok {
-		awsConfig.WithEndpoint(endpoint).
-			WithS3ForcePathStyle(true)
-	}
-
-	disableSSL, ok := config.Config(ConfigDisableSSL)
-	if ok && disableSSL == "true" {
-		awsConfig.WithDisableSSL(true)
-	}
-
-	sess, err := session.NewSession(awsConfig)
+	awsConfig, err := awsconfig.LoadDefaultConfig(context.Background(), loadOptions...)
 	if err != nil {
 		return nil, "", err
 	}
-	if sess == nil {
-		return nil, "", errors.New("creating the S3 session")
-	}
 
-	s3Client := s3.New(sess)
+	disableSSL, _ := config.Config(ConfigDisableSSL)
+	disableForcePathStyle, _ := config.Config(ConfigDisableForcePathStyle)
+	usev2, _ := config.Config(ConfigV2Signing)
+	endpoint, endpointSet := config.Config(ConfigEndpoint)
 
-	usev2, ok := config.Config(ConfigV2Signing)
-	if ok && usev2 == "true" {
-		setv2Handlers(s3Client)
-	}
+	s3Client := s3.NewFromConfig(awsConfig, func(o *s3.Options) {
+		o.EndpointOptions.DisableHTTPS = disableSSL == "true"
+		if endpointSet {
+			if endpoint != "" {
+				o.BaseEndpoint = new(endpointURL(endpoint, disableSSL == "true"))
+			}
+			o.UsePathStyle = disableForcePathStyle != "true"
+			// S3-compatible services do not all accept the checksums the
+			// SDK otherwise adds to every request.
+			o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+			o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
+		}
+		if usev2 == "true" {
+			o.HTTPSignerV4 = v2Signer{}
+		}
+	})
 
 	return s3Client, endpoint, nil
+}
+
+// endpointURL adds the scheme to an endpoint that is configured without one.
+func endpointURL(endpoint string, disableSSL bool) string {
+	if strings.Contains(endpoint, "://") {
+		return endpoint
+	}
+	if disableSSL {
+		return "http://" + endpoint
+	}
+	return "https://" + endpoint
 }

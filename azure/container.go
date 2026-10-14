@@ -1,28 +1,35 @@
 package azure
 
 import (
+	"context"
+	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	az "github.com/Azure/azure-sdk-for-go/storage"
-	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	azcontainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
+	"github.com/flyteorg/stow"
 )
-
-// The maximum size of an object that can be Put in a single request
-const maxPutSize = 256 * 1024 * 1024
 
 // timeFormat is the time format for azure.
 var timeFormat = "Mon, 2 Jan 2006 15:04:05 MST"
 
 type container struct {
-	id         string
-	properties az.ContainerProperties
-	client     *az.BlobStorageClient
+	id                string
+	properties        *BlobProps
+	client            *azcontainer.Client
+	preSigner         RequestPreSigner
+	uploadConcurrency int
 }
 
-var _ stow.Container = (*container)(nil)
+var (
+	_ stow.Container        = (*container)(nil)
+	_ stow.ContextContainer = (*container)(nil)
+)
 
 func (c *container) ID() string {
 	return c.id
@@ -32,123 +39,200 @@ func (c *container) Name() string {
 	return c.id
 }
 
-func (c *container) Item(id string) (stow.Item, error) {
-	blob := c.client.GetContainerReference(c.id).GetBlobReference(id)
-	err := blob.GetProperties(nil)
-	if err != nil {
-		if strings.Contains(err.Error(), "404") {
-			return nil, stow.ErrNotFound
+func (c *container) PreSignRequest(ctx context.Context, method stow.ClientMethod, key string,
+	params stow.PresignRequestParams) (response stow.PresignResponse, err error) {
+	containerName := c.id
+	blobName := key
+	var requestHeaders map[string]string
+	permissions := sas.BlobPermissions{}
+	switch method {
+	case stow.ClientMethodGet:
+		permissions.Read = true
+	case stow.ClientMethodPut:
+		permissions.Add = true
+		permissions.Write = true
+
+		requestHeaders = map[string]string{"Content-Length": strconv.Itoa(len(params.ContentMD5)), "Content-MD5": params.ContentMD5}
+		requestHeaders["x-ms-blob-type"] = "BlockBlob" // https://learn.microsoft.com/en-us/rest/api/storageservices/put-blob?tabs=microsoft-entra-id#remarks
+
+		if params.AddContentMD5Metadata {
+			requestHeaders[fmt.Sprintf("x-ms-meta-%s", stow.FlyteContentMD5)] = params.ContentMD5
 		}
+	}
+
+	sasQueryParams, err := c.preSigner(ctx, sas.BlobSignatureValues{
+		Protocol:      sas.ProtocolHTTPS,
+		StartTime:     time.Now().UTC().Add(-1 * clockSkewBuffer),
+		ExpiryTime:    time.Now().UTC().Add(params.ExpiresIn + clockSkewBuffer),
+		ContainerName: containerName,
+		BlobName:      blobName,
+		Permissions:   permissions.String(),
+	})
+
+	if err != nil {
+		return stow.PresignResponse{}, err
+	}
+
+	// Create the SAS URL for the resource you wish to access, and append the SAS query parameters.
+	qp := sasQueryParams.Encode()
+
+	return stow.PresignResponse{Url: fmt.Sprintf("%s/%s?%s", c.client.URL(), blobName, qp), RequiredRequestHeaders: requestHeaders}, nil
+}
+
+func (c *container) Item(id string) (stow.Item, error) {
+	return c.ItemContext(context.Background(), id)
+}
+
+// ItemContext is Item with a context.
+func (c *container) ItemContext(ctx context.Context, id string) (stow.Item, error) {
+	cleanedId := strings.Replace(id, " ", "+", -1)
+	items, _, err := c.ItemsContext(ctx, cleanedId, "", 1)
+	if err != nil {
 		return nil, err
-	}
-	item := &item{
-		id:         id,
-		container:  c,
-		client:     c.client,
-		properties: blob.Properties,
+	} else if len(items) == 0 {
+		return nil, stow.ErrNotFound
+	} else {
+		return items[0], nil
 	}
 
-	etag := cleanEtag(item.properties.Etag) // Etags returned from this method include quotes. Strip them.
-	item.properties.Etag = etag             // Assign the corrected string value to the field.
-
-	return item, nil
+	// Why not use this code? Because the Azure SDK/API will return metadata with the
+	// first character of each key upper-cased. Unfortunately, the MSFT position is
+	// that this is a golang upstream problem and they are not attempting to fix it.
+	//
+	// See: https://github.com/Azure/azure-sdk-for-go/issues/16791#issuecomment-1011518946
+	//
+	// The workaround used here is to just use their listing API, which doesn't rely on
+	// retrieving metadata as HTTP headers.
+	//
+	// Another reasonable alternative would be to just lower case all metadata keys, as is
+	// the case with s3: https://github.com/aws/aws-sdk-go/issues/445
+	//
+	//ctx := context.Background()
+	//blobClient := c.client.NewBlobClient(id)
+	//resp, err := blobClient.GetProperties(ctx, nil)
+	//if err != nil {
+	//	if strings.Contains(err.Error(), "404") {
+	//		return nil, stow.ErrNotFound
+	//	}
+	//	return nil, err
+	//}
+	//item := &item{
+	//	id:        id,
+	//	container: c,
+	//	client:    blobClient,
+	//	metadata:  makeStowCompatMetadataMap(resp.Metadata),
+	//	properties: &BlobProps{
+	//		ETag:          *resp.ETag,
+	//		LastModified:  *resp.LastModified,
+	//		ContentLength: *resp.ContentLength,
+	//	},
+	//}
+	//
+	//return item, nil
 }
 
 func (c *container) Items(prefix, cursor string, count int) ([]stow.Item, string, error) {
-	params := az.ListBlobsParameters{
-		Prefix:     prefix,
-		MaxResults: uint(count),
+	return c.ItemsContext(context.Background(), prefix, cursor, count)
+}
+
+// ItemsContext is Items with a context.
+func (c *container) ItemsContext(ctx context.Context, prefix, cursor string, count int) ([]stow.Item, string, error) {
+	options := azcontainer.ListBlobsFlatOptions{
+		Prefix:     &prefix,
+		MaxResults: new(int32(count)),
+		Include:    azcontainer.ListBlobsInclude{Metadata: true},
 	}
 	if cursor != "" {
-		params.Marker = cursor
+		options.Marker = &cursor
 	}
-	listblobs, err := c.client.GetContainerReference(c.id).ListBlobs(params)
+
+	listResp, err := c.client.NewListBlobsFlatPager(&options).NextPage(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	items := make([]stow.Item, len(listblobs.Blobs))
-	for i, blob := range listblobs.Blobs {
-
-		// Clean Etag just in case.
-		blob.Properties.Etag = cleanEtag(blob.Properties.Etag)
-
+	items := make([]stow.Item, len(listResp.Segment.BlobItems))
+	for i, blob := range listResp.Segment.BlobItems {
 		items[i] = &item{
-			id:         blob.Name,
-			container:  c,
-			client:     c.client,
-			properties: blob.Properties,
+			id:        *blob.Name,
+			container: c,
+			client:    c.client.NewBlobClient(*blob.Name),
+			metadata:  makeStowCompatMetadataMap(blob.Metadata),
+			properties: &BlobProps{
+				ETag:          *blob.Properties.ETag,
+				LastModified:  *blob.Properties.LastModified,
+				ContentLength: *blob.Properties.ContentLength,
+			},
 		}
 	}
-	return items, listblobs.NextMarker, nil
+	return items, *listResp.NextMarker, nil
 }
 
-func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
-	mdParsed, err := prepMetadata(metadata)
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]any) (stow.Item, error) {
+	return c.PutContext(context.Background(), name, r, size, metadata)
+}
+
+// PutContext is Put with a context.
+func (c *container) PutContext(ctx context.Context, name string, r io.Reader, size int64, metadata map[string]any) (stow.Item, error) {
+	mdParsed, err := makeAzureCompatMetadataMap(metadata)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Item, preparing metadata")
+		return nil, fmt.Errorf("unable to create or update Item, preparing metadata: %w", err)
 	}
 
 	name = strings.Replace(name, " ", "+", -1)
-
-	if size > maxPutSize {
-		// Do a multipart upload
-		err := c.multipartUpload(name, r, size)
+	blockClient := c.client.NewBlockBlobClient(name)
+	var blobProps = &BlobProps{ContentLength: size}
+	f, match := r.(*os.File)
+	if match {
+		resp, err := blockClient.UploadFile(ctx, f, &blockblob.UploadFileOptions{
+			Concurrency: uint16(c.uploadConcurrency),
+			Metadata:    mdParsed,
+		})
 		if err != nil {
-			return nil, errors.Wrap(err, "multipart upload")
+			return nil, fmt.Errorf("file upload: %w", err)
 		}
+		blobProps.ETag = *resp.ETag
+		blobProps.LastModified = *resp.LastModified
 	} else {
-		err = c.client.GetContainerReference(c.id).GetBlobReference(name).CreateBlockBlobFromReader(r, nil)
+		resp, err := blockClient.UploadStream(ctx, r, &blockblob.UploadStreamOptions{
+			Concurrency: c.uploadConcurrency,
+			Metadata:    mdParsed,
+		})
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create or update Item")
+			return nil, fmt.Errorf("stream upload: %w", err)
 		}
-	}
-
-	err = c.SetItemMetadata(name, mdParsed)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update item, setting Item metadata")
+		blobProps.ETag = *resp.ETag
+		blobProps.LastModified = *resp.LastModified
 	}
 
 	item := &item{
-		id:        name,
-		container: c,
-		client:    c.client,
-		properties: az.BlobProperties{
-			LastModified:  az.TimeRFC1123(time.Now()),
-			Etag:          "",
-			ContentLength: size,
-		},
+		id:         name,
+		container:  c,
+		metadata:   metadata,
+		client:     c.client.NewBlobClient(name),
+		properties: blobProps,
 	}
 	return item, nil
 }
 
 func (c *container) SetItemMetadata(itemName string, md map[string]string) error {
-	blob := c.client.GetContainerReference(c.id).GetBlobReference(itemName)
-	blob.Metadata = md
-	return blob.SetMetadata(nil)
-}
-
-func parseMetadata(md map[string]string) (map[string]interface{}, error) {
-	rtnMap := make(map[string]interface{}, len(md))
-	for key, value := range md {
-		rtnMap[key] = value
+	ctx := context.Background()
+	azCompatMap := make(map[string]*string, len(md))
+	for k, v := range md {
+		azCompatMap[k] = &v
 	}
-	return rtnMap, nil
-}
-
-func prepMetadata(md map[string]interface{}) (map[string]string, error) {
-	rtnMap := make(map[string]string, len(md))
-	for key, value := range md {
-		str, ok := value.(string)
-		if !ok {
-			return nil, errors.Errorf(`value of key '%s' in metadata must be of type string`, key)
-		}
-		rtnMap[key] = str
-	}
-	return rtnMap, nil
+	_, err := c.client.NewBlobClient(itemName).SetMetadata(
+		ctx, azCompatMap, nil)
+	return err
 }
 
 func (c *container) RemoveItem(id string) error {
-	return c.client.GetContainerReference(c.id).GetBlobReference(id).Delete(nil)
+	return c.RemoveItemContext(context.Background(), id)
+}
+
+// RemoveItemContext is RemoveItem with a context.
+func (c *container) RemoveItemContext(ctx context.Context, id string) error {
+	_, err := c.client.NewBlobClient(id).Delete(ctx, nil)
+	return err
 }
 
 // Remove quotation marks from beginning and end. This includes quotations that

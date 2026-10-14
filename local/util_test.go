@@ -1,20 +1,20 @@
 package local_test
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/cheekybits/is"
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/local"
 )
 
 func setup() (string, func() error, error) {
 	done := func() error { return nil } // noop
-	dir, err := ioutil.TempDir("testdata", "stow")
+	dir, err := os.MkdirTemp("testdata", "stow")
 	if err != nil {
 		return dir, done, err
 	}
@@ -36,15 +36,15 @@ func setup() (string, func() error, error) {
 	}
 
 	// add three items
-	err = ioutil.WriteFile(filepath.Join(dir, "three", "item1"), []byte("3.1"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "three", "item1"), []byte("3.1"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
-	err = ioutil.WriteFile(filepath.Join(dir, "three", "item2"), []byte("3.2"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "three", "item2"), []byte("3.2"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
-	err = ioutil.WriteFile(filepath.Join(dir, "three", "item3"), []byte("3.3"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "three", "item3"), []byte("3.3"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
@@ -58,11 +58,11 @@ func setup() (string, func() error, error) {
 		return dir, done, err
 	}
 	// make sym- and hardlink targets
-	err = ioutil.WriteFile(filepath.Join(dir, "z-links", "symtarget"), []byte("symlink target"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "z-links", "symtarget"), []byte("symlink target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
-	err = ioutil.WriteFile(filepath.Join(dir, "z-links", "hardtarget"), []byte("hardlink target"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "z-links", "hardtarget"), []byte("hardlink target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
@@ -78,7 +78,7 @@ func setup() (string, func() error, error) {
 	}
 
 	// make some root item
-	err = ioutil.WriteFile(filepath.Join(dir, "rootitem"), []byte("root target"), 0777)
+	err = os.WriteFile(filepath.Join(dir, "rootitem"), []byte("root target"), 0777)
 	if err != nil {
 		return dir, done, err
 	}
@@ -138,7 +138,7 @@ func TestCreateItem(t *testing.T) {
 	r, err := item.Open()
 	is.NoErr(err)
 	defer r.Close()
-	itemContents, err := ioutil.ReadAll(r)
+	itemContents, err := io.ReadAll(r)
 	is.NoErr(err)
 	is.Equal("new item contents", string(itemContents))
 

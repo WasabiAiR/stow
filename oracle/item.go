@@ -1,14 +1,15 @@
 package oracle
 
 import (
+	"context"
 	"io"
 	"net/url"
 	"path"
 	"sync"
 	"time"
 
-	"github.com/graymeta/stow"
-	"github.com/ncw/swift"
+	"github.com/flyteorg/stow"
+	"github.com/ncw/swift/v2"
 )
 
 type item struct {
@@ -20,12 +21,15 @@ type item struct {
 	size         int64
 	url          url.URL
 	lastModified time.Time
-	metadata     map[string]interface{}
-	infoOnce     sync.Once
-	infoErr      error
+	metadata     map[string]any
+	infoMu       sync.Mutex
+	infoLoaded   bool
 }
 
-var _ stow.Item = (*item)(nil)
+var (
+	_ stow.Item        = (*item)(nil)
+	_ stow.ContextItem = (*item)(nil)
+)
 
 // ID returns a string value representing the Item, in this case it's the
 // name of the object.
@@ -55,7 +59,12 @@ func (i *item) Size() (int64, error) {
 // Open is a method that returns an io.ReadCloser which represents the content
 // of the CloudStorage object.
 func (i *item) Open() (io.ReadCloser, error) {
-	r, _, err := i.client.ObjectOpen(i.container.id, i.id, false, nil)
+	return i.OpenContext(context.Background())
+}
+
+// OpenContext is Open with a context.
+func (i *item) OpenContext(ctx context.Context) (io.ReadCloser, error) {
+	r, _, err := i.client.ObjectOpen(ctx, i.container.id, i.id, false, nil)
 	var res io.ReadCloser = r
 	// FIXME: this is a workaround to issue https://github.com/graymeta/stow/issues/120
 	if s, ok := res.(readSeekCloser); ok {
@@ -89,17 +98,27 @@ func (f *fixReadSeekCloser) Seek(offset int64, whence int) (int64, error) {
 
 // ETag returns a string value representing the CloudStorage Object
 func (i *item) ETag() (string, error) {
+	return i.ETagContext(context.Background())
+}
+
+// ETagContext is ETag with a context.
+func (i *item) ETagContext(_ context.Context) (string, error) {
 	return i.hash, nil
 }
 
 // LastMod returns a time.Time object representing information on the date
 // of the last time the CloudStorage object was modified.
 func (i *item) LastMod() (time.Time, error) {
+	return i.LastModContext(context.Background())
+}
+
+// LastModContext is LastMod with a context.
+func (i *item) LastModContext(ctx context.Context) (time.Time, error) {
 	// If an object is PUT, certain information is missing. Detect
 	// if the lastModified field is missing, send a request to retrieve
 	// it, and save both this and other missing information so that a
 	// request doesn't have to be sent again.
-	err := i.ensureInfo()
+	err := i.ensureInfo(ctx)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -107,8 +126,13 @@ func (i *item) LastMod() (time.Time, error) {
 }
 
 // Metadata returns a map of key value pairs representing an Item's metadata
-func (i *item) Metadata() (map[string]interface{}, error) {
-	err := i.ensureInfo()
+func (i *item) Metadata() (map[string]any, error) {
+	return i.MetadataContext(context.Background())
+}
+
+// MetadataContext is Metadata with a context.
+func (i *item) MetadataContext(ctx context.Context) (map[string]any, error) {
+	err := i.ensureInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -118,37 +142,23 @@ func (i *item) Metadata() (map[string]interface{}, error) {
 // ensureInfo checks the fields that may be empty when an item is PUT.
 // Verify if the fields are empty, get information on the item, fill in
 // the missing fields.
-func (i *item) ensureInfo() error {
+func (i *item) ensureInfo(ctx context.Context) error {
+	i.infoMu.Lock()
+	defer i.infoMu.Unlock()
+
 	// If lastModified is empty, so is hash. get info on the Item and
 	// update the necessary fields at the same time.
-	if i.lastModified.IsZero() || i.hash == "" || i.metadata == nil {
-		i.infoOnce.Do(func() {
-			itemInfo, infoErr := i.getInfo()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
-
-			i.lastModified, i.infoErr = itemInfo.LastMod()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
-
-			i.metadata, i.infoErr = itemInfo.Metadata()
-			if infoErr != nil {
-				i.infoErr = infoErr
-				return
-			}
-		})
+	if i.infoLoaded || (!i.lastModified.IsZero() && i.hash != "" && i.metadata != nil) {
+		return nil
 	}
-	return i.infoErr
-}
 
-func (i *item) getInfo() (stow.Item, error) {
-	itemInfo, err := i.container.getItem(i.ID())
+	itemInfo, err := i.container.getItem(ctx, i.ID())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return itemInfo, nil
+	i.hash = itemInfo.hash
+	i.lastModified = itemInfo.lastModified
+	i.metadata = itemInfo.metadata
+	i.infoLoaded = true
+	return nil
 }

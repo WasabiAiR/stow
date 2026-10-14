@@ -1,13 +1,15 @@
 package sftp
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/graymeta/stow"
+	"github.com/flyteorg/stow"
 )
 
 type container struct {
@@ -23,6 +25,11 @@ func (c *container) ID() string {
 // Name returns a string value which represents the name of the container.
 func (c *container) Name() string {
 	return c.name
+}
+
+func (c *container) PreSignRequest(_ context.Context, _ stow.ClientMethod, _ string,
+	_ stow.PresignRequestParams) (response stow.PresignResponse, err error) {
+	return stow.PresignResponse{}, fmt.Errorf("unsupported")
 }
 
 // Item returns a stow.Item instance of a container based on the name of the
@@ -165,7 +172,7 @@ func (c *container) RemoveItem(id string) error {
 }
 
 // Put sends a request to upload content to the container.
-func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]interface{}) (stow.Item, error) {
+func (c *container) Put(name string, r io.Reader, size int64, metadata map[string]any) (stow.Item, error) {
 	if len(metadata) > 0 {
 		return nil, stow.NotSupported("metadata")
 	}

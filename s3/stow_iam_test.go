@@ -1,4 +1,4 @@
-// +build iam
+//go:build iam
 
 package s3
 
@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 )
 
 func TestStowIAM(t *testing.T) {

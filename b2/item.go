@@ -1,14 +1,13 @@
 package b2
 
 import (
+	"fmt"
 	"io"
 	"net/url"
 	"sync"
 	"time"
 
-	"github.com/graymeta/stow"
-
-	"github.com/pkg/errors"
+	"github.com/flyteorg/stow"
 	"gopkg.in/kothar/go-backblaze.v0"
 )
 
@@ -19,7 +18,7 @@ type item struct {
 	lastModified time.Time
 	bucket       *backblaze.Bucket
 
-	metadata map[string]interface{}
+	metadata map[string]any
 	infoOnce sync.Once
 	infoErr  error
 }
@@ -53,9 +52,9 @@ func (i *item) URL() *url.URL {
 }
 
 // Metadata returns additional item metadata fields that were set when the file was uploaded
-func (i *item) Metadata() (map[string]interface{}, error) {
+func (i *item) Metadata() (map[string]any, error) {
 	if err := i.ensureInfo(); err != nil {
-		return nil, errors.Wrap(err, "retrieving item metadata")
+		return nil, fmt.Errorf("retrieving item metadata: %w", err)
 	}
 	return i.metadata, nil
 }
@@ -84,7 +83,7 @@ func (i *item) OpenRange(start, end uint64) (io.ReadCloser, error) {
 // ETag returns an etag for an item. In this implementation we use the file's last modified timestamp
 func (i *item) ETag() (string, error) {
 	if err := i.ensureInfo(); err != nil {
-		return "", errors.Wrap(err, "retreiving etag")
+		return "", fmt.Errorf("retreiving etag: %w", err)
 	}
 	return i.lastModified.String(), nil
 }
@@ -92,7 +91,7 @@ func (i *item) ETag() (string, error) {
 // LastMod returns the file's last modified timestamp
 func (i *item) LastMod() (time.Time, error) {
 	if err := i.ensureInfo(); err != nil {
-		return time.Time{}, errors.Wrap(err, "retrieving Last Modified information of Item")
+		return time.Time{}, fmt.Errorf("retrieving Last Modified information of Item: %w", err)
 	}
 	return i.lastModified, nil
 }

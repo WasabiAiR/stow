@@ -1,15 +1,14 @@
 package google
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
 
 	"github.com/cheekybits/is"
 
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/test"
+	"github.com/flyteorg/stow"
+	"github.com/flyteorg/stow/test"
 )
 
 func TestStow(t *testing.T) {
@@ -21,7 +20,7 @@ func TestStow(t *testing.T) {
 		t.Skip("skipping test because GOOGLE_CREDENTIALS_FILE or GOOGLE_PROJECT_ID not set.")
 	}
 
-	b, err := ioutil.ReadFile(credFile)
+	b, err := os.ReadFile(credFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +41,7 @@ func TestPrepMetadataSuccess(t *testing.T) {
 	m["3"] = "4"
 	m["ninety-nine"] = "100"
 
-	m2 := make(map[string]interface{})
+	m2 := make(map[string]any)
 	for key, value := range m {
 		m2[key] = value
 	}
@@ -59,7 +58,7 @@ func TestPrepMetadataSuccess(t *testing.T) {
 func TestPrepMetadataFailureWithNonStringValues(t *testing.T) {
 	is := is.New(t)
 
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["float"] = 8.9
 	m["number"] = 9
 
